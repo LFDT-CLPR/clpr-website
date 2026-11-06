@@ -1,8 +1,9 @@
 name: DCO
 
+# Pull requests only. main changes only through pull requests, and the commit GitHub writes when it
+# squashes or merges one takes the author's name from their GitHub profile, which need not match the
+# name in their sign-off.
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
@@ -20,18 +21,11 @@ jobs:
 
       - name: Check Signed-off-by trailers
         env:
-          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
-          HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
-          # A new branch or rewritten history has no usable "before" commit, so check the whole history.
-          if [ "$BASE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
-            range="$HEAD"
-          else
-            range="$BASE..$HEAD"
-          fi
-
           failed=0
-          for sha in $(git rev-list --no-merges "$range"); do
+          for sha in $(git rev-list --no-merges "$BASE..$HEAD"); do
             author="$(git show -s --format='%an <%ae>' "$sha")"
             if ! git show -s --format='%(trailers:key=Signed-off-by,valueonly)' "$sha" | grep -qxF "$author"; then
               echo "::error::Commit $sha is missing 'Signed-off-by: $author'"
