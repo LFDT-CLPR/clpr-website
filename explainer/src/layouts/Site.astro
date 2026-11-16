@@ -24,7 +24,7 @@ const themeColor = (PACK as { themeColor: { light: string; dark: string } }).the
 <Base {...props}>
   <link slot="head" rel="preload" href={sora} as="font" type="font/woff2" crossorigin />
   {/* The website's theme rule, before first paint: a stored light, dark or system goes on
-      <html data-theme>; anything else is light, whatever the system says. The engine's own head
+      <html data-theme>; anything else leaves no attribute, which is system, the default. The engine's own head
       script, which runs next, only knows light and dark. */}
   <script is:inline slot="head" define:vars={{ themeColor }}>
     let theme = null;
@@ -32,7 +32,7 @@ const themeColor = (PACK as { themeColor: { light: string; dark: string } }).the
     if (theme === 'light' || theme === 'dark' || theme === 'system') document.documentElement.setAttribute('data-theme', theme);
     else document.documentElement.removeAttribute('data-theme');
     try { if (localStorage.getItem('toc-collapsed') === '1') document.documentElement.classList.add('toc-collapsed'); } catch (e) {}
-    const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const dark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute('content', dark ? themeColor.dark : themeColor.light));
   </script>
   <SiteHeader slot="header" path={props.path} />

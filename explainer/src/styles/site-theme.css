@@ -3,12 +3,12 @@
    Tokens come from the website's src/app/globals.css (ink on paper or on dark indigo, Sora, IBM
    Plex Mono, round panels). The website's rule for the theme: <html data-theme> holds the visitor's
    choice (light, dark or system, from the header's switch; Site.astro restores it before first
-   paint). No attribute is light, whatever the system says; dark applies for `dark`, and for
-   `system` when the system is dark. color-scheme carries that rule (light, dark, or `light dark`
+   paint). No attribute is system, the default; dark applies for `dark`, and for `system` (or no
+   attribute) when the system is dark. color-scheme carries that rule (light, dark, or `light dark`
    for system), and every colour token is light-dark(light, dark), so one declaration serves every
    case. The few non-colour tokens that differ are switched in the blocks after the tokens.
-   html[lang]:root outranks the engine's :root and [data-theme] rules, which would otherwise follow
-   the system when there is no attribute; chrome overrides carry an `html` prefix for the same reason.
+   html[lang]:root outranks the engine's :root and [data-theme] rules, so this rule holds rather than
+   the engine's; chrome overrides carry an `html` prefix for the same reason.
    ------------------------------------------------------------------ */
 
 @font-face { font-family: "Sora"; src: url("../assets/fonts/sora-latin-wght-normal.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
@@ -16,7 +16,7 @@
 @font-face { font-family: "IBM Plex Mono"; src: url("../assets/fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-display: swap; }
 
 html[lang]:root {
-  color-scheme: light;
+  color-scheme: light dark;
   --bg: light-dark(#f6f5fb, #0c0b1d);
   --bg-2: light-dark(#eeecf6, #111025);
   --surface: light-dark(#ffffff, #16152e);
@@ -83,10 +83,10 @@ html[lang]:root {
   --logo-light: inline;                  /* partner logos: their own colours on paper */
   --logo-dark: none;                     /* and their versions for dark backgrounds on indigo */
 }
+html[lang]:root[data-theme="light"] { color-scheme: light; }
 html[lang]:root[data-theme="dark"] { color-scheme: dark; --tint: 16%; --logo-light: none; --logo-dark: inline; }
-html[lang]:root[data-theme="system"] { color-scheme: light dark; }
 @media (prefers-color-scheme: dark) {
-  html[lang]:root[data-theme="system"] { --tint: 16%; --logo-light: none; --logo-dark: inline; }
+  html[lang]:root:is([data-theme="system"], :not([data-theme])) { --tint: 16%; --logo-light: none; --logo-dark: inline; }
 }
 
 /* ---------- frame ---------- */
@@ -166,7 +166,7 @@ html .site-btn.primary { background: var(--fg); color: var(--bg); }
 html .site-btn.primary:hover { background: light-dark(#2a2550, #ece9ff); }
 @media (max-width: 40rem) { html .site-btn.primary { display: none; } }
 /* The colour-theme switch, as on the website: Light, Dark and System in one pill. The current choice
-   is marked from <html data-theme> itself (no attribute is light), so it is right before any script. */
+   is marked from <html data-theme> itself (no attribute is system), so it is right before any script. */
 html .theme-switch { display: inline-flex; align-items: center; gap: 0.125rem; padding: 0.125rem; border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--fg) 3%, transparent); }
 html .theme-switch button {
   display: inline-flex; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; padding: 0;
@@ -175,9 +175,9 @@ html .theme-switch button {
 }
 html .theme-switch button:hover { color: var(--fg); }
 html .theme-switch svg { width: 0.875rem; height: 0.875rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-html:not([data-theme="dark"]):not([data-theme="system"]) .theme-switch [data-theme-choice="light"],
+html[data-theme="light"] .theme-switch [data-theme-choice="light"],
 html[data-theme="dark"] .theme-switch [data-theme-choice="dark"],
-html[data-theme="system"] .theme-switch [data-theme-choice="system"] { background: color-mix(in srgb, var(--fg) 9%, transparent); color: var(--fg); }
+html:not([data-theme="light"]):not([data-theme="dark"]) .theme-switch [data-theme-choice="system"] { background: color-mix(in srgb, var(--fg) 9%, transparent); color: var(--fg); }
 
 html .site-subnav { border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 2%, transparent); }
 /* The two pages as the website's navigation pills: Sora, sentence case, the current one lit. */
@@ -261,8 +261,8 @@ html table { background: transparent; }
 html .table-wrap th { background: var(--bg-2); }
 html code { background: color-mix(in srgb, var(--fg) 7%, transparent); border-color: transparent; }
 html pre, html .astro-code { background: var(--bg-2) !important; border-color: var(--line); border-radius: var(--radius); }
-/* Code colours follow color-scheme too: the engine's own rules pick Shiki's dark colours whenever the
-   system is dark and there is no attribute, which here is the light theme. */
+/* Code colours follow color-scheme too, rather than the engine's own rules, which pick Shiki's dark
+   colours from the system alone and would miss a chosen Light or Dark. */
 html[lang]:root .astro-code, html[lang]:root .astro-code span { color: light-dark(var(--shiki-light), var(--shiki-dark)) !important; }
 html a { text-decoration-color: color-mix(in srgb, var(--link) 45%, transparent); }
 html .skip { background: var(--surface); }

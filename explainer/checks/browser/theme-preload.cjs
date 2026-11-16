@@ -1,6 +1,6 @@
 // Why this exists: kse's browser gates (check-sims, shot, overflow) and the diagram text check only
-// emulate prefers-color-scheme, and since D21 light is the default whatever the system says, so
-// `DARK=1` no longer shows the dark theme. Preloaded with
+// emulate prefers-color-scheme, which reaches only the default (System, D22), not a stored Light or
+// Dark choice. Preloaded with
 //   THEME=dark NODE_OPTIONS=--require=./checks/browser/theme-preload.cjs <gate>
 // it stores THEME in every page those gates open, as the header's switch would, prints the
 // background the first page rendered, and fails the run if a page did not take the theme.

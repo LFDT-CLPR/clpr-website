@@ -158,7 +158,7 @@ and `SiteFooter.astro`, so a change to this site's look is repeated there.
 
 ## Design notes
 
-Version 2 has a light and a dark theme; light is the default. Layout, spacing and type follow linear.app; the scroll story follows
+Version 2 has a light and a dark theme; by default it follows the system's setting. Layout, spacing and type follow linear.app; the scroll story follows
 Apple product pages; the interactive particle logo follows lusion.co. The brand colors still come
 from Hashgraph's CLPR presentation.
 
@@ -227,8 +227,8 @@ from Hashgraph's CLPR presentation.
 - **Header.** The nav lists the site's pages (Explainer, Issue Explorer, Governance, Blog) and marks
   the current one (`aria-current="page"`); the home page's sections are in the footer. Beside the theme
   switch, GitHub and Start contributing it needs 64rem, and below that a menu button takes over. The mobile menu fills the screen, locks scrolling and closes on Escape.
-- **Themes.** `ThemeSwitch` in the header offers Light, Dark and System. Light is what a visitor
-  sees until they choose; System follows the computer and changes with it. The choice is
+- **Themes.** `ThemeSwitch` in the header offers Light, Dark and System. System is what a visitor
+  gets until they choose: it follows the computer and changes with it. The choice is
   `data-theme` on `<html>`, kept in `localStorage` as `theme`, the key the explainer reads too, so
   one choice covers both. An inline script in `layout.tsx` applies it before the first paint, and
   the switch marks its option from the attribute, so nothing flashes before React hydrates

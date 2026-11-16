@@ -221,6 +221,8 @@ remove its pattern in the same change that adds the evidence.
 
 ## D21. Light by default, dark or the system's on request, as the website
 
+*The default is superseded by D22: the system's setting, not light.*
+
 **Decision.** The pages follow the website: light by default, with a Light/Dark/System switch in the
 header. `<html data-theme>` holds the choice and `localStorage` key `theme` stores it (the key the
 website and the engine use, so a choice carries across). No attribute is light, even when the system
@@ -249,3 +251,18 @@ again, with `checks/browser/theme-preload.cjs` (loaded through `NODE_OPTIONS`, s
 untouched) storing `THEME=dark` in every page they open and failing the run if a page did not take it.
 For a dark screenshot, click `[data-theme-choice="dark"]` first or use the same preload. Look at both
 themes when changing a figure.
+
+## D22. The system's setting by default, as the website
+
+**Decision.** Both the website and these pages start on System: a visitor who has not chosen sees the
+theme their computer asks for, and it changes with it. No `data-theme` attribute now means system
+(the same as `system`); Light and Dark are still choices on the header's switch, stored as before under
+`theme`. `site-theme.css` sets `color-scheme: light dark` on the root and `light` only for a chosen
+Light, and the switch marks System when there is no attribute.
+
+**Why.** A visitor whose computer is set to dark should not be met by a light page they did not ask
+for; the switch remains for anyone who wants the other theme.
+
+**Consequences.** The rest of D21 stands. `DARK=1 kse check-sims` in verify once more shows the dark
+theme, through the default; `check:dark` still covers a stored Dark choice.
+

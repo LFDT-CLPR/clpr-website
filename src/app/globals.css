@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
-/* Light is the default. The visitor can choose Light, Dark or System: data-theme on <html>, saved as
-   localStorage "theme", which the explainer shares (src/lib/theme.ts). Dark applies when they chose Dark,
-   or chose System and the system is dark; `dark:` and `@variant dark` carry it. */
+/* System is the default. The visitor can choose Light, Dark or System: data-theme on <html>, saved as
+   localStorage "theme", which the explainer shares (src/lib/theme.ts); no attribute is System. Dark applies
+   when they chose Dark, or chose System (or nothing) and the system is dark; `dark:` and `@variant dark` carry it. */
 @custom-variant dark {
   &:where([data-theme="dark"], [data-theme="dark"] *) {
     @slot;
   }
   @media (prefers-color-scheme: dark) {
-    &:where([data-theme="system"], [data-theme="system"] *) {
+    &:where([data-theme="system"], [data-theme="system"] *, :root:not([data-theme]), :root:not([data-theme]) *) {
       @slot;
     }
   }
@@ -289,11 +289,11 @@
   display: none;
 }
 
-/* Theme switch (ThemeSwitch.tsx): the chosen option, read from data-theme; no attribute is Light. */
+/* Theme switch (ThemeSwitch.tsx): the chosen option, read from data-theme; no attribute is System. */
 
-:root:not([data-theme]) [data-theme-option="light"],
 [data-theme="light"] [data-theme-option="light"],
 [data-theme="dark"] [data-theme-option="dark"],
+:root:not([data-theme]) [data-theme-option="system"],
 [data-theme="system"] [data-theme-option="system"] {
   background: color-mix(in oklab, var(--fg) 9%, transparent);
   color: var(--fg);
