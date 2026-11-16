@@ -90,10 +90,10 @@ website's panel radius) and restyles the chrome; the fonts are self-hosted from 
 (OFL), so nothing is fetched. The theme follows the website's rule: `<html data-theme>` holds the
 visitor's choice (`light`, `dark` or `system`), set by the header's Light/Dark/System switch and stored
 in `localStorage` under `theme`, the key the website uses, so a choice carries across. No attribute
-means light, whatever the system says; a head script in `Site.astro` restores the stored choice before
+means system, the default; a head script in `Site.astro` restores the stored choice before
 first paint. The stylesheet turns that into `color-scheme` (light, dark, or `light dark` for system)
 and every colour token is a `light-dark(light, dark)` pair, so one declaration serves every case. The
-engine's own theme toggle, which treats no attribute as the system's setting, is not rendered. `Site.astro` fills the engine layout's `header` and `footer` slots with
+engine's own theme toggle, which also treats no attribute as the system's setting, is not rendered. `Site.astro` fills the engine layout's `header` and `footer` slots with
 `SiteHeader.astro` and `SiteFooter.astro`, static copies of the website's header and footer. Prose sits
 at a 68ch measure; figures, simulations and tables run the full 840px column. The actor colours are
 fixed and used identically in every diagram on both pages:

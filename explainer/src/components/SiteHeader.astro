@@ -45,7 +45,7 @@ const themeColor = (PACK as { themeColor: { light: string; dark: string } }).the
     <div class="actions">
       <div class="theme-switch" role="group" aria-label="Color theme" data-light-color={themeColor.light} data-dark-color={themeColor.dark}>
         {themes.map((theme) => (
-          <button type="button" data-theme-choice={theme.value} aria-label={theme.label} title={theme.label} aria-pressed={theme.value === 'light' ? 'true' : 'false'}>
+          <button type="button" data-theme-choice={theme.value} aria-label={theme.label} title={theme.label} aria-pressed={theme.value === 'system' ? 'true' : 'false'}>
             <svg viewBox="0 0 24 24" aria-hidden="true" set:html={theme.icon} />
           </button>
         ))}
@@ -66,7 +66,7 @@ const themeColor = (PACK as { themeColor: { light: string; dark: string } }).the
 <script>
   // The colour-theme switch, as on the website: the choice (light, dark or system) goes on
   // <html data-theme> and into localStorage `theme`, which Site.astro restores before first paint.
-  // Dark applies for `dark`, and for `system` while the system is dark; anything else is light.
+  // Dark applies for `dark`, and for `system` (the default, also no attribute) while the system is dark.
   // The CSS marks the current choice from the attribute; this keeps aria-pressed and the browser's
   // theme colour in step with it.
   const root = document.documentElement;
@@ -75,7 +75,7 @@ const themeColor = (PACK as { themeColor: { light: string; dark: string } }).the
   const colours = document.querySelector<HTMLElement>('.theme-switch')?.dataset;
   const choice = () => {
     const theme = root.getAttribute('data-theme');
-    return theme === 'dark' || theme === 'system' ? theme : 'light';
+    return theme === 'light' || theme === 'dark' ? theme : 'system';
   };
   const sync = () => {
     const current = choice();
@@ -86,7 +86,7 @@ const themeColor = (PACK as { themeColor: { light: string; dark: string } }).the
   };
   buttons.forEach((button) => {
     button.addEventListener('click', () => {
-      const next = button.dataset.themeChoice ?? 'light';
+      const next = button.dataset.themeChoice ?? 'system';
       root.setAttribute('data-theme', next);
       try { localStorage.setItem('theme', next); } catch (e) {}
       sync();

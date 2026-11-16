@@ -41,9 +41,12 @@ export const metadata: Metadata = {
   },
 };
 
-// Light is the default; ThemeSwitch moves it to the theme in effect.
+// System is the default, so the browser's chrome follows the system until ThemeSwitch moves it to the theme in effect.
 export const viewport: Viewport = {
-  themeColor: THEME_COLOR.light,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

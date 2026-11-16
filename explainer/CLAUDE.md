@@ -23,8 +23,8 @@ documentation is in `docs/` (start at `docs/README.md`); this file is the short 
 3. **Neutral voice, donation-ready.** No personal branding, no marketing claims, no numbers
    without a source. Apache-2.0 code, CC BY 4.0 text, DCO sign-off on every commit
    (`git commit -s`).
-4. **The website's theme, phone width.** The pages wear the CLPR website's theme: light by default, dark
-   or the system's on the header's Light/Dark/System switch. `src/styles/site-theme.css` redefines the
+4. **The website's theme, phone width.** The pages wear the CLPR website's theme: the system's setting by default,
+   light or dark on the header's Light/Dark/System switch. `src/styles/site-theme.css` redefines the
    engine's tokens (`styles/global.css`) as `light-dark()` pairs and `Site.astro` supplies the website's
    header and footer and restores the stored choice before first paint; never hard-code a colour or font,
    and look at both themes. Everything must render at 400px wide. Wide drawings go inside
@@ -96,8 +96,8 @@ Conventions every sim follows — copy `ChannelLife.astro` or `RunningHash.astro
 - `pnpm test` — build then check.
 - `pnpm exec kse shot <path> <out.png> [width] [fullPage] [clickSelector|…]` — screenshot a
   built page; look at the PNG before calling layout done. For the dark theme make
-  `'[data-theme-choice="dark"]'` the first click (`DARK=1` only emulates a dark system, and light is
-  the default);
+  `'[data-theme-choice="dark"]'` the first click (`DARK=1` emulates a dark system, which the default follows,
+  but the click covers a stored choice);
   `pnpm exec kse overflow <path> 400` for phone overflow;
   `pnpm exec kse preview-diagram <Figure.astro> <out-prefix>` for a figure without a build (in the
   engine's fonts, which are narrower than the site's Sora: confirm with the diagram text check).

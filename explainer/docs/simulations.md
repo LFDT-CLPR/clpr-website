@@ -63,7 +63,7 @@ Rules:
   invents an epoch length, it says so on screen.
 - **Phone width and both themes.** `viewBox` SVGs scale; text at 11 px or larger; wrap very wide
   drawings in `<Figure>`. Check with `pnpm exec kse overflow <path> 400` and a screenshot in
-  dark mode (`pnpm exec kse shot … '[data-theme-choice="dark"]'`; light is the default).
+  dark mode (`pnpm exec kse shot … '[data-theme-choice="dark"]'`; the default follows the system, which the shot emulates as light).
 - **Accessibility.** Native `<button>`s, `aria-pressed` on toggles, `role="img"` with an
   `aria-label` on SVGs, keyboard handlers on clickable SVG groups (`tabindex="0"`, Enter/Space).
 - **No external resources, no storage, no fetches.** Everything the sim needs is in the file.

@@ -1,4 +1,4 @@
-// The colour theme. Light is the default; the visitor can choose Light, Dark or System. The choice is
+// The colour theme. System (the computer's setting) is the default; the visitor can choose Light, Dark or System. The choice is
 // data-theme on <html>, saved as localStorage "theme" (the explainer under /plumbing/ reads the same key).
 // globals.css turns it into colours: dark for Dark, and for System when the system is dark.
 
@@ -6,7 +6,7 @@ export type ThemeChoice = "light" | "dark" | "system";
 export type Theme = "light" | "dark";
 
 export const THEME_KEY = "theme";
-export const DEFAULT_THEME: ThemeChoice = "light";
+export const DEFAULT_THEME: ThemeChoice = "system";
 
 /** The page background of each theme (--bg in globals.css), for the browser's own chrome. */
 export const THEME_COLOR: Record<Theme, string> = { light: "#f6f5fb", dark: "#0c0b1d" };
@@ -18,7 +18,7 @@ export const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("${THEME
 
 export function themeChoice(): ThemeChoice {
   const chosen = document.documentElement.getAttribute("data-theme");
-  return chosen === "dark" || chosen === "system" ? chosen : DEFAULT_THEME;
+  return chosen === "light" || chosen === "dark" || chosen === "system" ? chosen : DEFAULT_THEME;
 }
 
 /** The theme in effect: the choice, with System resolved against the system's setting. */
