@@ -86,9 +86,8 @@ Failures in `check:anchors` or `check-code-refs` are the citations that no longe
 
 ## Deploy
 
-Netlify: import the repository; [`netlify.toml`](netlify.toml) does the rest. GitHub Pages:
-enable *Pages → Source: GitHub Actions*; [`pages.yml`](.github/workflows/pages.yml) builds under
-`/<repo>/`. See [docs/deployment.md](docs/deployment.md).
+The explainer is not deployed on its own: the website builds it and serves the two pages at
+`/plumbing/` and `/plumbing/developers/`. See [docs/deployment.md](docs/deployment.md).
 
 ## Documentation
 

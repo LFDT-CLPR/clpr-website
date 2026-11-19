@@ -141,7 +141,7 @@ sendMessage([auth] caller, channel_id: bytes(32), connector_id: bytes(32),
             target_application: bytes, message_data: bytes) → { message_id: uint64 }
 ```
 
-{/* detail-allow: the application-facing callback interface, which the specification defines */}
+{/* detail-allow: the EVM application interface, which the reference contracts define; the specification leaves the callback interface to each platform */}
 ```solidity
 interface IClprApplication {
     /// Called when a cross-ledger Data Message arrives. Return bytes become the reply.
@@ -198,7 +198,7 @@ contract PingPong is IClprApplication {
 - **Choose the channel by finality need.** A price feed might accept a `latest`-level channel; a token bridge should not.
 </Callout>
 
-**Reply statuses.** There are four: `SUCCESS`, `APPLICATION_ERROR`, `CONNECTOR_NOT_FOUND` and `CONNECTOR_UNDERFUNDED`. The last two are connector-attributable and slash, and so does a connector charge that fails after the call. Implementations may define further values; treat any value beyond the four as implementation-specific.
+**Reply statuses.** There are four: `SUCCESS`, `APPLICATION_ERROR`, `CONNECTOR_NOT_FOUND` and `CONNECTOR_UNDERFUNDED`. The last two are connector-attributable and slash, and so does a connector charge that fails after the call.
 
 <Callout kind="key">
 sendMessage returns a message_id; that id is what correlates the eventual response with the message you sent.
@@ -208,14 +208,14 @@ sendMessage returns a message_id; that id is what correlates the eventual respon
 
 <Section id="journey" page="developers">
 
-One message, end to end, in protocol terms: twenty-eight steps, two state proofs, one reply, between a Hiero ledger on the left and a QBFT ledger on the right. Each step names the algorithm or structure it runs through; the plain narration sits above the protocol narration. The switch runs the trip the other way, where the proofs change and the rules do not.
+One message, end to end, in protocol terms: twenty-eight steps, two state proofs, one reply, between a Hiero ledger on the left and an EVM ledger running QBFT on the right. Each step names the algorithm or structure it runs through; the plain narration sits above the protocol narration. The switch runs the trip the other way, where the proofs change and the rules do not.
 
 <Journey mode="both" />
 
-Keep two things from it for the sections that follow. Steps 12 to 19 are one transaction on the receiving ledger: `submitBundle`, the verification algorithm, acknowledgement, the connector charge, dispatch and the queued response. A rejected bundle applies none of it; in an accepted one, a failed application call or connector charge becomes that message's reply status and the rest of the bundle still commits. And steps 7 to 11 and 20 to 21 are the endpoints' own work, re-checked the moment it comes back on chain.
+Keep two things from it for the sections that follow. Steps 12 to 19 are one transaction on the receiving ledger: `submitBundle`, the verification algorithm, acknowledgement, the connector charge, dispatch and the queued response. A rejected bundle applies none of it; in an accepted one, a failed application call, a missing connector or an underfunded one becomes that message's reply status and the rest of the bundle still commits. And steps 8 to 11 and 20 to 21 are the endpoints' own work, re-checked the moment it comes back on chain.
 
 <Callout kind="key">
-Everything between the two ledgers is re-verified on arrival; the on-chain half of each hop is one transaction that either lands whole or not at all.
+Every bundle the endpoints carry is re-verified on arrival; the on-chain half of each hop is one transaction.
 </Callout>
 
 </Section>
@@ -268,10 +268,6 @@ Messages never travel individually. A **bundle** is an ordered batch of payloads
 
 <BundlePrefixAnchor />
 
-<Callout kind="impl">
-The EVM contracts check the recomputed hash against the sender's latest `sentRunningHash`, and the QBFT verifier proves the running hash of message `nextMessageId − 1`, so there a bundle must run to the sender's newest message rather than stop at an earlier anchor, and a backlog larger than one bundle cannot drain in slices.
-</Callout>
-
 ### Progress criteria
 
 The service rejects any bundle that satisfies none of these (**NoProgress**), and endpoints MUST NOT submit one:
@@ -318,7 +314,7 @@ The verifier answers one question, whether this is authentically the peer's stat
 </Callout>
 
 <Callout kind="impl">
-Where the EVM contracts differ from the specification wording in this section: a bundle may repeat messages the ledger already has at its front, which are skipped (it is rejected only if it jumps ahead or carries nothing new); the running hash folds `sha256(previous ‖ sha256(payload))`; the application is called first and the connector is charged afterwards, on the gas used, using one service-wide margin; delivering a response charges no connector; an out-of-order response pauses an ACTIVE channel without reverting, keeping the bundle's trust anchor and manifest updates but not its acknowledgement; a `REDACTED` message also gets a reply, and a malformed control message or an unknown wire field rejects the whole bundle; and closing transitions to DRAINED and CLOSED are evaluated after dispatch and also need every data message answered.
+Where the EVM contracts differ from the specification wording in this section: a bundle may repeat messages the ledger already has at its front, which are skipped (it is rejected if it jumps ahead, is numbered inconsistently or makes no progress); the running hash folds `sha256(previous ‖ sha256(payload))`; the application is called first and the connector is charged afterwards, on the gas used, using one service-wide margin; an out-of-order response pauses an ACTIVE channel without reverting: nothing is dispatched, and the bundle's trust anchor, endpoint manifest and acknowledgement updates are kept; a malformed control message or an unknown wire field rejects the whole bundle; and closing transitions to DRAINED and CLOSED are evaluated after dispatch and also need every data message answered.
 </Callout>
 
 </Section>
@@ -473,7 +469,7 @@ A sync cycle is one bidirectional stream scoped to a single channel. Each side s
 
 Three properties to internalize. The request is **unproven** and "MUST NOT cause a state change": a stale or under-claiming request at worst produces duplicates that the replay defence rejects, costing bandwidth and a fee, never correctness, and an over-claim only delays messages the requester still needs. Each bundle is **shaped by the receiver's request**: the responder starts from the state the receiver reports in the same stream, not from a cached view of it. And endpoints **MUST pre-verify** by executing the verifier locally before submitting, "otherwise the endpoint will have to pay for invalid payloads that fail verification post-consensus".
 
-The reason: the earlier single-call `sync` computed bundles from a cached view of the peer's acknowledgements one cycle stale, so in steady state delivered messages were sent again, roughly halving effective bundle throughput. Sync cadence is intentionally unspecified: "an empirical tuning question, not a protocol-level constant".
+The reason: the earlier single-call `sync` computed bundles from a cached view of the peer's acknowledgements one cycle stale, so in steady state delivered messages were sent again, roughly halving effective bundle throughput when bundles are capped by the per-bundle message limit. Sync cadence is intentionally unspecified: "an empirical tuning question, not a protocol-level constant".
 
 **Private networks** simply omit `service_endpoint` from their manifest entries; their endpoints are then the only ones that can initiate. **Close-notification:** when a channel reaches CLOSED locally, the endpoint's terminal obligation is to keep submitting one final bundle carrying `status = CLOSED` to the remote until it is accepted or rejected as already closed.
 
@@ -532,6 +528,10 @@ A connector's authorization contract is asked, before a message is queued, wheth
 ### Paying
 
 On the destination, each Data Message's `connector_id` is resolved to the local connector. If it exists and can pay, it is charged the gas used plus a margin, and the entire amount goes to the account that submitted the bundle: no treasury, no owner cut, nothing to the sending side. Response Messages are charged the same way on their way home. Then the application is called.
+
+<Callout kind="impl">
+The EVM contracts call the application first and charge the connector afterwards, on the gas used. They pay in the ledger's native token by default. A deployment may instead name one token contract when the service is created; stakes, bonds, charges and slash proceeds are then paid in that token for the life of the service.
+</Callout>
 
 <Money id="money-dev" detail />
 
@@ -666,7 +666,7 @@ A Foundry project. `ClprService.sol` is an immutable router that holds all state
 
 <EvmRouterModules />
 
-The repository records its design choices under `docs/`. The contracts are a reference implementation that is still converging on the specification, which is the reference for the protocol; where they differ, the differences are known and being settled.
+The repository records its design choices under `docs/`. The contracts are a reference implementation that is still converging on the specification, which is the reference for the protocol; where they differ, the specification is the reference.
 
 ### Hiero: the native service
 
@@ -674,7 +674,7 @@ On Hiero the CLPR Service is a native service inside the consensus node, reachab
 
 ### The endpoint: `clpr-endpoint`
 
-A standalone Java relay for EVM ledgers, built with Gradle from a handful of modules: protobuf types, core domain types, a gRPC server and client, EVM interaction over JSON-RPC, sync orchestration and peer management, and the application entry point. Local networks are declared with a proof type; Hiero appears only as a channel's peer proof type. Outbound, the endpoint notices new messages on a channel, builds a payload and syncs it with a peer chosen from the peer manifest. Inbound, it decodes the peer's bundle and submits it to the local CLPR Service. The repository's `docs/` folder is the map; some of its documents describe work in flight, so read them against the code.
+A standalone Java relay for EVM ledgers, built with Gradle from a handful of modules: protobuf types, core domain types, a gRPC server and client, EVM interaction over JSON-RPC, sync orchestration and peer management, and the application entry point. Local networks are declared with a proof type; Hiero appears only as a channel's peer proof type. Each cycle the endpoint picks a peer from the peer manifest and opens a sync stream for the channel: it sends a request describing its own state, receives the peer's bundle together with the peer's request, and answers with a bundle built from its own ledger for that request. A bundle it receives, whichever side opened the stream, is decoded and submitted to the local CLPR Service. The stream runs without TLS, and the endpoint does not authenticate its peer: a bundle stands on its proof. The repository's `docs/` folder is the map; some of its documents describe work in flight, so read them against the code.
 
 <EndpointTwoLanes />
 
@@ -713,14 +713,14 @@ A decision record puts the problem, the options weighed, the solution and its te
 
 CLPR is incubated as a lab of **LF Decentralized Trust**, a Linux Foundation project. The signed Labs charter, kept in the lab's governance repository, fixes the rules every lab operates under:
 
-- **Oversight** by the foundation's Technical Advisory Council (TAC), which approves project proposals, including incubation and deprecation, organizes and removes sub-projects, and approves the processes for contributing.
+- **Oversight** by the foundation's Technical Advisory Council (TAC), whose oversight can include approving project proposals, including incubation and deprecation, organizing and removing sub-projects, and approving the processes for contributing.
 - **Licensing.** Inbound and outbound code under Apache License 2.0, every new inbound code contribution carrying a Developer Certificate of Origin sign-off; specifications under the Community Specification License 1.0; documentation under CC BY 4.0. Exceptions need a two-thirds vote of the entire TAC. Files should carry SPDX identifiers.
-- **Copyright** in new contributions stays with its holders, and no contributor is required to assign it. Project trademarks are transferred to LF Projects, LLC, which holds them for the project; the Hedera Governing Council undertook to donate the CLPR brand and trademark to LFDT once the lab was accepted.
+- **Copyright** in new contributions stays with its holders, and no contributor is required to assign it. Project trademarks are held for the project by LF Projects, LLC, or an associated hosting entity; the Hedera Governing Council undertook to donate the CLPR brand and trademark to LFDT once the lab was accepted.
 - **Openness.** Participation cannot be refused on any basis that is not reasonable and non-discriminatory, and "the output of all Project discussions, proposals, timelines, decisions, and status should be made open and easily visible to all".
 
 The mission of the Labs project is "to support development of very early open projects".
 
-Inside the lab, every team and its rights on each repository are defined in `teams.yml`, and a change to a role or team is a pull request against that file referencing a governance issue. Anyone who contributes is a Contributor and needs no team. Committers are per repository: the spec, smart-contracts and endpoint repositories each have a `<repository-name>-committers` team with write access. One `clpr-maintainers` team, with maintain rights on every repository, takes the decisions that affect the whole organization, including creating repositories and adding or removing Committers and Maintainers. General teams cover release engineering (`clpr-release-engineers`), security (`security-maintainers`) and foundation staff (`lfdt-staff`, admin on `.github` and `governance`). Decisions aim for consensus; otherwise the Maintainers vote, in the weekly call when more than half of them are present or asynchronously over 14 days, and a vote passes when more Maintainers vote for it than against it.
+Inside the lab, every team and its rights on each repository are defined in `teams.yml`, and a change to a role or team is a pull request against that file referencing a governance issue. Anyone who contributes is a Contributor and needs no team. Committers are per repository: a `<repository-name>-committers` team has write access to its repository. One `clpr-maintainers` team, with maintain rights on every repository, takes the decisions that affect the whole organization, including creating repositories and adding or removing Committers and Maintainers. General teams cover release engineering (`clpr-release-engineers`), security (`security-maintainers`) and foundation staff (`lfdt-staff`, admin on `.github` and `governance`). Decisions aim for consensus; otherwise the Maintainers vote, in the weekly call when more than half of them are present or asynchronously over 14 days, and a vote passes when more Maintainers vote for it than against it.
 
 The lab's scope: collaboration on the specification, the reference implementations of service, verifiers and endpoints, application development, and native integrations into other ledger types.
 

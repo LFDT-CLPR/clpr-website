@@ -2,6 +2,58 @@
 
 Newest first. Each sync entry lists the upstream commit range it was reviewed against.
 
+## 2026-11-19 - sync and whole-repository audit
+
+Upstream: clpr-smart-contracts 276c8d5 → 1c558a4 (53 commits), clpr-endpoint 2ccd48d → 2747dc0
+(22 commits), governance 1447ae0 → 5251371 (5 commits). clpr-spec@945082d and org-profile@528e9c0
+have not moved. The site engine moves to `knowledge-site-engine@0.1.1`, which lets a site cite
+repositories outside its primary organisation; nothing here uses that yet.
+
+- Contracts: message redaction is gone and the reply status enum is the specification's four
+  values → developers §4 and the §8 callout, journey step 26, the redaction figure in §21.
+- Contracts: a bundle may stop before the sender's newest message → the "cannot drain in slices"
+  callout in developers §7 is deleted.
+- Contracts: the connector is charged for delivering a reply; an out-of-order reply pauses the
+  channel and keeps the bundle's acknowledgement; bundle submission is permissionless → developers
+  §8 callout, the BundleVerify simulation, journey reverse step 25.
+- Contracts: QBFT has a header-mode and a contract-mode verifier, both needing a two-thirds quorum
+  of a committed validator set, and the old verifier is legacy → journey steps 20 and 23 (both
+  directions), the trust anchor row of the cast, the TrustAnchor simulation, the two-state-trees
+  figure, the verifier row of the catalogue; six references now point at the verifier document.
+- Contracts: a Tempo verifier → a new row in the ledgers table.
+- Contracts: the fee asset may be one token named at deployment → an implementation note in
+  developers §15, which also states that the contracts call first and charge afterwards.
+- Contracts: the Hiero verifier's cached anchor changed shape → journey steps 13 and reverse 23,
+  the TrustAnchor simulation. Line anchors into `ChannelLogic.sol` are dropped.
+- Endpoint: sync is the specified two-phase exchange on one stream; mutual TLS and the second
+  listener were removed, so peers are not authenticated and a bundle stands on its proof → the
+  endpoint and wire rows of the catalogue, developers §20, journey steps 8 (both directions), the
+  "Two lanes through one relay" figure (redrawn: no poller, no certificates, no second port).
+- Endpoint: Ethereum proof of stake and QBFT contract mode are new local proof types → the
+  Ethereum and QBFT rows of the ledgers table, the catalogue, the website's endpoint card.
+- governance/teams.yml: committer teams for the e2e and website repositories, new spec
+  committers → developers §22, the website's recorded team list, the issue explorer's closing text.
+- The watch list for clpr-endpoint now covers `docs/`, the gRPC modules and `ProofType.java`; the
+  old list missed the TLS removal.
+- Audit of every surface against the new pins (66 input files in 15 groups, 11 website
+  screenshots): 152 candidate findings, 83 fixed here. The rest are statements that follow the
+  specification where the reference code differs (the implementation notes carry the difference),
+  volatile detail that still matches the pins, wording the maintainers settled earlier, and
+  findings rejected on re-reading; the audit report lists each.
+- Stale documents corrected: the explainer's README (deployment), `docs/README.md` (layout,
+  workflows, section counts), `docs/testing.md` (what CI runs), the website README (a removed
+  component, the footer note).
+- Not content-affecting: tests, CI workflows, gas reports, deployment tooling, dependency bumps,
+  the Safe and kill-switch runbooks, the endpoint's 0.8.0 release.
+- Ambiguities to raise upstream: the specification's QBFT verifier documents still describe the
+  epoch-header scheme and an epoch-number anchor id, while the contracts' two current verifiers use
+  hops at change blocks and a block-number id; the endpoint's `docs/sync-protocol.md` calls
+  `BundleRequest` and `BundleResponse` an implementation extension although the specification
+  defines both, and says a stream carries three messages while the code sends a fourth, closing
+  one; the contracts' `docs/bundle-flow.md` says no cursor advances on a pause while the code
+  commits the acknowledgement; `docs/CLPR.md` points at a drift review file that is not in the
+  repository; the specification requires mutual TLS for sync and the reference endpoint has none.
+
 ## 2026-11-02 - the explainer wears the landing page's look
 
 Same pins, content unchanged. The pages now sit on the website's aurora background, with its

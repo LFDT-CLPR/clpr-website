@@ -140,9 +140,10 @@ document vs. the Solidity). The changelog lists them so a maintainer can raise t
   A Connector sits beside the Service (its registration and locked stake are in the Service);
   the application calls the Service, which asks the Connector.
 - A formula, a sync call or an ordering without saying whether it is the specification's or the
-  pinned reference contracts' and endpoint's. The specification streams `sync` and updates all
-  Channel state before dispatch; the reference endpoint serves a single call and the contracts
-  charge the Connector after the call. Say which one the figure shows.
+  pinned reference contracts' and endpoint's. The specification updates all Channel state before
+  dispatch; the reference contracts charge the Connector after the call. The specification runs
+  `sync` over mutual TLS; the reference endpoint serves the same stream without it. Say which
+  one the figure shows.
 - That the sending side is never paid. A Response Message charges the source Connector the same
   way, and the charge goes to the submitter on that ledger.
 - A reason for how ledgers or CLPR work that no source gives. Introduce it as "in general", or

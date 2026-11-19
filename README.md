@@ -87,7 +87,6 @@ src/
     ClprMark.tsx       The CLPR spiral logo (also the source shape for the particles)
     Hero.tsx  Extensibility.tsx  Repositories.tsx
     ThemeSwitch.tsx    The Light / Dark / System switch in the header
-    Voices.tsx         Community voices, after hiero.org: one quote at a time beside its organization, turning every 10s
     PageShell.tsx      The frame and opening of every page but the home page
     BlogLead.tsx  BlogPostCard.tsx  BlogPostList.tsx
                        The blog index: the newest post at size beside the next two, then the archive
@@ -269,8 +268,9 @@ from Hashgraph's CLPR presentation.
 - **Footer.** Its top edge is a Channel: two Endpoints joined by a twisted fibre bundle, with
   a message crossing one way and its response the other (CSS, still with reduced motion).
   Links are grouped by intent (Explore the page, Build with the repositories, how the lab
-  is run), and a row shows who is behind CLPR with their marks: a lab of LF Decentralized
-  Trust, contributed by Hashgraph and Hedera, built natively into Hiero. Below it the large CLPR
+  is run), and a row states where CLPR comes from, with the marks: a lab of LF Decentralized
+  Trust, contributed by Hashgraph under its agreement with the Hedera Governing Council, with a
+  native Hiero service specified in HIP-1535. Below it the large CLPR
   wordmark lights up in the spiral's colors under the pointer (`data-pointer-glow`); on touch
   screens the light sweeps across it on its own.
 - **Motion and accessibility.** With `prefers-reduced-motion` the background holds still and

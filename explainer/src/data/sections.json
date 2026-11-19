@@ -714,8 +714,8 @@
         {
           "doc": "repo",
           "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/qbft/QBFTVerifier.sol",
-          "label": "QBFTVerifier.sol"
+          "path": "src/verifiers/evm/qbft/qbft-verifier.md",
+          "label": "QBFT verifiers"
         },
         {
           "doc": "repo",
@@ -946,7 +946,7 @@
         "numeral": "I",
         "name": "The problem",
         "title": "Why two ledgers cannot just talk",
-        "goal": "Know what a ledger is, why two of them cannot see each other, and why the usual fix makes every message only as safe as the party in the middle.",
+        "goal": "Know what a ledger is, why two of them cannot see each other, and why a trusted party in the middle makes every message only as safe as that party.",
         "first": "ledger"
       },
       {
@@ -969,8 +969,8 @@
         "id": "build",
         "numeral": "IV",
         "name": "What you can build",
-        "title": "What people build with it",
-        "goal": "The four patterns the protocol was designed around, the shapes of network that pairs of ledgers can form, and who runs what.",
+        "title": "What the design anticipates people building",
+        "goal": "The four patterns the design outlines, the shapes of network that pairs of ledgers can form, and who runs what.",
         "first": "patterns"
       },
       {
@@ -988,7 +988,7 @@
         "numeral": "I",
         "name": "Foundations",
         "title": "What it is for, and the mental model",
-        "goal": "What CLPR delivers, what people build on it, whom an application trusts and why, and the four layers the rest of the page walks down.",
+        "goal": "What CLPR delivers, what the design anticipates people building on it, whom an application trusts and why, and the four layers the rest of the page walks down.",
         "first": "why"
       },
       {

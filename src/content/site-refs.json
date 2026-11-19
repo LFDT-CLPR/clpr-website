@@ -230,6 +230,12 @@
         },
         {
           "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java",
+          "label": "endpoint proof types"
+        },
+        {
+          "doc": "repo",
           "id": "governance",
           "path": "README.md",
           "label": "governance README"
@@ -422,7 +428,7 @@
         "gh api repos/hiero-ledger/hiero-improvement-proposals/contents/HIP/hip-1535.md -q .content | base64 -d | grep -m1 '^status:'"
       ],
       "recorded": {
-        "date": "2026-11-03",
+        "date": "2026-11-19",
         "result": "HIP-1535 status: Approved; the HIP describes the service as opt-in (networks that do not enable it are unaffected)"
       }
     },
@@ -432,7 +438,7 @@
         "gh api repos/LFDT-CLPR/clpr-spec/license -q .license.spdx_id"
       ],
       "recorded": {
-        "date": "2026-11-02",
+        "date": "2026-11-19",
         "result": "Apache-2.0; the charter (governance repository, §6.b.iv) says specifications are developed under the Community Specification License 1.0"
       }
     },
@@ -442,7 +448,7 @@
         "gh issue view 5 -R LF-Decentralized-Trust/lab-proposals --json state,labels -q '.state + \" \" + ([.labels[].name]|join(\",\"))'"
       ],
       "recorded": {
-        "date": "2026-11-02",
+        "date": "2026-11-19",
         "result": "CLOSED Approved (2026-09-11)"
       }
     },
@@ -452,8 +458,8 @@
         "gh api repos/LFDT-CLPR/governance/contents/teams.yml -q .content | base64 -d"
       ],
       "recorded": {
-        "date": "2026-11-04",
-        "result": "clpr-maintainers: edward-swirldslabs (team maintainer), hendrikebbers, SimiHunjan; clpr-spec-committers: rbair23; clpr-smart-contracts-committers: BartoszSolkaBD, bootcodes, jasuwienas, Ferparishuertas, Neeharika-Sompalli, tinker-michaelj, viniciusjssouza, mhess-swl, JivkoKelchev; clpr-endpoint-committers: mxtartaglia-sl, timo0, lukasz-hashgraph, ashumahajan. Names are the members' public GitHub names (gh api users/<handle> -q .name)."
+        "date": "2026-11-19",
+        "result": "clpr-maintainers: edward-swirldslabs (team maintainer), hendrikebbers, SimiHunjan; clpr-spec-committers: Neeharika-Sompalli, jasuwienas, lukasz-hashgraph, mhess-swl, tinker-michaelj, viniciusjssouza; clpr-smart-contracts-committers: BartoszSolkaBD, bootcodes, jasuwienas, Ferparishuertas, Neeharika-Sompalli, tinker-michaelj, viniciusjssouza, mhess-swl, JivkoKelchev; clpr-endpoint-committers: mxtartaglia-sl, timo0, lukasz-hashgraph, ashumahajan; clpr-e2e-committers: rwalworth, Neurone, mgarbs, EMerchant90, RaphaelMessian; clpr-website-committers: danielmarv. These are GitHub handles as teams.yml lists them."
       }
     },
     "lfdt-release": {
@@ -463,7 +469,7 @@
         "curl -sL https://genfinity.io/2026/09/24/hedera-hashgraph-clpr-linux-foundation-decentralized-trust-labs/ | grep -oE '(Cross ledger interoperability|Just weeks ago)[^<]*' | head -4"
       ],
       "recorded": {
-        "date": "2026-11-04",
+        "date": "2026-11-19",
         "result": "LFDT release dated 24 September 2026: CLPR is a bridgeless cross-ledger messaging protocol lab contributed by Hedera and developed by the Hashgraph team; Barbosa's release quote does not mention CLPR and Baird is not quoted there. Genfinity (24 September 2026) carries both quotes as used on the site."
       }
     }

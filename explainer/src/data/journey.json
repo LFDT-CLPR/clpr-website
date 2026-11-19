@@ -57,7 +57,7 @@
       "phase": "queue",
       "label": "sendMessage()",
       "title": "The application calls sendMessage on the CLPR Service",
-      "plain": "One function call on the application. It hands over four things: which channel to use, which connector is paying, who the message is for, and the message itself. The application does no cross-chain work of its own; it passes all of that to the CLPR Service and gets back a message id.",
+      "plain": "One function call from the application to its CLPR Service. It hands over four things: which channel to use, which connector is paying, who the message is for, and the message itself. The application does no cross-chain work of its own; it passes all of that to the CLPR Service and gets back a message id.",
       "protocol": "The application calls IClprService.sendMessage(channelId, connectorId, targetApplication, messageData). The service stamps msg.sender as the message's sender and, on success, returns the new message id.",
       "lit": [
         "appA",
@@ -225,7 +225,7 @@
       "label": "gRPC open",
       "title": "A sync stream opens and BundleRequests are exchanged",
       "plain": "The two endpoints keep a connection open between them. The receiving side says which message number it has reached, so the sending side knows exactly what to send.",
-      "protocol": "A sync cycle is one bidirectional gRPC stream of ClprSyncPayload messages under mutual TLS. Each side's BundleRequest carries its own received_message_id, status, trust_anchor_id and endpoint manifest version. The request is unproven and never changes state; it only shapes a minimal bundle. Delivery is pulled, not pushed.",
+      "protocol": "A sync cycle is one bidirectional gRPC stream of ClprSyncPayload messages, specified to run under mutual TLS (the reference EVM endpoint runs it without TLS). Each side's BundleRequest carries its own received_message_id, status, trust_anchor_id and endpoint manifest version. The request is unproven and never changes state; it only shapes a minimal bundle. Delivery is pulled, not pushed.",
       "lit": [
         "epA",
         "epB"
@@ -249,7 +249,7 @@
       "label": "fetch proof",
       "title": "The Hiero endpoint fetches the StateProof",
       "plain": "The endpoint collects the receipt proving the message really is in the ledger's signed state. It only fetches this proof. It does not create it, and it could not forge it if it wanted to.",
-      "protocol": "The endpoint retrieves a StateProof covering the Channel leaf (tag 482) and one ClprMessageValue leaf (tag 498) per message, each with a SHA-384 Merkle path to the signed block root. It parses and validates the structure but does not reassemble it.",
+      "protocol": "The endpoint retrieves a StateProof covering the Channel leaf and one ClprMessageValue leaf per message, each with a SHA-384 Merkle path to the signed block root. It parses and validates the structure but does not reassemble it.",
       "lit": [
         "epA",
         "chainA"
@@ -269,7 +269,7 @@
       "label": "gRPC send",
       "title": "The BundleResponse travels down the stream",
       "plain": "The message, together with its proof, travels down the open line to the other ledger's endpoint.",
-      "protocol": "A BundleResponse carries one opaque bundle_payload: the ordered batch of messages plus the state proof over the last of them, the anchor. Proving the anchor plus recomputing the running hash chain proves every message in the batch.",
+      "protocol": "A BundleResponse carries one opaque bundle_payload: the ordered batch of messages plus the state proof over the last of them, the anchor (a Hiero StateProof also carries a leaf for each message). Proving the anchor plus recomputing the running hash chain proves every message in the batch.",
       "lit": [
         "epA",
         "epB",
@@ -354,7 +354,7 @@
       "label": "verifyBundle()",
       "title": "The verifier checks the threshold signature and the Merkle paths",
       "plain": "The destination ledger checks the source ledger's signature itself, against the identity it already trusts, and walks the proof back to the signed block. This is the step where the destination checks the source ledger's own signature itself, rather than relying on a relay's say-so.",
-      "protocol": "Bundle verification step 1: the service calls the Channel's verifier with (bundle_payload, Channel.trust_anchor, channel_context). For a Hiero peer the trust anchor is the ledger_id: the verifier recomputes the SHA-384 Merkle root from each leaf proof, checks the hinTS aggregate signature against the stored ledger_id, and returns sync data, the ordered messages, and the anchor id and running hash. The EVM HieroVerifier checks against its constructor's ledgerId instead, using Channel.trust_anchor as a cached keccak256 of the hinTS verification key.",
+      "protocol": "Bundle verification step 1: the service calls the Channel's verifier with (bundle_payload, Channel.trust_anchor, channel_context). For a Hiero peer the trust anchor is the ledger_id: the verifier recomputes the SHA-384 Merkle root from each leaf proof, checks the hinTS aggregate signature against the stored ledger_id, and returns sync data, the ordered messages, and the anchor id and running hash. The EVM HieroVerifier checks against the ledger id fixed at its deployment; what it keeps in Channel.trust_anchor is a cache, not the root of trust.",
       "lit": [
         "svcB",
         "verB"
@@ -414,7 +414,7 @@
       "label": "gas budget",
       "title": "Connector resolved and the gas budget computed",
       "plain": "The destination looks up the connector that agreed to pay and works out how much execution it can afford.",
-      "protocol": "The message's connector_id is resolved via (channel_id, connector_id) to the local Connector. A missing Connector yields a CONNECTOR_NOT_FOUND response; an unfunded one is slashed and yields CONNECTOR_UNDERFUNDED. Both are answers, not bundle failures.",
+      "protocol": "The message's connector_id is resolved via (channel_id, connector_id) to the local Connector. A missing Connector yields a CONNECTOR_NOT_FOUND response; an unfunded one is slashed and yields CONNECTOR_UNDERFUNDED. Both are answers, not bundle failures. The EVM contracts also bound the gas forwarded to the application by what the Connector's balance can pay for.",
       "lit": [
         "svcB",
         "conB"
@@ -463,7 +463,7 @@
       "label": "settle gas",
       "title": "The connector is charged and the submitter reimbursed",
       "plain": "The connector pays for the execution that just happened, plus a little extra, and the whole amount goes to whoever submitted the transaction. That margin is why anyone bothers running an endpoint.",
-      "protocol": "The Connector is charged actual_gas_used × (1 + margin_percent/100). The entire charge is paid to the submitting account; there is no protocol treasury and no payment to anyone on the sending side.",
+      "protocol": "The Connector is charged actual_gas_used × (1 + margin_percent/100). The entire charge is paid to the submitting account; there is no protocol treasury and, for this message, no payment to anyone on the sending side.",
       "lit": [
         "conB",
         "epB"
@@ -530,7 +530,7 @@
       "label": "QBFT proof",
       "title": "The EVM endpoint builds a QBFT state proof",
       "plain": "Coming back, the proof works differently. This ledger's validators sign block headers directly, so the endpoint takes a header carrying those signatures plus a proof of the exact storage holding the reply.",
-      "protocol": "The relay assembles an RLP 5-tuple: the current block header (with QBFT committed seals in extraData), any epoch-boundary headers needed for validator-set rotation, the EIP-1186 account proof for the CLPR Service, storage proofs for five Channel slots and the anchor message's running hash, and the serialized bundle content.",
+      "protocol": "The relay assembles an RLP 5-tuple: the current block header (with QBFT committed seals in extraData), any headers needed to carry the validator set across a change, the EIP-1186 account proof for the CLPR Service, storage proofs for five Channel slots and the anchor message's running hash, and the serialized bundle content.",
       "lit": [
         "epB",
         "chainB"
@@ -594,7 +594,7 @@
       "label": "verify seals",
       "title": "QBFT committed seals checked against the trust anchor",
       "plain": "The Hiero ledger checks the validator signatures on that block header against the validators it has on record for this channel, and follows any change of validators since. How many signatures are required depends on the verifier.",
-      "protocol": "The QBFT verifier recovers the ECDSA signers from the header's committed seals and requires a threshold to match the validator set hash in the trust anchor. Epoch headers in the bundle advance the set; each must be sealed by the previous set, so history cannot be skipped. The reference QBFTVerifier tracks one validator address instead and needs MIN_COMMITTED_SEALS seals, one of them from that validator.",
+      "protocol": "The QBFT verifier recovers the ECDSA signers from the header's committed seals and requires a threshold to match the validator set hash in the trust anchor. Headers in the bundle that cross a change of validators advance the set; each must be sealed by the set trusted before it, so history cannot be skipped.",
       "lit": [
         "svcA",
         "verA"
@@ -609,8 +609,8 @@
         {
           "doc": "repo",
           "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/qbft/QBFTVerifier.sol",
-          "label": "QBFTVerifier.sol"
+          "path": "src/verifiers/evm/qbft/qbft-verifier.md",
+          "label": "QBFT verifiers"
         }
       ]
     },
@@ -663,7 +663,7 @@
       "label": "onClprResponse()",
       "title": "The original application is called back",
       "plain": "The original application is called back with the message id, a status, and whatever the other side sent back.",
-      "protocol": "IClprApplication.onClprResponse(channelId, messageId, status, responseData) is invoked best-effort; the status is a ClprMessageReplyStatus: SUCCESS, APPLICATION_ERROR, CONNECTOR_NOT_FOUND or CONNECTOR_UNDERFUNDED. The EVM contracts' ReplyStatus adds REDACTED, CHANNEL_CLOSED and NOT_HANDLED.",
+      "protocol": "IClprApplication.onClprResponse(channelId, messageId, status, responseData) is invoked best-effort; the status is a ClprMessageReplyStatus: SUCCESS, APPLICATION_ERROR, CONNECTOR_NOT_FOUND or CONNECTOR_UNDERFUNDED.",
       "lit": [
         "svcA",
         "appA"
@@ -804,7 +804,7 @@
       "label": "quota",
       "title": "Connector queue quota checked",
       "plain": "The connector's slice of the outbound queue is checked before it is asked to pay for anything.",
-      "protocol": "The EVM service enforces connectorQueueQuotaPct × maxQueueDepth per connector and reverts with ClprQueueQuotaExceeded above it; per-Connector quotas are one candidate mitigation for queue monopolization, not a protocol requirement.",
+      "protocol": "The EVM service enforces connectorQueueQuotaPct × maxQueueDepth per connector and reverts once the connector is at its quota; per-Connector quotas are one candidate mitigation for queue monopolization, not a protocol requirement.",
       "lit": [
         "svcB",
         "conB"
@@ -829,7 +829,7 @@
       "label": "authorize()",
       "title": "The connector authorizes the message",
       "plain": "The connector on this side approves the message. The same connector is registered on both ledgers under one identity, and that is what makes a channel work in both directions.",
-      "protocol": "ClprService calls IClprConnector.authorizeOutboundMessage(channelId, targetApplication, sender, messageData). The connector id is keccak256(channel_id ‖ public_key ‖ salt), identical on both ledgers, so the destination will resolve the same connector to pay.",
+      "protocol": "ClprService calls IClprConnector.authorizeOutboundMessage(channelId, targetApplication, sender, messageData). The connector id is derived from the channel id, the operator's public key and a salt, identical on both ledgers, so the destination will resolve the same connector to pay.",
       "lit": [
         "svcB",
         "conB"
@@ -902,7 +902,7 @@
       "label": "QBFT proof",
       "title": "The EVM endpoint builds a QBFT state proof",
       "plain": "This ledger's validators sign block headers directly, so the endpoint pairs a signed header with a proof of the exact storage slots holding your message.",
-      "protocol": "The relay assembles the RLP 5-tuple: the current block header with QBFT committed seals, any epoch-boundary headers needed for validator-set rotation, the EIP-1186 account proof for the CLPR Service, storage proofs for five Channel slots and the anchor message's running hash, and the serialized bundle content.",
+      "protocol": "The relay assembles the RLP 5-tuple: the current block header with QBFT committed seals, any headers needed to carry the validator set across a change, the EIP-1186 account proof for the CLPR Service, storage proofs for five Channel slots and the anchor message's running hash, and the serialized bundle content.",
       "lit": [
         "epB",
         "chainB"
@@ -922,7 +922,7 @@
       "label": "gRPC open",
       "title": "A sync stream opens and BundleRequests are exchanged",
       "plain": "One connection per sync, with the receiving side saying what it still needs. The transport does not care which way the message is going.",
-      "protocol": "One bidirectional gRPC stream per channel under mutual TLS; each side's BundleRequest carries its received_message_id, status, trust_anchor_id and manifest version. The request is unproven and shapes the bundle; it never changes state.",
+      "protocol": "One bidirectional gRPC stream per sync cycle, specified to run under mutual TLS (the reference EVM endpoint runs it without TLS); each side's BundleRequest carries its received_message_id, status, trust_anchor_id and manifest version. The request is unproven and shapes the bundle; it never changes state.",
       "lit": [
         "epA",
         "epB"
@@ -1008,7 +1008,7 @@
       "label": "verify seals",
       "title": "QBFT committed seals verified against the trust anchor",
       "plain": "The Hiero ledger checks the signatures in the block header against the validator list it holds for this channel; how many are required depends on the verifier.",
-      "protocol": "The QBFT verifier recovers the ECDSA signers of the committed seals and requires a threshold to match the validator set hash stored in the Channel's trust anchor; epoch headers, if present, advance the set. The reference QBFTVerifier tracks one validator address instead and needs MIN_COMMITTED_SEALS seals, one of them from that validator.",
+      "protocol": "The QBFT verifier recovers the ECDSA signers of the committed seals and requires a threshold to match the validator set hash stored in the Channel's trust anchor; headers that cross a change of validators, if present, advance the set.",
       "lit": [
         "svcA",
         "verA"
@@ -1029,8 +1029,8 @@
         {
           "doc": "repo",
           "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/qbft/QBFTVerifier.sol",
-          "label": "QBFTVerifier.sol"
+          "path": "src/verifiers/evm/qbft/qbft-verifier.md",
+          "label": "QBFT verifiers"
         }
       ]
     },
@@ -1258,7 +1258,7 @@
       "label": "verifyBundle()",
       "title": "The verifier checks the threshold signature and the Merkle paths",
       "plain": "The verifier checks the joint signature and the proof paths against the identity on record for this channel.",
-      "protocol": "A Hiero peer's trust anchor is its ledger_id, and the verifier checks the hinTS aggregate signature against it. The EVM HieroVerifier decodes the StateProof, derives the SHA-384 block root, has TSSVerifier check the signature through the EIP-2537 BLS precompiles against its constructor's ledgerId, and walks the leaf paths; Channel.trust_anchor serves only as a cached keccak256 of the hinTS verification key.",
+      "protocol": "A Hiero peer's trust anchor is its ledger_id, and the verifier checks the hinTS aggregate signature against it. The EVM HieroVerifier decodes the StateProof, derives the SHA-384 block root, has TSSVerifier check the signature through the EIP-2537 BLS precompiles against its constructor's ledgerId, and walks the leaf paths; Channel.trust_anchor serves only as a cache.",
       "lit": [
         "svcB",
         "verB"
@@ -1308,7 +1308,7 @@
       "label": "ordering",
       "title": "Response ordering verified against the retained message",
       "plain": "The reply is matched against the oldest message still waiting for one. Out-of-order delivery pauses the channel instead.",
-      "protocol": "The reply's message_id must match the oldest unresponded Data Message retained in the outbound queue; a mismatch sets PAUSED and rejects the bundle.",
+      "protocol": "The reply's message_id must match the oldest unresponded Data Message retained in the outbound queue; a mismatch sets PAUSED and rejects the bundle. The EVM contracts pause without reverting: nothing is dispatched, and the bundle's acknowledgement is kept.",
       "lit": [
         "svcB",
         "qB"

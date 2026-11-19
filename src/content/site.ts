@@ -119,13 +119,13 @@ export const comparison = {
     },
     {
       aspect: "Custody",
-      bridge: "Assets can sit with a custodian, whose keys become a target",
+      bridge: "Assets can sit with a custodian",
       clpr: "The protocol pools no user assets: each CLPR Service holds only Connector funds and Endpoint bonds. Applications built on CLPR may still hold assets",
     },
     {
       aspect: "When something goes offline",
       bridge: "Delivery depends on the intermediary layer staying up",
-      clpr: "Anyone, including the sender, can resume by submitting the proof",
+      clpr: "Anyone can resume by submitting a bundle",
     },
     {
       aspect: "Speed",
@@ -162,7 +162,7 @@ export const useCases = {
     },
     {
       name: "N-ledger atomic swap",
-      body: "Several ledgers change state together through two-phase commit, carried as ordinary messages. If any one of them fails, all of them roll back.",
+      body: "Several ledgers change state together through two-phase commit. If any one of them fails, all of them roll back.",
     },
     {
       name: "Native Hiero asset management",
@@ -174,11 +174,11 @@ export const useCases = {
     items: [
       {
         name: "Delivery depends on Endpoints",
-        body: "If nobody runs an Endpoint for a Channel, messages wait in the queue. Nothing is lost or faked; nothing moves either.",
+        body: "If nobody runs an Endpoint for a Channel, messages wait in the queue. Nothing is forged; nothing moves either.",
       },
       {
         name: "Nothing is secret",
-        body: "Message contents sit on both ledgers in plain view. CLPR proves a message is authentic and unaltered, not that it is private.",
+        body: "Message contents are stored on both ledgers in plaintext. CLPR proves a message is authentic and unaltered, not that it is private.",
       },
       {
         name: "Authentic is not safe",
@@ -243,7 +243,7 @@ export const repositories = {
   featuredLabel: "Start here",
   implementsLabel: "Implements",
   runsOnLabel: "Runs on",
-  rulesLabel: "How the project is run",
+  rulesLabel: "How the lab is run",
   starsLabel: "GitHub stars",
   facts: [
     { term: "Code license", detail: "Apache-2.0 with DCO sign-off" },
@@ -280,10 +280,10 @@ export const repositories = {
     {
       name: "clpr-endpoint",
       kind: "Java",
-      body: "A CLPR Endpoint that reads EVM chain state and submits bundles to EVM ledgers. It supports QBFT and CometBFT proof types.",
+      body: "A CLPR Endpoint that reads EVM chain state and submits bundles to EVM ledgers. It builds QBFT, CometBFT and Ethereum proof-of-stake proofs.",
       href: links.endpoint,
       implements: ["endpoint"],
-      runsOn: "EVM ledgers (QBFT, CometBFT)",
+      runsOn: "EVM ledgers (QBFT, CometBFT, Ethereum proof of stake)",
       status: null,
     },
     {
@@ -299,7 +299,7 @@ export const repositories = {
   governance: {
     name: "governance",
     kind: "Governance",
-    body: "How the lab is run: maintainers, processes and decision-making, following LF Decentralized Trust practices.",
+    body: "The lab's maintainers, processes and decision-making.",
     href: links.governance,
   },
 } as const;
@@ -394,7 +394,7 @@ export const governancePage = {
     lead: "Read the charter and the rules, and follow the lab's governance where it happens.",
     action: "Open resource",
     items: [
-      { platform: "GitHub", name: "LFDT Labs charter", body: "The formal scope and operating rules for CLPR as an LFDT lab.", href: links.labsCharter },
+      { platform: "GitHub", name: "LFDT Labs charter", body: "The charter of LF Decentralized Trust Labs, which CLPR is part of.", href: links.labsCharter },
       { platform: "GitHub", name: "Governance rules", body: "The roles, decision making and voting, in GOVERNANCE.md.", href: links.governanceRules },
       { platform: "GitHub", name: "Teams", body: "Every team, its members and its rights on each repository, in teams.yml.", href: links.teams },
       { platform: "LFX", name: "Weekly call", body: "The weekly CLPR call, open to everyone, on the LFX meeting calendar.", href: links.weeklyCall },
@@ -407,7 +407,7 @@ export const issueExplorer = {
   description: "Every open, unassigned issue in the main CLPR repositories, filtered by difficulty or repository.",
   kicker: "Contribute",
   title: "Issue Explorer",
-  lead: "Every open CLPR issue that nobody has picked up yet. Filter by how much you want to take on, or by the repository you already know.",
+  lead: "Every open issue in the main CLPR repositories that nobody has picked up yet. Filter by how much you want to take on, or by the repository you already know.",
   chips: { open: "Open", unassigned: "Unassigned", repositories: "{count} repositories" },
   counter: "{count} open issues",
   counterOne: "1 open issue",
@@ -465,7 +465,7 @@ export const issueExplorer = {
   contributing: { label: "Read the contribution guidelines", href: links.contributing },
   closing: {
     title: "Looking further afield?",
-    body: "The explorer covers the main CLPR repositories. The governance and organization repositories keep their open issues on GitHub.",
+    body: "The explorer covers the main CLPR repositories. The governance, organization and website repositories keep their open issues on GitHub.",
     cta: { label: "Search every open issue", href: links.openIssues },
   },
 } as const;
