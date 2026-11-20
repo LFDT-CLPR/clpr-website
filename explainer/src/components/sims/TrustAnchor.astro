@@ -32,7 +32,6 @@ const LINKS = {
   hiero: pinned('clpr-spec', 'verifiers/hiero/trust_anchor.md'),
   adr: pinned('clpr-spec', 'ADR/2026-07-02-channel-context-verifier-interface.md'),
   qbftSol: pinned('clpr-smart-contracts', 'src/verifiers/evm/qbft/qbft-verifier.md'),
-  relayConfig: pinned('clpr-endpoint', 'docs/configuration.md'),
 };
 ---
 <div class="sim trustanchor" id={id} data-links={JSON.stringify(LINKS)}>
@@ -170,8 +169,8 @@ const LINKS = {
     <div class="steps two">
       <div class="result">
         <h4>Concrete encodings</h4>
-        <p><strong>QBFT (EVM ledger) verifiers.</strong> The reference contracts carry two: one reads the validator set from block headers, the other from a validator contract on the source ledger. In both, the anchor holds a commitment to the trusted validator set, the code hash of the peer CLPR Service and the block the set was read at, and the anchor id is that block number. A header is accepted when two thirds of the trusted set sealed it.</p>
-        <p class="small">Rotation evidence is one header for each block at which the validator set changed, oldest first: each is sealed by the set trusted before it, and the verifier walks them in order and returns only the final anchor. With validators named in block headers, one member may change per header; with a validator contract, each header comes with a proof of the contract's list. For networks that name their validators in block headers, the reference endpoint caps the rotation headers per bundle and catches up over several bundles if more passed. The simulation calls the stretch in which one validator set seals blocks an epoch, numbers the sets V1, V2 and so on, and uses that number as the anchor id.</p>
+        <p><strong>QBFT (EVM ledger) verifiers.</strong> The reference contracts carry two current ones: one reads the validator set from block headers, the other from a validator contract on the source ledger. A legacy single-validator verifier, marked for removal, still ships beside them. In both current verifiers, the anchor holds a commitment to the trusted validator set, the code hash of the peer CLPR Service and the block the set was read at, and the anchor id is that block number. A header is accepted when two thirds of the trusted set sealed it.</p>
+        <p class="small">Rotation evidence is one header for each block at which the validator set changed, oldest first: each is sealed by the set trusted before it, and the verifier walks them in order and returns only the final anchor. With validators named in block headers, one member may change per header; with a validator contract, each header comes with a proof of the contract's list. The simulation calls the stretch in which one validator set seals blocks an epoch, numbers the sets V1, V2 and so on, and uses that number as the anchor id.</p>
         <p><strong>Hiero (TSS) verifier.</strong> The anchor is the raw <code>ledger_id</code> bytes, the genesis-rooted identity of the network's threshold signing key, with no framing and no separate id (<code>verifyConfig</code> returns an empty <code>initialTrustAnchorId</code>). Rotation is not implemented yet: the native verification path returns an empty <code>newTrustAnchor</code>, so there the anchor is immutable for the Channel's lifetime. The Solidity <code>HieroVerifier</code> checks signatures against the ledger_id fixed at its deployment and returns a cache hint as <code>newTrustAnchor</code>. In the specification one generic Hiero verifier can serve Channels to many Hiero networks, the anchor saying which network is verified; the pinned Solidity verifier is fixed to one ledger_id at deployment.</p>
       </div>
       <div class="result">
@@ -185,7 +184,7 @@ const LINKS = {
         </ul>
       </div>
     </div>
-    <p class="small" style="margin:10px 0 0">Source: <a href={LINKS.design315} rel="noopener">design §3.1.5</a> · <a href={LINKS.spec31} rel="noopener">spec §3.1</a> · <a href={LINKS.spec32} rel="noopener">spec §3.2</a> · <a href={LINKS.spec42} rel="noopener">spec §4.2</a> · <a href={LINKS.qbftSol} rel="noopener">QBFT verifiers (EVM)</a> · <a href={LINKS.relayConfig} rel="noopener">relay configuration</a> · <a href={LINKS.hiero} rel="noopener">Hiero trust anchor</a> · <a href={LINKS.adr} rel="noopener">ADR 2026-07-02</a>.</p>
+    <p class="small" style="margin:10px 0 0">Source: <a href={LINKS.design315} rel="noopener">design §3.1.5</a> · <a href={LINKS.spec31} rel="noopener">spec §3.1</a> · <a href={LINKS.spec32} rel="noopener">spec §3.2</a> · <a href={LINKS.spec42} rel="noopener">spec §4.2</a> · <a href={LINKS.qbftSol} rel="noopener">QBFT verifiers (EVM)</a> · <a href={LINKS.hiero} rel="noopener">Hiero trust anchor</a> · <a href={LINKS.adr} rel="noopener">ADR 2026-07-02</a>.</p>
   </div>
 </div>
 
@@ -241,7 +240,7 @@ const LINKS = {
   interface Last { bundle: string; proof: string; returns: string; store: string; verdict: Verdict }
   interface Msg { plain: string; proto: string; refs: [string, string][] }
   const MAX = 7;
-  const CAP = 5; // rotation proofs per batched bundle in this simulation; the reference endpoint's cap is a setting
+  const CAP = 5; // rotation proofs per batched bundle in this simulation
   const NOTE: Record<Mode, string> = {
     single: 'one authority at a time (a QBFT validator set)',
     window: '{current, next} (Ethereum sync committees)',
@@ -574,8 +573,8 @@ const LINKS = {
       };
       render();
       say({
-        plain: `One transaction instead of ${n + 1}. The payload carries ${n} rotation proofs in order; the verifier walks them internally, checking each against the authority the previous one installed, and returns only the final anchor ${words()}. The intermediate authorities never touch the chain. ${plural(k, 'message')} proven under V${cur} ${k === 1 ? 'rides' : 'ride'} along in the same bundle; the QBFT relay for header-named validator sets, by contrast, sends a bundle with more than one rotation proof without messages.${left > 0 ? ` The endpoint missed ${missed} rotations and this simulation caps a bundle at ${CAP} rotation proofs, so ${plural(left, 'more')} ${left === 1 ? 'follows' : 'follow'} in the next one.` : ''}`,
-        proto: `"A verifier MAY support batching multiple rotations into a single bundle_payload by walking the chain of rotation proofs internally; only the final new_trust_anchor and new_trust_anchor_id are returned and stored on-chain, and application messages proven under that final authority MAY be included in the same bundle." The reference QBFT verifiers do this by walking the headers at which the validator set changed, each sealed by the set that was trusted before it. For networks that name their validators in block headers, the reference endpoint caps the rotation headers per bundle, oldest first, carries no messages in a bundle with more than one header, and catches up over subsequent bundles.`,
+        plain: `One transaction instead of ${n + 1}. The payload carries ${n} rotation proofs in order; the verifier walks them internally, checking each against the authority the previous one installed, and returns only the final anchor ${words()}. The intermediate authorities never touch the chain. ${plural(k, 'message')} proven under V${cur} ${k === 1 ? 'rides' : 'ride'} along in the same bundle.${left > 0 ? ` The endpoint missed ${missed} rotations and this simulation caps a bundle at ${CAP} rotation proofs, so ${plural(left, 'more')} ${left === 1 ? 'follows' : 'follow'} in the next one.` : ''}`,
+        proto: `"A verifier MAY support batching multiple rotations into a single bundle_payload by walking the chain of rotation proofs internally; only the final new_trust_anchor and new_trust_anchor_id are returned and stored on-chain, and application messages proven under that final authority MAY be included in the same bundle." The reference QBFT verifiers do this by walking the headers at which the validator set changed, each sealed by the set that was trusted before it.`,
         refs: [['specCatchup', 'spec §3.2, catch-up'], ['qbftSol', 'QBFT verifiers (EVM)']],
       });
     }

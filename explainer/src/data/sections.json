@@ -677,6 +677,12 @@
           "id": "clpr-spec",
           "path": "ADR/2026-07-14-endpoint-sync-streaming-and-mtls.md",
           "label": "ADR 2026-07-14"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "docs/sync-protocol.md",
+          "label": "endpoint docs/sync-protocol.md"
         }
       ]
     },

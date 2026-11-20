@@ -122,8 +122,7 @@ and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a s
 | `clpr-relay-proto` | catalog.json components[wire] |
 | `clpr-relay-sync/src/main/java/org/hiero/clpr/relay/sync/PeerSelector.java` | dev §implementations |
 | `docs/architecture.md` | EndpointTwoLanes.astro; catalog.json components[epB] |
-| `docs/configuration.md` | TrustAnchor.astro |
-| `docs/sync-protocol.md` | EndpointTwoLanes.astro; catalog.json components[epB] |
+| `docs/sync-protocol.md` | EndpointTwoLanes.astro; catalog.json components[epB]; dev §sync |
 | `README.md` | catalog.json components[epB]; dev §implementations |
 
 ## clpr-smart-contracts (files)
