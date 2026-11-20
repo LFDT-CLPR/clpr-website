@@ -194,8 +194,8 @@ from Hashgraph's CLPR presentation.
   (the spiral, or the two ledgers and their Channel). The 404 page
   has none, so it still shows the particle spiral.
 - **Why bridgeless.** Two cards, the same two ledgers in each: joined through a bridge in the
-  middle (muted grey) and directly by a CLPR Channel whose proof B's Verifier checks
-  (`ComparisonArt`, both on the same clock). Below each drawing the five aspects (trust, custody,
+  middle (muted grey) and directly by a CLPR Channel, with a Verifier in each ledger; B's lights up
+  when the proof arrives (`ComparisonArt`, both on the same clock). Below each drawing the five aspects (trust, custody,
   going offline, speed, what moves) line up across the cards on a shared CSS subgrid.
 - **Pages.** The Issue Explorer, Governance and Blog pages share `PageShell` (header, footer, no WebGL
   background) and `PageIntro` (the hero's kicker pill and type). Governance follows hiero.org/tsc:
@@ -240,7 +240,7 @@ from Hashgraph's CLPR presentation.
   scrolls, the ledgers appear, the Channel opens from Endpoint A to Endpoint B as a twisted
   ribbon, and messages queue on Ledger A, linked by a running-hash line, and cross in bundles
   of three; each message gets one response back. In the state proofs chapter every bundle
-  carries a magenta proof ring, B's Verifier lights up and the verified state spreads through
+  travels inside a magenta proof pill, B's Verifier lights up and the verified state spreads through
   B's validators. Scroll decides what is shown; time only moves the traffic. The ledgers sit
   where `ProtocolField` publishes them (`--ledger-a-x` …), so the aurora glows behind them.
 - **Section illustrations.** `ProtocolField` can give a section its own network

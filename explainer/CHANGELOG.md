@@ -36,10 +36,22 @@ repositories outside its primary organisation; nothing here uses that yet.
 - The watch list for clpr-endpoint now covers `docs/`, the gRPC modules and `ProofType.java`; the
   old list missed the TLS removal.
 - Audit of every surface against the new pins (66 input files in 15 groups, 11 website
-  screenshots): 152 candidate findings, 83 fixed here. The rest are statements that follow the
-  specification where the reference code differs (the implementation notes carry the difference),
-  volatile detail that still matches the pins, wording the maintainers settled earlier, and
-  findings rejected on re-reading; the audit report lists each.
+  screenshots): 152 candidate findings, 83 fixed in the first pass. The rest are statements that
+  follow the specification where the reference code differs (the implementation notes carry the
+  difference), wording the maintainers settled earlier, findings rejected on re-reading, and the
+  two groups below; the audit report lists each.
+- Volatile detail cut although it still matched the pins: the catalogue and decision-record detail
+  rows (module, class and file names, toolchain, curves, the certificate profile, interface
+  signatures, the connector id formula, the Hiero system address and leaf tags); the throttle
+  table and sizing rule in developers §10; the certificate profile in §12; the worked sizing
+  example in §7; contract and module names in §17, §20 and the router figure; vote parameters and
+  team slugs in §22; tags, prefixes and slot counts in the two-state-trees figure; the authorize
+  signature and the id formula in the bilateral connector figure.
+- Redrawn: the Extend simulation (on each ledger the Endpoints, the CLPR Service and the verifier
+  sit in that order in the column facing the other ledger, the Connector beside the Service, and
+  the two sides mirror each other); the website's comparison card (a Verifier in each ledger); the
+  website story's state proofs chapter (the proof is a pill around the travelling bundle, not a
+  ring that could be read as something standing between the ledgers).
 - Stale documents corrected: the explainer's README (deployment), `docs/README.md` (layout,
   workflows, section counts), `docs/testing.md` (what CI runs), the website README (a removed
   component, the footer note).

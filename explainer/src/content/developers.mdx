@@ -287,7 +287,7 @@ The service rejects any bundle that satisfies none of these (**NoProgress**), an
 
 Endpoints evaluate these against their cached view before building a bundle (the pre-check); the service re-evaluates against on-chain values after the verifier returns (step 1a). A rotation-only or manifest-only bundle with no messages is valid.
 
-**Sizing.** On a ledger with a 30M-gas block the worked example is ten messages per bundle at 2M gas each, leaving room for the service's own logic. On Hiero, limits are expressed as operations-per-second so that oversized bundles are rejected at ingest: "once a bundle starts execution, it must be able to finish". `max_message_payload_bytes` is enforced on both ends, the destination's check being authoritative.
+**Sizing.** A ledger sets its cap on messages per bundle and its gas cap per message so that a full bundle fits in one transaction with room left for the service's own logic. On Hiero, limits are expressed as operations-per-second so that oversized bundles are rejected at ingest: "once a bundle starts execution, it must be able to finish". `max_message_payload_bytes` is enforced on both ends, the destination's check being authoritative.
 
 <Callout kind="key">
 One proof per bundle, over the anchor only; the running hash extends that proof backwards over every earlier message in the slice.
@@ -349,28 +349,13 @@ The configuration holds the ledger's protocol version (both sides must agree; an
 
 **Protocol version** is bumped on any backward-incompatible change: new control message variants, running hash algorithm, signature schemes, wire format. Cross-version messaging is not supported; a peer that receives a ConfigUpdate with an unrecognized version rejects it, halting the channel until it upgrades.
 
-**Throttles** are ledger-wide values advertised to all peers and enforced per channel:
-
-<div class="table-wrap">
-<table>
-<thead><tr><th>Field</th><th class="wrap">Meaning</th><th class="wrap">Enforced by</th></tr></thead>
-<tbody>
-<tr><td><code>max_messages_per_bundle</code></td><td class="wrap">Hard cap on messages in one bundle, sized to this ledger's per-transaction execution budget</td><td class="wrap">Sending endpoints must respect it; destination rejects the whole bundle at verification step 2</td></tr>
-<tr><td><code>max_message_payload_bytes</code></td><td class="wrap">Largest single payload this ledger will accept</td><td class="wrap">Source at enqueue (against the peer's advertised value); destination at bundle processing (authoritative)</td></tr>
-<tr><td><code>max_gas_per_message</code></td><td class="wrap">Compute budget for one message; bounds worst-case execution time</td><td class="wrap">Destination, as the gas cap on the application callback</td></tr>
-<tr><td><code>max_queue_depth</code></td><td class="wrap">Maximum unacknowledged messages in the outbound queue per channel: natural backpressure</td><td class="wrap">Source at enqueue</td></tr>
-<tr><td><code>max_sync_bytes</code></td><td class="wrap">Largest serialized <code>ClprSyncPayload</code> accepted at the gRPC level</td><td class="wrap">Endpoints; must exceed one payload plus proof overhead or the channel deadlocks</td></tr>
-<tr><td><code>max_local_endpoints</code></td><td class="wrap">Cap on this service's live endpoint manifest</td><td class="wrap">Service, at admission</td></tr>
-<tr><td><code>max_peer_endpoints</code></td><td class="wrap">How many of a peer's endpoints to cache per channel; the first N in manifest order are kept</td><td class="wrap">Service, when storing a peer manifest</td></tr>
-</tbody>
-</table>
-</div>
+**Throttles** are ledger-wide limits advertised to all peers and enforced per channel. A ledger publishes a cap on the messages in one bundle, the largest payload it accepts, the compute budget for one message, the depth of a channel's outbound queue, the size of one sync payload, and how many endpoints it lists and how many of a peer's it caches. The source enforces its queue depth and the peer's payload limit when a message is enqueued. The destination enforces the bundle and payload limits when it processes a bundle, and its check is the authoritative one.
 
 <Callout kind="gotcha">
-The deadlock is real: `max_sync_bytes` "MUST be greater than `max_message_payload_bytes` plus the protocol overhead" of a single message. "If `MaxSyncBytes` is set too low, the Channel can deadlock": the next message to send may be larger than the bundle payload can carry, halting progress indefinitely. The suggested rule of thumb is `max_sync_bytes ≥ max_message_payload_bytes × max_messages_per_bundle + proof_overhead`.
+The deadlock is real. The sync size limit must be greater than the largest payload plus the protocol overhead of a single message. Set too low, the channel can deadlock: the next message to send may be larger than a bundle can carry, halting progress indefinitely. The specification's rule of thumb sizes it for a full bundle of the largest payloads plus the proof.
 </Callout>
 
-**Strictness.** Every limit is published, so exceeding one is "a measurable, attributable violation". Implementations MUST reject unrecognized fields, unknown message types and malformed metadata outright rather than skipping them. Defaults for the main throttle values are still to be fixed (the spec marks them TBD); `clprEnabled` defaults to `false` and is checked dynamically on every call, giving each deployment a runtime kill switch.
+**Strictness.** Every limit is published, so exceeding one is "a measurable, attributable violation". Implementations MUST reject unrecognized fields, unknown message types and malformed metadata outright rather than skipping them. Defaults for the main throttle values are still to be fixed (the spec marks them TBD). The service's enable switch defaults to off and is checked on every call, giving each deployment a runtime kill switch.
 
 <Callout kind="key">
 A peer is (ChainID, ClprServiceAddress): the chain id names a ledger, the address names which service on it.
@@ -426,7 +411,7 @@ A channel's status and message counters are state-proven and carried to the peer
 
 An endpoint is an off-chain node that runs the sync protocol, obtains proofs, pre-verifies and submits bundles. Two manifests describe them.
 
-The **local manifest** (`ClprEndpointManifest`) is service-level state: an ordered list of `ClprEndpoint` entries, a version counter starting at 1 and incremented on every change to the set, and the `service_address` it belongs to. An entry holds an optional `ServiceEndpoint` (numeric IP and port; omitted by private networks that only dial out) and a `tls_certificate`: a DER-encoded, self-signed **ECDSA P-384 CA certificate**, minimized (single-RDN DN, minimal serial, only basicConstraints and keyUsage) and **at most 512 bytes**, rejected at admission otherwise. That CA is never presented on the wire; each endpoint mints an in-memory **Ed25519 leaf** signed by it at process start, presents the leaf at every mTLS handshake, and regenerates it on restart or after `leaf_certificate_validity_seconds` (default 86 400).
+The **local manifest** (`ClprEndpointManifest`) is service-level state: an ordered list of `ClprEndpoint` entries, a version counter starting at 1 and incremented on every change to the set, and the `service_address` it belongs to. An entry holds an optional `ServiceEndpoint` (numeric IP and port; omitted by private networks that only dial out) and a minimized, self-signed CA certificate that roots the endpoint's mutual TLS; an oversized certificate is rejected at admission. That CA is never presented on the wire: each endpoint mints a short-lived leaf certificate signed by it at process start, holds it in memory, presents it at every handshake, and regenerates it on restart or when it expires.
 
 How endpoints get into the local manifest depends on the platform:
 
@@ -601,7 +586,7 @@ Endpoints can be replaced by a transaction; a verifier's address is fixed for a 
 <ChecksEffectsDispatch />
 
 <Callout kind="impl">
-The EVM contracts rely on a guard on `submitBundle` instead (<a href={sol('src/ClprService.sol')}>ClprService.sol</a>, <a href={sol('src/libraries/service/BundleLib.sol')}>BundleLib.sol</a>): the application is called first, the connector is charged after, and the channel cursors are written after the whole loop. On strictness, they answer a malformed data message with an `APPLICATION_ERROR` reply instead of rejecting the bundle; an unknown wire field or a truncated control message still rejects it.
+The EVM contracts rely on a guard on `submitBundle` instead (<a href={sol('src/ClprService.sol')}>the service contract</a>, <a href={sol('src/libraries/service/BundleLib.sol')}>its bundle library</a>): the application is called first, the connector is charged after, and the channel cursors are written after the whole loop. On strictness, they answer a malformed data message with an `APPLICATION_ERROR` reply instead of rejecting the bundle; an unknown wire field or a truncated control message still rejects it.
 </Callout>
 
 - **Untrusted payloads (8.6)** and **no confidentiality (8.7).**
@@ -662,7 +647,7 @@ A new ledger brings its own CLPR Service, endpoints that build its proofs, and a
 
 ### EVM: `clpr-smart-contracts`
 
-A Foundry project. `ClprService.sol` is an immutable router that holds all state and dispatches to logic modules sharing one storage layout. Verifiers live under `src/verifiers/`, one per proof family. Interfaces the protocol calls outward are <a href={sol('src/interfaces/IClprApplication.sol')}>IClprApplication</a>, <a href={sol('src/interfaces/IClprConnector.sol')}>IClprConnector</a> and <a href={sol('src/interfaces/IClprVerifier.sol')}>IClprVerifier</a>; the public ABI is <a href={sol('src/interfaces/IClprService.sol')}>IClprService</a>.
+A Foundry project. One immutable router contract holds all state and dispatches to logic modules sharing one storage layout. Verifiers have their own folder, one per proof family. The repository publishes the interfaces the protocol calls outward, for <a href={sol('src/interfaces/IClprApplication.sol')}>applications</a>, <a href={sol('src/interfaces/IClprConnector.sol')}>connectors</a> and <a href={sol('src/interfaces/IClprVerifier.sol')}>verifiers</a>, and <a href={sol('src/interfaces/IClprService.sol')}>the service's public interface</a>.
 
 <EvmRouterModules />
 
@@ -670,7 +655,7 @@ The repository records its design choices under `docs/`. The contracts are a ref
 
 ### Hiero: the native service
 
-On Hiero the CLPR Service is a native service inside the consensus node, reachable from the EVM through a system contract. Its state is part of the node's Merkle tree, which is why its queue can be proven directly. A native verification path for Hiero proofs (`VerifyConfigCall`/`VerifyBundleCall`) is documented alongside the verifiers, and verifiers for other ledgers are contracts deployed to Hiero.
+On Hiero the CLPR Service is a native service inside the consensus node, reachable from the EVM through a system contract. Its state is part of the node's Merkle tree, which is why its queue can be proven directly. A native verification path for Hiero proofs is documented alongside the verifiers, and verifiers for other ledgers are contracts deployed to Hiero.
 
 ### The endpoint: `clpr-endpoint`
 
@@ -720,7 +705,7 @@ CLPR is incubated as a lab of **LF Decentralized Trust**, a Linux Foundation pro
 
 The mission of the Labs project is "to support development of very early open projects".
 
-Inside the lab, every team and its rights on each repository are defined in `teams.yml`, and a change to a role or team is a pull request against that file referencing a governance issue. Anyone who contributes is a Contributor and needs no team. Committers are per repository: a `<repository-name>-committers` team has write access to its repository. One `clpr-maintainers` team, with maintain rights on every repository, takes the decisions that affect the whole organization, including creating repositories and adding or removing Committers and Maintainers. General teams cover release engineering (`clpr-release-engineers`), security (`security-maintainers`) and foundation staff (`lfdt-staff`, admin on `.github` and `governance`). Decisions aim for consensus; otherwise the Maintainers vote, in the weekly call when more than half of them are present or asynchronously over 14 days, and a vote passes when more Maintainers vote for it than against it.
+Inside the lab, every team and its rights on each repository are defined in `teams.yml`, and a change to a role or team is a pull request against that file referencing a governance issue. Anyone who contributes is a Contributor and needs no team. Committers are per repository: each repository has a committers team with write access to it. One maintainers team, with maintain rights on every repository, takes the decisions that affect the whole organization, including creating repositories and adding or removing Committers and Maintainers. General teams cover release engineering, security and foundation staff. Decisions aim for consensus; otherwise the Maintainers vote, under the quorum and voting period the lab's <a href={pinned('governance', 'GOVERNANCE.md')}>governance document</a> sets.
 
 The lab's scope: collaboration on the specification, the reference implementations of service, verifiers and endpoints, application development, and native integrations into other ledger types.
 

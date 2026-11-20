@@ -30,17 +30,15 @@ import { design, spec } from '../../../lib/sources';
 
     <!-- the service asks the connector on A -->
     <line x1="50" y1="80" x2="50" y2="148" class="line money" marker-end="url(#bc-arrow-money)" />
-    <text x="60" y="98" class="t small">the service asks</text>
-    <text x="60" y="112" class="t mono">authorizeMessage(sender,</text>
-    <text x="60" y="126" class="t mono">target_application,</text>
-    <text x="60" y="140" class="t mono">message_size, message_data)</text>
+    <text x="60" y="108" class="t small">the service asks the</text>
+    <text x="60" y="124" class="t small">connector to authorize</text>
 
     <!-- connector on A -->
     <rect x="16" y="150" width="190" height="84" rx="8" class="d-money" />
     <text x="111" y="172" class="t b center">Connector on A</text>
-    <text x="111" y="190" class="t mono center">connector_id =</text>
-    <text x="111" y="204" class="t mono center">keccak256(channel_id ‖</text>
-    <text x="111" y="218" class="t mono center">public_key ‖ salt)</text>
+    <text x="111" y="190" class="t small center">one id, derived from</text>
+    <text x="111" y="204" class="t small center">the channel, the operator's</text>
+    <text x="111" y="218" class="t small center">public key and a salt</text>
 
     <line x1="206" y1="186" x2="268" y2="186" class="line money" marker-end="url(#bc-arrow-money)" />
     <text x="237" y="178" class="t mono center">true</text>
