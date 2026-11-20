@@ -5,7 +5,7 @@ import { design, spec } from '../../../lib/sources';
 ---
 <Figure
   lead="How sure is sure enough."
-  caption="On ledgers where recent blocks can be undone, a verifier that accepts the latest block is fast but can deliver a phantom message. One that accepts finalized blocks only is slower and never delivers one. Two channels between the same ledgers can use different verifiers."
+  caption="On ledgers where recent blocks can be undone, a verifier that accepts the latest block is fast but can deliver a phantom message. One that accepts finalized blocks only waits for finality and does not deliver a block that can still be undone. Two channels between the same ledgers can use different verifiers."
   source={[{ label: 'design §3.1.5', href: design('315-verifier-contracts') }, { label: 'spec §8.3', href: spec('83-reorg-risk') }]}
   kind="spec"
   minWidth={760}
@@ -79,7 +79,7 @@ import { design, spec } from '../../../lib/sources';
     <rect x="520" y="218" width="220" height="64" rx="10" class="d-ok"/>
     <text x="630" y="238" class="t b center">Channel "finalized"</text>
     <text x="630" y="256" class="t small center">verifier accepts finalized blocks only</text>
-    <text x="630" y="272" class="t small center">still waiting; it never delivers it</text>
+    <text x="630" y="272" class="t small center">still waiting; it does not deliver it</text>
 
     <!-- takeaway -->
     <text x="380" y="312" class="t take center">The verifier sets how final a block must be; anything high-value belongs on a finalized-only channel.</text>

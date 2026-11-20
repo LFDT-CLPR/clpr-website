@@ -1,16 +1,16 @@
 ---
-/** The clpr-endpoint relay as two lanes: outbound (poll the local node, build the payload, pick a peer, stream it) and inbound (decode the peer's bundle, trim what is already accepted, dry-run submitBundle, sign and pay). Draws on the page's endpoint paragraph and the repository's docs/architecture.md and docs/sync-protocol.md. */
+/** The clpr-endpoint relay as two lanes: each cycle (read the channel, pick a peer, exchange requests and bundles on one sync stream) and a bundle that arrived (decode it, trim what is already accepted where the proof format allows, dry-run submitBundle, sign and pay). Draws on the page's endpoint paragraph and the repository's docs/architecture.md and docs/sync-protocol.md. */
 import Figure from '@kse/components/Figure.astro';
 import { pinned } from '../../../lib/sources';
 ---
 <Figure
   lead="Two lanes through one relay."
-  caption="On the way out the relay notices the queue grow, builds a payload with a proof and sends it to a peer in a sync call (unary in the reference endpoint; the spec defines a stream), the peer picked at random, weighted by past successes. On the way in it decodes the peer's bundle, drops messages its ledger already accepted (for EVM-format bundles) so a duplicate cannot sink the bundle as a replay, previews submitBundle with eth_call, and only then signs and pays."
+  caption="Each cycle the relay reads its channel, picks a peer at random, weighted by past successes, and opens a sync stream: it sends a request saying how far it has got, receives the peer's bundle together with the peer's own request, and answers that request with a bundle built from its ledger. A bundle that arrives is decoded and, where the proof format allows, trimmed of messages its ledger already accepted; the relay previews submitBundle with eth_call, and only then signs and pays. The reference endpoint runs the stream without TLS and does not authenticate its peer: a bundle is accepted on its proof."
   source={[{ label: 'endpoint docs/architecture.md', href: pinned('clpr-endpoint', 'docs/architecture.md') }, { label: 'docs/sync-protocol.md', href: pinned('clpr-endpoint', 'docs/sync-protocol.md') }]}
   kind="impl"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 400" role="img" aria-label="A tall Local EVM node box on the left and a tall Peer endpoint box on the right, with two horizontal lanes between them. The outbound lane runs left to right through three boxes: a state-change poller that watches nextMessageId, a sync task that reads the new messages and builds the payload with QbftBundleConstructor, and a peer picker that chooses at random, weighted by past successes, skipping peers in back-off. The inbound lane runs right to left through a decode and trim box, a green dry-run box where submitBundle is previewed with eth_call, and a submitter that signs submitBundle client-side with EIP-1559 and polls for the receipt. A note at the bottom names the always-plaintext info port 9546.">
+  <svg viewBox="0 0 760 400" role="img" aria-label="A tall Local EVM node box on the left and a tall Peer endpoint box on the right, with two horizontal lanes between them. The upper lane, run every cycle, goes left to right through three boxes: read the channel, its status and how far it has got; a peer picker that chooses at random, weighted by past successes, skipping peers in back-off; and a sync stream on which the relay sends its own request, gets the peer's bundle and request, and answers it. Arrows run both ways between the sync stream and the peer endpoint, which is labelled gRPC sync stream, no TLS, bundles are judged on their proof. The lower lane, for a bundle that arrived, runs right to left through a decode and trim box, a green dry-run box where submitBundle is previewed with eth_call, and a submitter that signs submitBundle client-side with EIP-1559 and polls for the receipt. A note at the bottom says one gRPC listener serves sync and the ledger configuration query.">
     <defs>
       <marker id="ep-lanes-arrow-b" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--b)"/></marker>
       <marker id="ep-lanes-arrow-c" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--c)"/></marker>
@@ -31,35 +31,35 @@ import { pinned } from '../../../lib/sources';
     <rect x="666" y="48" width="86" height="242" rx="10" class="d-c"/>
     <text x="709" y="70" class="t b center">Peer</text>
     <text x="709" y="87" class="t b center">endpoint</text>
-    <text x="709" y="112" class="t small center">sync RPC</text>
-    <text x="709" y="128" class="t mono center">port 9545</text>
-    <text x="709" y="156" class="t small center">mTLS</text>
-    <text x="709" y="172" class="t small center">when on:</text>
-    <text x="709" y="188" class="t small center">P-384 CA,</text>
-    <text x="709" y="204" class="t small center">Ed25519 leaf</text>
+    <text x="709" y="112" class="t small center">gRPC sync</text>
+    <text x="709" y="128" class="t small center">stream</text>
+    <text x="709" y="156" class="t small center">no TLS;</text>
+    <text x="709" y="172" class="t small center">bundles are</text>
+    <text x="709" y="188" class="t small center">judged on</text>
+    <text x="709" y="204" class="t small center">their proof</text>
 
-    <!-- outbound lane -->
-    <text x="114" y="36" class="t b">Outbound · the local queue grew</text>
+    <!-- each cycle -->
+    <text x="114" y="36" class="t b">Each cycle · ask a peer and answer it</text>
     <line x1="94" y1="88" x2="112" y2="88" class="line b" marker-end="url(#ep-lanes-arrow-b)"/>
     <rect x="114" y="48" width="160" height="80" rx="8" class="d-c"/>
-    <text x="122" y="68" class="t b">State-change poller</text>
-    <text x="122" y="86" class="t small">one per channel; wakes</text>
-    <text x="122" y="102" class="t small">the sync task when</text>
-    <text x="122" y="118" class="t mono">nextMessageId</text>
-    <text x="212" y="118" class="t small">advances</text>
+    <text x="122" y="68" class="t b">Read the channel</text>
+    <text x="122" y="86" class="t small">once per cycle: its</text>
+    <text x="122" y="102" class="t small">status and how far</text>
+    <text x="122" y="118" class="t small">it has got</text>
     <line x1="274" y1="88" x2="292" y2="88" class="line c" marker-end="url(#ep-lanes-arrow-c)"/>
     <rect x="294" y="48" width="160" height="80" rx="8" class="d-c"/>
-    <text x="302" y="68" class="t b">Sync task</text>
-    <text x="302" y="86" class="t small">reads the new messages,</text>
-    <text x="302" y="102" class="t small">builds payload and proof</text>
-    <text x="302" y="118" class="t mono">QbftBundleConstructor</text>
+    <text x="302" y="68" class="t b">Peer picker</text>
+    <text x="302" y="86" class="t small">random, weighted by</text>
+    <text x="302" y="102" class="t small">past successes; failing</text>
+    <text x="302" y="118" class="t small">peers back off</text>
     <line x1="454" y1="88" x2="472" y2="88" class="line c" marker-end="url(#ep-lanes-arrow-c)"/>
     <rect x="474" y="48" width="172" height="80" rx="8" class="d-c"/>
-    <text x="482" y="68" class="t b">Peer picker</text>
-    <text x="482" y="86" class="t small">random, weighted by</text>
-    <text x="482" y="102" class="t small">past successes; failing</text>
-    <text x="482" y="118" class="t small">peers back off</text>
-    <line x1="646" y1="88" x2="664" y2="88" class="line c" marker-end="url(#ep-lanes-arrow-c)"/>
+    <text x="482" y="68" class="t b">Sync stream</text>
+    <text x="482" y="86" class="t small">sends its own request;</text>
+    <text x="482" y="102" class="t small">gets the peer's bundle</text>
+    <text x="482" y="118" class="t small">and request; answers it</text>
+    <line x1="646" y1="78" x2="664" y2="78" class="line c" marker-end="url(#ep-lanes-arrow-c)"/>
+    <line x1="666" y1="100" x2="648" y2="100" class="line c" marker-end="url(#ep-lanes-arrow-c)"/>
 
     <!-- inbound lane, right to left -->
     <text x="114" y="198" class="t b">Inbound · a peer's bundle arrived</text>
@@ -67,8 +67,8 @@ import { pinned } from '../../../lib/sources';
     <rect x="474" y="210" width="172" height="80" rx="8" class="d-c"/>
     <text x="482" y="230" class="t b">Decode and trim</text>
     <text x="482" y="248" class="t small">parses the peer's bundle;</text>
-    <text x="482" y="264" class="t small">drops messages the ledger</text>
-    <text x="482" y="280" class="t small">already accepted (EVM)</text>
+    <text x="482" y="264" class="t small">drops accepted messages</text>
+    <text x="482" y="280" class="t small">where the format allows</text>
     <line x1="474" y1="250" x2="456" y2="250" class="line c" marker-end="url(#ep-lanes-arrow-c)"/>
     <rect x="294" y="210" width="160" height="80" rx="8" class="d-ok"/>
     <text x="302" y="230" class="t b">Dry-run</text>
@@ -83,12 +83,11 @@ import { pinned } from '../../../lib/sources';
     <text x="122" y="280" class="t small">polls for the receipt</text>
     <line x1="114" y1="250" x2="96" y2="250" class="line b" marker-end="url(#ep-lanes-arrow-b)"/>
 
-    <!-- info port -->
+    <!-- one listener -->
     <rect x="114" y="316" width="532" height="34" rx="8" class="d-surface"/>
-    <text x="122" y="338" class="t mono">info port 9546</text>
-    <text x="234" y="338" class="t small muted">always plaintext · chain-verifiable public data</text>
+    <text x="380" y="338" class="t small muted center">One gRPC listener serves sync and the ledger configuration query</text>
 
     <!-- takeaway -->
-    <text x="380" y="384" class="t take center">Out: poll, build, pick a peer, send. In: decode, trim, dry-run, then sign and pay.</text>
+    <text x="380" y="384" class="t take center">Each cycle: pick a peer, ask, answer its request. What arrives: decode, trim, dry-run, sign and pay.</text>
   </svg>
 </Figure>

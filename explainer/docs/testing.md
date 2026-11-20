@@ -73,6 +73,7 @@ container. The usual culprits are a long inline `code` token (fixed globally wit
 
 ## What CI runs
 
-Pull requests and non-`main` pushes: `pnpm install && pnpm run build && pnpm run check`. Pushes to
-`main`: the same, then deploy to Pages (if enabled). The weekly `upstream-watch` workflow runs
+Pull requests and pushes to `main` run the `explainer` workflow: `pnpm install --frozen-lockfile`,
+Playwright's Chromium, then `pnpm run verify`. It deploys nothing; the website's host builds the
+pages. The weekly `upstream-watch` workflow runs
 `pnpm exec kse sync-upstream --report-only` and files an issue when a pin is behind.

@@ -473,12 +473,23 @@ export function StoryStage({ className }: { className?: string }) {
         ctx.drawImage(bundle.response ? warm : tones.a.star, point.x - size / 2, point.y - size / 2, size, size);
       }
       if (bundle.proof && !bundle.response) {
+        // The state proof travels with the bundle: one pill around all of its messages.
+        const head = onChannel(clamp01(along + spacing), 0.3);
+        const tail = onChannel(clamp01(along - spacing), 0.3);
+        const half = Math.hypot(head.x - tail.x, head.y - tail.y) / 2;
+        const radius = Math.max(8, layout.r * 0.09);
+        ctx.save();
         ctx.globalAlpha = fade * proofs;
         ctx.strokeStyle = "rgb(255 140 192)";
         ctx.lineWidth = 1.4;
+        ctx.translate(middle.x, middle.y);
+        ctx.rotate(Math.atan2(head.y - tail.y, head.x - tail.x));
         ctx.beginPath();
-        ctx.arc(middle.x, middle.y, Math.max(8, layout.r * 0.09), 0, TAU);
+        ctx.arc(half, 0, radius, -Math.PI / 2, Math.PI / 2);
+        ctx.arc(-half, 0, radius, Math.PI / 2, Math.PI * 1.5);
+        ctx.closePath();
         ctx.stroke();
+        ctx.restore();
       }
     };
 

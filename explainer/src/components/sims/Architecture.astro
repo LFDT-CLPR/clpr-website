@@ -37,7 +37,6 @@ const parts = catalog.components.map((c) => ({ ...c, links: c.refs.map((r) => ({
         <text x="190" y="196" class="t center b">CLPR Service · native service</text>
         <text x="190" y="214" class="t small center">channels · queues · connectors · locked funds</text>
         <text x="190" y="232" class="t small center">inside the consensus node, state in the Merkle tree</text>
-        <text x="190" y="250" class="t small center mono">system address 0x…016e</text>
       </g>
       <g data-part="verB" data-tone="ok" class="part" tabindex="0" role="button" aria-label="Verifiers on Hiero">
         <rect x="36" y="272" width="308" height="34" rx="8" class="d-ok" /><text x="190" y="294" class="t small center">Verifiers for peers' proofs (system contract / native)</text>
@@ -50,7 +49,7 @@ const parts = catalog.components.map((c) => ({ ...c, links: c.refs.map((r) => ({
 
       <!-- Ledger B -->
       <rect x="580" y="90" width="340" height="290" rx="14" class="d-surface" stroke-dasharray="6 5" />
-      <text x="596" y="112" class="t b" style="fill:var(--b)">EVM ledger (e.g. QBFT)</text>
+      <text x="596" y="112" class="t b" style="fill:var(--b)">EVM ledger</text>
       <g data-part="appB" data-tone="b" class="part" tabindex="0" role="button" aria-label="Applications on the EVM network">
         <rect x="596" y="122" width="144" height="40" rx="8" class="d-b" /><text x="668" y="147" class="t center b">Applications</text>
       </g>
@@ -60,12 +59,12 @@ const parts = catalog.components.map((c) => ({ ...c, links: c.refs.map((r) => ({
       <g data-part="svcB" data-tone="b" class="part" tabindex="0" role="button" aria-label="CLPR Service, contract">
         <rect x="596" y="174" width="308" height="86" rx="10" class="d-b" />
         <text x="750" y="196" class="t center b">CLPR Service · Solidity contracts</text>
-        <text x="750" y="214" class="t small center">ClprService.sol router → logic modules</text>
+        <text x="750" y="214" class="t small center">one router → logic modules</text>
         <text x="750" y="232" class="t small center">channels · messaging · bundles · connectors · admin</text>
         <text x="750" y="250" class="t small center mono">clpr-smart-contracts</text>
       </g>
       <g data-part="verB" data-tone="ok" class="part" tabindex="0" role="button" aria-label="Verifier contracts on the EVM network">
-        <rect x="596" y="272" width="308" height="34" rx="8" class="d-ok" /><text x="750" y="294" class="t small center">Verifier contracts: HieroVerifier, QBFTVerifier, …</text>
+        <rect x="596" y="272" width="308" height="34" rx="8" class="d-ok" /><text x="750" y="294" class="t small center">Verifier contracts: Hiero, QBFT, …</text>
       </g>
       <g data-part="epB" data-tone="c" class="part" tabindex="0" role="button" aria-label="Endpoint relay">
         <rect x="596" y="318" width="308" height="48" rx="8" class="d-c" />
@@ -78,7 +77,7 @@ const parts = catalog.components.map((c) => ({ ...c, links: c.refs.map((r) => ({
         <rect x="368" y="300" width="204" height="80" rx="8" class="d-surface" />
         <line x1="344" y1="342" x2="368" y2="342" class="line c" /><line x1="572" y1="342" x2="596" y2="342" class="line c" />
         <text x="470" y="321" class="t center b">gRPC sync</text>
-        <text x="470" y="339" class="t small center">gRPC sync · one exchange/cycle</text>
+        <text x="470" y="339" class="t small center">one stream per cycle</text>
         <text x="470" y="354" class="t small center">unproven requests,</text>
         <text x="470" y="369" class="t small center">proven bundles</text>
       </g>

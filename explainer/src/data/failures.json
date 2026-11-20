@@ -70,7 +70,7 @@
     {
       "k": "replay",
       "q": "An endpoint re-submits an old bundle",
-      "what": "Every message must have an id strictly greater than the last one received, and the first must be exactly one past it. A stale bundle fails this check even if its proof is valid.",
+      "what": "Every new message must carry the id one past the last one received, in unbroken order, and a bundle with nothing new makes no progress. A stale bundle fails this check even if its proof is valid.",
       "pays": "The endpoint wasted its own fee.",
       "state": "ACTIVE",
       "recovers": "Nothing to recover.",
@@ -115,7 +115,7 @@
     {
       "k": "order",
       "q": "Replies come back in the wrong order",
-      "what": "This is the one failure the protocol treats as corruption rather than noise. The channel is set to PAUSED: no new sends, and bundles with out-of-order replies are rejected outright. Syncs continue.",
+      "what": "This is the one failure the protocol treats as corruption rather than noise. The channel is set to PAUSED: no new sends, and nothing from a bundle with out-of-order replies is delivered. Syncs continue.",
       "pays": "Nobody is slashed; you cannot slash a ledger.",
       "state": "PAUSED",
       "recovers": "Automatically, if the peer produces a correctly ordered bundle. Otherwise the admin can close the channel; it drains once the peer fixes its ordering. Some in-flight messages may end up needing reconciliation outside the protocol.",
@@ -160,7 +160,7 @@
     {
       "k": "verifier",
       "q": "The verifier turns out to be buggy or compromised",
-      "what": "A bad verifier can accept fabricated proofs, so the protocol's own checks cannot save a channel whose verifier lies. The admin closes the channel; because verifiers are fixed for a channel's lifetime, a new channel with a correct verifier is registered.",
+      "what": "A bad verifier can accept fabricated proofs, so the protocol's own checks cannot save a channel whose verifier lies. The admin closes the channel; because a channel's verifier address is fixed for its lifetime, a new channel with a correct verifier is registered.",
       "pays": "Whoever trusted the channel. Connector operators are expected to vet verifiers before staking.",
       "state": "CLOSING → DRAINED → CLOSED",
       "recovers": "Yes, on a new channel. Messages in flight when it closed may be left unresolved and need application-level reconciliation.",
@@ -190,7 +190,7 @@
     {
       "k": "consensus",
       "q": "A ledger's own validators are compromised",
-      "what": "Then messages from that ledger can be forged, and CLPR does not claim otherwise. A message is exactly as trustworthy as the consensus that sealed it.",
+      "what": "Then messages from that ledger can be forged, and CLPR does not claim otherwise. A message is no more trustworthy than the consensus that sealed it.",
       "pays": "Everyone relying on that ledger, on-chain or cross-chain.",
       "state": "n/a",
       "recovers": "Outside the protocol's scope. Beyond the two ledgers' consensus, the only other parts trusted for this are the channel's verifier and the CLPR Service on each side; endpoints and connectors cannot forge a message.",

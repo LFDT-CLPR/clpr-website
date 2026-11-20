@@ -5,7 +5,7 @@ import { design, spec } from '../../../lib/sources';
 ---
 <Figure
   lead="Reject, pause, or fine."
-  caption="A bundle that fails verification is rejected and changes nothing. Replies out of order are treated as corruption and pause the channel. A failure inside one message, such as a connector or an application error, produces a failure reply instead; only the connector's failures are fined. With every endpoint offline, nothing is rejected: messages wait in the queue."
+  caption="A bundle that fails verification is rejected and changes nothing. Replies out of order are treated as corruption and pause the channel. A failure inside one message, such as a connector or an application error, produces a failure reply instead; only the connector's failures are fined. With every endpoint offline, messages wait in the queue, up to its depth limit."
   source={[
     { label: 'spec §4.2', href: spec('42-bundle-verification-algorithm') },
     { label: 'spec §4.5', href: spec('45-response-ordering-verification') },

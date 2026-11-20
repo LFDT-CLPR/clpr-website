@@ -6,7 +6,7 @@ allowBuilds:
   unrs-resolver: false
 
 minimumReleaseAgeExclude:
-  - knowledge-site-engine@0.1.0
+  - knowledge-site-engine@0.1.1
 
 # typescript-eslint 8.72 still pulls minimatch 10 (globparts DoS advisory, fixed in 11.0.1); 8.73 moves to ^11.0.1.
 # Drop this once the lockfile resolves typescript-eslint >= 8.73.0.

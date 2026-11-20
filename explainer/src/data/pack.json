@@ -171,6 +171,26 @@
     [
       "\\bverifier contracts? (should be|are|is) immutable\\b",
       "the verifier address is fixed for a Channel's lifetime; the contract may sit behind an upgradeable proxy"
+    ],
+    [
+      "\\bstill implements? the earlier unary\\b|\\bunary in the reference endpoint\\b",
+      "the reference endpoint serves the specified two-phase sync stream, without TLS"
+    ],
+    [
+      "\\bmutual TLS when the operator enables\\b|\\boptional mandatory mTLS\\b",
+      "the reference endpoint runs sync without TLS and does not authenticate its peer; a bundle stands on its proof"
+    ],
+    [
+      "\\brestricts? submitBundle to registered endpoints\\b",
+      "bundle submission is permissionless in the specification and in the reference contracts"
+    ],
+    [
+      "\\bstill implements? redaction\\b",
+      "redaction is removed from the specification and from the reference contracts"
+    ],
+    [
+      "\\bcannot drain in slices\\b",
+      "a bundle may be a prefix of the sender's queue, in the specification and in the reference contracts"
     ]
   ],
   "structure": {

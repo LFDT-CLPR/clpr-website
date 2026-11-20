@@ -27,7 +27,7 @@
   "dependencies": {
     "@astrojs/mdx": "^8.1.6",
     "astro": "^7.4.12",
-    "knowledge-site-engine": "0.1.0"
+    "knowledge-site-engine": "0.1.1"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

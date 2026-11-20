@@ -181,7 +181,7 @@ const arrOk = `${id}-arr-ok`;
         else if (st === 'ACTIVE' || st === 'PAUSED') set('CLOSING', 'close', 'Only the CLPR Service admin can close. From ACTIVE or PAUSED the channel starts a graceful drain: no new sends, but everything in flight still completes. The peer learns of it through the status carried in the next sync.');
         else if (st === 'DRAINED') set('CLOSED', 'close', 'Recovery path: if the peer\'s endpoint can never deliver its final close-notification, the admin closes a DRAINED channel directly. Nothing is abandoned because the outbound queue is already fully acknowledged.');
       },
-      ooo: () => set('PAUSED', 'ooo', 'A reply arrived that does not match the oldest unanswered data message. That means the peer\'s reply generation is broken, so the channel pauses rather than delivering out of order. The bad bundle is rejected; nothing was dispatched.'),
+      ooo: () => set('PAUSED', 'ooo', 'A reply arrived that does not match the oldest unanswered data message. That means the peer\'s reply generation is broken, so the channel pauses rather than delivering out of order. Nothing from the bad bundle is dispatched.'),
       good: () => set('ACTIVE', 'good', 'A bundle with correctly ordered replies arrived. The channel resumes on its own; no admin action is needed.'),
       peerclosing: () => set('CLOSING', 'peerclosing', 'The peer\'s sync data says CLOSING (or DRAINED, or CLOSED). Our side follows into CLOSING so both drain together.'),
       acked: () => set('DRAINED', 'acked', 'No data message with an id above acked_message_id remains in our outbound queue: the peer has everything we sent. Replies we generated while closing may still be in flight; they drain through this state.'),

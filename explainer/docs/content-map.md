@@ -116,14 +116,13 @@ and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a s
 
 | Path | Site locations |
 |---|---|
-| `clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java` | ledgers.json ledgers[avalanche]; ledgers.json ledgers[ethereum] |
+| `clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java` | ledgers.json ledgers[avalanche]; ledgers.json ledgers[ethereum]; ledgers.json ledgers[qbft]; ledgers.json ledgers[tempo] |
 | `clpr-relay-app/src/main/resources/relay-config-example.yaml` | catalog.json components[epB] |
 | `clpr-relay-grpc-server/src/main/java/org/hiero/clpr/relay/grpc/server/ClprSyncService.java` | catalog.json components[wire] |
 | `clpr-relay-proto` | catalog.json components[wire] |
 | `clpr-relay-sync/src/main/java/org/hiero/clpr/relay/sync/PeerSelector.java` | dev §implementations |
 | `docs/architecture.md` | EndpointTwoLanes.astro; catalog.json components[epB] |
-| `docs/configuration.md` | TrustAnchor.astro |
-| `docs/sync-protocol.md` | EndpointTwoLanes.astro; catalog.json components[epB] |
+| `docs/sync-protocol.md` | EndpointTwoLanes.astro; catalog.json components[epB]; dev §sync |
 | `README.md` | catalog.json components[epB]; dev §implementations |
 
 ## clpr-smart-contracts (files)
@@ -150,9 +149,11 @@ and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a s
 | `src/verifiers/evm/common/ClprEvmBundleVerifier.sol` | dev §bundles |
 | `src/verifiers/evm/ethereum/EthMainnetVerifier.sol` | ledgers.json ledgers[ethereum] |
 | `src/verifiers/evm/ethereum/README.md` | ledgers.json ledgers[ethereum] |
-| `src/verifiers/evm/qbft/QBFTVerifier.sol` | TrustAnchor.astro; catalog.json components[verB]; dev §verifiers; journey step 12; journey step 23; ledgers.json ledgers[qbft] |
+| `src/verifiers/evm/qbft/qbft-verifier.md` | TrustAnchor.astro; catalog.json components[verB]; dev §verifiers; journey step 12; journey step 23; ledgers.json ledgers[qbft] |
 | `src/verifiers/evm/sei/README.md` | ledgers.json ledgers[sei] |
 | `src/verifiers/evm/sei/SeiCometBftVerifier.sol` | ledgers.json ledgers[sei] |
+| `src/verifiers/evm/tempo/tempo-verifier.md` | ledgers.json ledgers[tempo] |
+| `src/verifiers/evm/tempo/TempoVerifier.sol` | ledgers.json ledgers[tempo] |
 | `src/verifiers/hiero/HieroVerifier.sol` | catalog.json components[verB]; dev §verifiers; journey step 13; journey step 23; ledgers.json ledgers[hiero] |
 | `test/E2EApplication.sol` | catalog.json components[appB] |
 
@@ -177,7 +178,7 @@ and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a s
 | `verifiers/hiero/trust_anchor.md` | TrustAnchor.astro |
 | `verifiers/hiero/verifier_contract.md` | journey step 13; journey step 23; ledgers.json ledgers[hiero] |
 | `verifiers/qbft/state_proof.md` | TwoStateTrees.astro; journey step 11; journey step 13; journey step 20; journey step 24; journey step 7; ledgers.json ledgers[qbft] |
-| `verifiers/qbft/trust_anchor.md` | TrustAnchor.astro; journey step 12; journey step 23 |
+| `verifiers/qbft/trust_anchor.md` | journey step 12; journey step 23 |
 | `verifiers/qbft/verifier_contract.md` | journey step 12; ledgers.json ledgers[qbft] |
 | `verifiers/README.md` | SpecDocumentMap.astro; catalog.json components[verB]; dev §extend; dev §verifiers; general §extend |
 

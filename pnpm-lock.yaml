@@ -265,8 +265,8 @@ importers:
         specifier: ^7.4.12
         version: 7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)
       knowledge-site-engine:
-        specifier: 0.1.0
-        version: 0.1.0(@astrojs/mdx@8.1.6(@astrojs/markdown-satteri@0.4.10)(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)))(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1))
+        specifier: 0.1.1
+        version: 0.1.1(@astrojs/mdx@8.1.6(@astrojs/markdown-satteri@0.4.10)(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)))(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1))
     devDependencies:
       playwright:
         specifier: ^1.63.0
@@ -2421,8 +2421,8 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  knowledge-site-engine@0.1.0:
-    resolution: {integrity: sha512-Oo7De51V7fkT6DQF+sFzHI9fqVu2e829ErcV3nsxS/1TPeTXM614aBLklyUWDagr5RGrl3XtQzgeZ0LS38W5Xg==}
+  knowledge-site-engine@0.1.1:
+    resolution: {integrity: sha512-wP0UxuiyPujgQWtD4gVXP/eC9jXcRMb5Ewgq79s0A7BNPBIh3uhlV58oCiH331Fby0gl4ju5oPtULUTOlhx2gQ==}
     hasBin: true
     peerDependencies:
       '@astrojs/mdx': '>=8'
@@ -5836,7 +5836,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  knowledge-site-engine@0.1.0(@astrojs/mdx@8.1.6(@astrojs/markdown-satteri@0.4.10)(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)))(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)):
+  knowledge-site-engine@0.1.1(@astrojs/mdx@8.1.6(@astrojs/markdown-satteri@0.4.10)(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)))(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)):
     dependencies:
       '@astrojs/mdx': 8.1.6(@astrojs/markdown-satteri@0.4.10)(astro@7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1))
       astro: 7.4.12(@types/node@20.19.43)(jiti@2.7.0)(yaml@2.9.1)

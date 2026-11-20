@@ -19,7 +19,7 @@
     {
       "id": "qbft",
       "name": "EVM ledgers running QBFT",
-      "proof": "A block header carrying the validators' seals, plus a proof of the storage slots that hold the data",
+      "proof": "A block header carrying the validators' seals, plus a proof of the storage slots that hold the data. In the reference code the validator set is named in block headers or held in a validator contract",
       "status": "documented",
       "specDir": "verifiers/qbft",
       "codeDir": "src/verifiers/evm/qbft",
@@ -28,7 +28,8 @@
       "refs": [
         { "doc": "repo", "id": "clpr-spec", "path": "verifiers/qbft/state_proof.md", "label": "QBFT state proof" },
         { "doc": "repo", "id": "clpr-spec", "path": "verifiers/qbft/verifier_contract.md", "label": "QBFT verifier" },
-        { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/qbft/QBFTVerifier.sol", "label": "QBFTVerifier.sol" }
+        { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/qbft/qbft-verifier.md", "label": "QBFT verifiers" },
+        { "doc": "repo", "id": "clpr-endpoint", "path": "clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java", "label": "endpoint proof types" }
       ]
     },
     {
@@ -39,7 +40,7 @@
       "specDir": null,
       "codeDir": "src/verifiers/evm/ethereum",
       "service": "Solidity contracts",
-      "endpoint": "None: the endpoint program does not support it",
+      "endpoint": "The endpoint program",
       "refs": [
         { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/ethereum/EthMainnetVerifier.sol", "label": "EthMainnetVerifier.sol" },
         { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/ethereum/README.md", "label": "verifier README" },
@@ -58,6 +59,21 @@
       "refs": [
         { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/sei/SeiCometBftVerifier.sol", "label": "SeiCometBftVerifier.sol" },
         { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/sei/README.md", "label": "verifier README" }
+      ]
+    },
+    {
+      "id": "tempo",
+      "name": "Tempo, an EVM ledger with threshold-signature finality",
+      "proof": "A finalization certificate: one threshold signature by the validators over the block, plus a proof of the storage slots that hold the data",
+      "status": "code",
+      "specDir": null,
+      "codeDir": "src/verifiers/evm/tempo",
+      "service": "Solidity contracts",
+      "endpoint": "None: the endpoint program does not support it",
+      "refs": [
+        { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/tempo/TempoVerifier.sol", "label": "TempoVerifier.sol" },
+        { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/tempo/tempo-verifier.md", "label": "Tempo verifier" },
+        { "doc": "repo", "id": "clpr-endpoint", "path": "clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java", "label": "endpoint proof types" }
       ]
     },
     {
