@@ -57,14 +57,13 @@ repositories outside its primary organisation; nothing here uses that yet.
   component, the footer note).
 - Not content-affecting: tests, CI workflows, gas reports, deployment tooling, dependency bumps,
   the Safe and kill-switch runbooks, the endpoint's 0.8.0 release.
-- Ambiguities to raise upstream: the specification's QBFT verifier documents still describe the
-  epoch-header scheme and an epoch-number anchor id, while the contracts' two current verifiers use
-  hops at change blocks and a block-number id; the endpoint's `docs/sync-protocol.md` calls
-  `BundleRequest` and `BundleResponse` an implementation extension although the specification
-  defines both, and says a stream carries three messages while the code sends a fourth, closing
-  one; the contracts' `docs/bundle-flow.md` says no cursor advances on a pause while the code
-  commits the acknowledgement; `docs/CLPR.md` points at a drift review file that is not in the
-  repository; the specification requires mutual TLS for sync and the reference endpoint has none.
+- Where an upstream document and the code beside it differ, the pages follow the code. The
+  TrustAnchor simulation describes the two current QBFT verifiers (a commitment to the validator
+  set, one header for each block at which the set changed, the anchor's block number as its id)
+  and cites the contracts' verifier document. The sync section states the specified mutual TLS
+  and, in an implementation note, that the reference endpoint runs the stream without it. A pause
+  keeps the bundle's acknowledgement, and a payload with neither a request nor a response closes
+  a sync stream, as the code does.
 
 ## 2026-11-02 - the explainer wears the landing page's look
 

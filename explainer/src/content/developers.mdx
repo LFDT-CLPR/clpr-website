@@ -452,6 +452,10 @@ A sync cycle is one bidirectional stream scoped to a single channel. Each side s
 
 <SyncCycle />
 
+<Callout kind="impl">
+The reference EVM endpoint runs this stream without TLS and does not authenticate its peer. It accepts an inbound bundle on the strength of its proof.
+</Callout>
+
 Three properties to internalize. The request is **unproven** and "MUST NOT cause a state change": a stale or under-claiming request at worst produces duplicates that the replay defence rejects, costing bandwidth and a fee, never correctness, and an over-claim only delays messages the requester still needs. Each bundle is **shaped by the receiver's request**: the responder starts from the state the receiver reports in the same stream, not from a cached view of it. And endpoints **MUST pre-verify** by executing the verifier locally before submitting, "otherwise the endpoint will have to pay for invalid payloads that fail verification post-consensus".
 
 The reason: the earlier single-call `sync` computed bundles from a cached view of the peer's acknowledgements one cycle stale, so in steady state delivered messages were sent again, roughly halving effective bundle throughput when bundles are capped by the per-bundle message limit. Sync cadence is intentionally unspecified: "an empirical tuning question, not a protocol-level constant".

@@ -179,7 +179,7 @@ and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a s
 | `verifiers/hiero/trust_anchor.md` | TrustAnchor.astro |
 | `verifiers/hiero/verifier_contract.md` | journey step 13; journey step 23; ledgers.json ledgers[hiero] |
 | `verifiers/qbft/state_proof.md` | TwoStateTrees.astro; journey step 11; journey step 13; journey step 20; journey step 24; journey step 7; ledgers.json ledgers[qbft] |
-| `verifiers/qbft/trust_anchor.md` | TrustAnchor.astro; journey step 12; journey step 23 |
+| `verifiers/qbft/trust_anchor.md` | journey step 12; journey step 23 |
 | `verifiers/qbft/verifier_contract.md` | journey step 12; ledgers.json ledgers[qbft] |
 | `verifiers/README.md` | SpecDocumentMap.astro; catalog.json components[verB]; dev §extend; dev §verifiers; general §extend |
 
