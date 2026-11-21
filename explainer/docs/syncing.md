@@ -19,9 +19,11 @@ change outside the pins. Only `clpr-sync` edits or re-pins.
 
 Three ways to learn that a pinned repository has moved:
 
-- **Weekly, automatically.** `.github/workflows/upstream-watch.yml` runs every Monday, compares
-  the pins with each repository's head, and opens (or updates) an issue labelled `upstream-sync`
-  containing the drift report. It never edits content.
+- **Weekly, automatically.** `.github/workflows/upstream-watch.yml` runs every Monday and again
+  when a change to `src/data/sources.json` lands on `main`. It compares the pins with each
+  repository's head and opens (or updates) an issue labelled `upstream-sync` containing the drift
+  report. When every pin matches again, it comments and closes that issue, so a merged sync closes
+  it within minutes. It never edits content.
 - **On demand.** `pnpm run sync:fetch` prints the same report locally.
 - **By hand.** Watching the LFDT-CLPR organization on GitHub.
 

@@ -76,4 +76,5 @@ container. The usual culprits are a long inline `code` token (fixed globally wit
 Pull requests and pushes to `main` run the `explainer` workflow: `pnpm install --frozen-lockfile`,
 Playwright's Chromium, then `pnpm run verify`. It deploys nothing; the website's host builds the
 pages. The weekly `upstream-watch` workflow runs
-`pnpm exec kse sync-upstream --report-only` and files an issue when a pin is behind.
+`pnpm exec kse sync-upstream --report-only` and files an issue when a pin is behind, closing it
+once every pin matches.
