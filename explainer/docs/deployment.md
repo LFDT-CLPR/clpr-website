@@ -58,4 +58,5 @@ is git-ignored.
 and runs `pnpm run verify` in this directory on every pull request and push that touches
 `explainer/`. `kse check-anchors` passes there without the upstream checkouts; run it locally
 after a sync. `.github/workflows/upstream-watch.yml` compares the pinned upstream commits with
-upstream HEAD once a week and opens an issue when they have moved.
+upstream HEAD once a week and after each sync lands on `main`; it opens an issue when they have
+moved and closes it once they match.
