@@ -3,6 +3,8 @@
 The website of **CLPR** (“Clipper”), the bridgeless Cross Ledger Protocol, an
 [LF Decentralized Trust](https://www.lfdecentralizedtrust.org/) Lab.
 
+Today the website is hosted temporarily under https://clpr.playground.open-elements.cloud until the official domain is forwarded to LFDT.
+
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · shadcn/ui-style components · pnpm
