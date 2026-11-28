@@ -6,7 +6,7 @@ as an [LF Decentralized Trust](https://www.lfdecentralizedtrust.org/) lab at
 CLPR to a working understanding of the whole system, with the journey of one message as the
 centrepiece and the specification, the smart contracts, the endpoint and the lab's governance all
 covered. Each page opens with a twelve-second wordless loop of that journey, then explains it
-with forty-nine captioned figures and fourteen interactive simulations. Every claim is written
+with captioned figures and interactive simulations. Every claim is written
 against pinned commits of the upstream repositories, and the build fails if the pages and the
 pins disagree.
 
@@ -16,8 +16,8 @@ website's `pnpm build` (`embed.mjs` runs Astro with `BASE_PATH=/plumbing/`); see
 
 | Page | For | Covers |
 |---|---|---|
-| **`/`** | Anyone. No prior knowledge assumed. | What a ledger is, why ledgers cannot see each other, why bridges fail, proof instead of trust, the cast, the 28-step round trip in both directions, the running-hash chain, who pays, what can go wrong, channels, endpoints, verifiers, the six roles, a tappable map of every piece of software, adding a ledger, limits, how the spec changes, the LFDT lab |
-| **`/developers/`** | Developers. No prior knowledge of CLPR; comfort with ledgers, hashes and contracts. | The same arc at full depth: trust model, four layers, identity and throttles, channels (commit-reveal, lifecycle), endpoints and manifests, the sync protocol, queue and running hash, bundles and progress, the bundle verification algorithm with fault injection, response ordering, connectors and slashing, verifiers and trust-anchor rotation, the application API, roles, recovery, security, the reference implementations and their divergences, the ADRs, governance, glossary |
+| **`/`** | Anyone. No prior knowledge assumed. | What a ledger is, why ledgers cannot see each other, why a trusted party in the middle is the weak point, proof instead of trust, the cast, the round trip in both directions, the running-hash chain, who pays, what can go wrong, channels, endpoints, verifiers, the six roles, a tappable map of every piece of software, adding a ledger, limits, how the spec changes, the LFDT lab |
+| **`/developers/`** | Developers. No prior knowledge of CLPR; comfort with ledgers, hashes and contracts. | The same arc at full depth: trust model, four layers, identity and throttles, channels (commit-reveal, lifecycle), endpoints and manifests, the sync protocol, queue and running hash, bundles and progress, the bundle verification algorithm with fault injection, response ordering, connectors and slashing, verifiers and trust-anchor rotation, the application API, roles, recovery, security, the reference implementations, the CLIP process, governance, glossary |
 
 ## What makes it trustworthy
 
@@ -27,9 +27,8 @@ website's `pnpm build` (`embed.mjs` runs Astro with `BASE_PATH=/plumbing/`); see
   branch link or mismatch.
 - **Labelled claims.** The pages distinguish what the specification says, what the reference
   Solidity and Java code actually does (including its documented divergences), and what the
-  specification itself marks as unresolved. The journey marks each step as observable on chain,
-  observable through a transaction, or inferred.
-- **A figure for every mechanism.** Forty-nine static drawings, one per idea, each with a bold
+  specification itself marks as unresolved.
+- **A figure for every mechanism.** Static drawings, one per idea, each with a bold
   lead phrase, a caption and a source line pinned to the upstream commit; see
   [docs/figures.md](docs/figures.md).
 - **Real numbers where it is cheap.** The hash-chain and bundle-verification simulations compute
@@ -61,11 +60,11 @@ pnpm run sync:pin                       # move the pins to the reviewed commits
 pnpm test && pnpm exec kse check-anchors
 ```
 
-The full procedure is the [`clpr-sync` skill](.claude/skills/clpr-sync/SKILL.md), which Claude
+The full procedure is the [`clpr-sync` skill](../.claude/skills/clpr-sync/SKILL.md), which Claude
 can run end to end (fetch, read the diffs, update both pages and the simulations, re-pin, check,
-look, audit, record, commit). Two report-only skills go with it: [`clpr-drift`](.claude/skills/clpr-drift/SKILL.md)
-says what moved upstream and what it touches; [`clpr-audit`](.claude/skills/clpr-audit/SKILL.md) checks every
-statement in the repository, the website's landing page included, against the passage it cites at the pinned commits. A weekly [workflow](.github/workflows/upstream-watch.yml) opens an issue
+look, audit, record, commit). Two report-only skills go with it: [`clpr-drift`](../.claude/skills/clpr-drift/SKILL.md)
+says what moved upstream and what it touches; [`clpr-audit`](../.claude/skills/clpr-audit/SKILL.md) checks every
+statement in the repository, the website's landing page included, against the passage it cites at the pinned commits. A weekly [workflow](../.github/workflows/upstream-watch.yml) opens an issue
 when a pinned repository has moved. See [docs/syncing.md](docs/syncing.md).
 
 ## Building against other commits

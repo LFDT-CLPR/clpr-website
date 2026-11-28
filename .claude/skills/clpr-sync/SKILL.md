@@ -32,11 +32,12 @@ whether the site still matches the pins, and only this skill changes files or pi
 
 - **Upstream wins.** If the site and the repositories disagree, the site is wrong. Do not "improve"
   the protocol in prose; describe it.
-- **Pinned links only.** Use `design()`, `spec()`, `sol()`, `pinned()` from `src/lib/sources.ts`.
+- **Pinned links only.** Use the document helpers (`overview()`, `messaging()`, `stakes()`, one per
+  `pack.json` `docs` key), `sol()` and `pinned()` from `src/lib/sources.ts`.
   Never write a `blob/main` URL. `pnpm run check` fails on unpinned links.
 - **Label the kind of claim.** `<Callout kind="spec">` quotes the text; `kind="impl"` describes the
   reference code and its divergences; `kind="open"` marks what the spec calls unresolved. A
-  behaviour you inferred is not a spec claim — say "inferred" or leave it out.
+  behaviour you inferred is not a spec claim; leave it out.
 - **Neutral, donation-ready voice.** No marketing, no personal branding, no unsourced numbers.
 - **The specification's words are the names.** Endpoint, CLPR Service, outbound queue, message id,
   running hash, trust anchor, endpoint manifest, commit and reveal, ledger, bundle, connector,
@@ -85,9 +86,9 @@ Classify each changed file:
 
 | Change | Treat as |
 |---|---|
-| Spec text, ADRs, verifier docs, options doc, org profile README, charter, teams.yml | **Content-affecting.** Go through step 2. |
+| Specification text (overview, Protocol modules, Ledger Specifications, Recommendations, open issues, CLIPs, releases), org profile README, charter, teams.yml | **Content-affecting.** Go through step 2. A new specification file needs a `pack.json` `docs` key and a helper in `src/lib/sources.ts`, or a `repo` ref. |
 | Solidity interfaces (`src/interfaces/*.sol`), `ClprTypes.sol` enums, `docs/*.md` in the contracts repo, endpoint README / config example | **Content-affecting** for the developer page and the `impl` callouts. |
-| Tests, CI workflows, build files, formatting-only diffs, dependency bumps | Not content-affecting. Note them in the changelog entry only. |
+| Tests, CI workflows, build files, formatting-only diffs, dependency bumps, the specification's `archive/` (kept upstream for reference only, never a source) | Not content-affecting. Note them in the changelog entry only. |
 
 ## 2. Find every site location the change touches
 
@@ -104,7 +105,7 @@ Then search the site for direct references, because the map is a guide, not a pr
 grep -rn "<anchor-or-term>" src/content src/data src/components
 ```
 
-Anchors are the GitHub heading slugs (e.g. `'328-response-ordering-and-correlation'`). If a heading
+Anchors are the GitHub heading slugs (e.g. `'8-response-ordering'` in Messaging). If a heading
 was renamed or renumbered upstream, every reference to it must change; step 5 catches the ones you
 miss.
 
@@ -113,8 +114,8 @@ miss.
 For each affected location, re-read the site text **next to the new upstream text** and ask:
 
 - Does the site still say what the spec says? Fix wording, numbers, field names, step order.
-- Did the spec add, remove or rename something (a field, a status, a criterion, a step, an ADR)?
-  Add or remove it on the site. Tables (throttles, progress criteria, slashing, recovery, ADRs)
+- Did the spec add, remove or rename something (a field, a status, a criterion, a step, an open
+  issue)? Add or remove it on the site. Tables (throttles, progress criteria, slashing, recovery, open issues)
   must match the upstream tables row for row.
 - Did the change resolve something the site marks as an open question, or open a new one? Update
   the `kind="open"` callouts and the "What CLPR does not do" section on the general page.
@@ -122,21 +123,24 @@ For each affected location, re-read the site text **next to the new upstream tex
   Remove it. Did a new one appear in `docs/bundle-flow.md` / `docs/quirks.md`? Add it.
 - Do the **simulations** still model the behaviour? A sim's `Source:` links passing the anchor
   check does not mean its logic is right. Read the sim's script against the changed section. The
-  ones most likely to be affected: `BundleVerify.astro` (§4.2 steps and criteria), `Ordering.astro`
-  (§4.5), `ChannelLife.astro` (§2.1.1 transitions), `SyncCycle.astro` (§1.5 fields),
-  `CommitReveal.astro` (§5.1, §6.3), `TrustAnchor.astro` (§3.1.5, §3.2, verifier docs),
-  `Money.astro` (§4.6 formula and statuses), `Failures.astro` (§5 table), `RunningHash.astro`
-  (§4.1 formula), `Journey.astro` + `journey.json` (the whole round trip, both directions),
+  ones most likely to be affected: `BundleVerify.astro` (Channel state transitions §2 steps and §3
+  progress criteria), `Ordering.astro` (Messaging §8, §9; Channel state transitions §6),
+  `ChannelLife.astro` (Channel state transitions §4, §5), `SyncCycle.astro` (Endpoint sync §3, §4),
+  `CommitReveal.astro` (Channel setup §2, Connector setup §2), `TrustAnchor.astro` (Verifier
+  interface §4, Endpoint sync §5.1, the proof schemes under `ledgers/`), `Money.astro` (Channel
+  economics §1, §2; Stakes and bonds §2), `Failures.astro` (the `failures.json` rows: Stakes and
+  bonds §2.1, CLPR Service §7), `RunningHash.astro` (Messaging §3, §4),
+  `Journey.astro` + `journey.json` (the whole round trip, both directions),
   `Architecture.astro` (what each repository contains and where).
 - `src/data/journey.json`: check each step whose `refs` point at a changed section; the `plain`
   and `protocol` texts must both stay true. Do not renumber steps unless the protocol changed the
   sequence — the general page's prose refers to step numbers.
 - The data files under `src/data/` (`catalog.json`, `ledgers.json`, `patterns.json`, `roles.json`,
-  `open.json`, `failures.json`, `cast.json`, `adrs.json`): each row's `refs` say which upstream
+  `open.json`, `failures.json`, `cast.json`): each row's `refs` say which upstream
   passage it rests on; re-read every row whose ref points into a changed section and fix its text.
   `node checks/check-data.mjs` compares the inventories with `.upstream/`; its failures are the
-  list of new upstream things to add as rows (a verifier directory, an ADR, an application pattern,
-  a role, a flagged `‼️` passage). After any change to a `refs` entry, run `pnpm run content-map`.
+  list of new upstream things to add as rows (a ledger directory, a verifier code directory, an
+  open issue, a role, an application pattern, a part, a recovery row). After any change to a `refs` entry, run `pnpm run content-map`.
 
 Keep the register of each page: the general page explains from nothing, in short plain sentences,
 using the specification's terms and explaining each where it first appears; the developer page is
@@ -201,11 +205,11 @@ Append an entry to `CHANGELOG.md` at the top, in this shape:
 ```markdown
 ## 2026-10-14 — sync
 
-Upstream: clpr-spec 945082d → 1a2b3c4 (3 commits), governance 498d4f4 → 9f8e7d6 (1 commit).
+Upstream: clpr-spec da68222 → 1a2b3c4 (3 commits), governance 5251371 → 9f8e7d6 (1 commit).
 
-- Spec §3.2.4 added a sixth bundle progress criterion → developers §8 table, `BundleVerify.astro` step 1a, `journey.json` step 14.
-- ADR 2026-10-02 (title) → developers §18 ADR table; endpoints callout.
-- governance/teams.yml: new maintainer → general §18, developers §19, `Architecture.astro` lab card.
+- Channel state transitions §3 added a progress criterion → developers §7 table, `BundleVerify.astro`, `journey.json` step 14.
+- A CLIP (title) was integrated into Messaging §8 → developers §9, `Ordering.astro`; the CLIP process in developers §21 unchanged.
+- governance/teams.yml: new maintainer → general §16, developers §22, `Architecture.astro` lab card.
 - Not content-affecting: CI workflow changes in clpr-smart-contracts.
 - Ambiguities to raise upstream: (list, or "none").
 ```
@@ -243,7 +247,7 @@ the `lastSynced` date.
    source to be cited by a component), add `refs` to the sections and data rows that use it, then
    write or update the sections, using `pinned('<id>', 'path/in/repo')` for links, and run
    `pnpm run content-map`. Add it to the repository table in
-   general §18 ("Where CLPR lives"), to the `Architecture.astro` map if it is a component of the system, and, if it is an implementation, to developers §17.
+   general §16 ("Where CLPR lives"), to the `Architecture.astro` map if it is a component of the system, and, if it is an implementation, to developers §20.
 5. `pnpm test` and `pnpm exec kse check-anchors`. The provenance table picks the new repository
    up automatically. Add a changelog entry and commit as in steps 6–7.
 

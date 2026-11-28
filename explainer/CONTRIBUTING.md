@@ -15,7 +15,8 @@ change to the explainer looks like.
 ## What a good change looks like
 
 1. **It cites its source.** Any statement about the protocol links to the pinned upstream file
-   through `src/lib/sources.ts` (`design()`, `spec()`, `sol()`, `pinned()`), never to a branch.
+   through `src/lib/sources.ts` (one helper per specification document, such as `messaging()`, plus
+   `sol()` and `pinned()`), never to a branch.
 2. **It says what kind of claim it is.** Spec text, reference-implementation behaviour and open
    questions are labelled differently on the pages; keep them apart.
 3. **It keeps both registers.** The general page uses everyday words and no protocol jargon in

@@ -10,8 +10,7 @@ How the site is built, from a request for `/` down to the bytes in `dist/`.
 - **MDX** (`@astrojs/mdx`) lets the two content files mix prose with components, so a section can
   contain a paragraph, a `<Callout>`, a simulation and a table in the order a reader needs them.
 - **No runtime dependencies.** Cryptography in the simulations uses WebCrypto (SHA-256) and a
-  self-tested Keccak-256 written in the component. Diagrams are inline SVG. Fonts are system
-  fonts. This keeps the pages fast, keeps the supply chain to Astro itself, and keeps every
+  self-tested Keccak-256 written in the component. Diagrams are inline SVG. This keeps the pages fast, keeps the supply chain to Astro itself, and keeps every
   simulation readable as a single file.
 - **Playwright** is a dev dependency used only by `kse shot` and `kse overflow`.
 
@@ -58,9 +57,9 @@ into view. The reveal does nothing under `prefers-reduced-motion`, and without J
 | File | Owns | Consumed by |
 |---|---|---|
 | `src/data/sections.json` | Section ids, titles, order and acts for each page; per section the upstream `refs` that back it and an optional `illustration` flag | `Section.astro` (heading, number, the developer page's reference line), `SecRef.astro` (section numbers in prose), `Base.astro`/`Toc.astro` (TOC), `check-provenance.mjs` (order, presence, act pointers), `check-anchors.mjs`, `content-map.mjs` |
-| `src/data/catalog.json`, `ledgers.json`, `patterns.json`, `roles.json`, `open.json`, `failures.json`, `cast.json`, `adrs.json` | The facts that change when CLPR changes: components, verifiers per ledger, application patterns, roles and scenarios, flagged open issues, failure cases, the cast, decision records; one row each, every row with `refs` | `Architecture.astro`, `Failures.astro`, `Cast.astro`, `AdrTable.astro`; `check-data.mjs` (shape, inventories against `.upstream/`); `content-map.mjs` |
-| `src/data/journey.json` | The 28 steps in both directions: label, title, plain and protocol narration, evidence class, which diagram nodes light up, spec references | `Journey.astro` (renders cards and lists server-side, drives the animation client-side), `check-anchors.mjs` (refs) |
-| `src/data/sources.json` | The upstream repositories, their pinned commits and dates, their roles, the paths worth watching | `lib/sources.ts` (all pinned links), `Provenance.astro`, every script under `scripts/` |
+| `src/data/catalog.json`, `ledgers.json`, `patterns.json`, `roles.json`, `open.json`, `failures.json`, `cast.json` | The facts that change when CLPR changes: components, verifiers per ledger, application patterns, roles and scenarios, the numbered open issues, failure cases, the cast; one row each, every row with `refs` | `Architecture.astro`, `Failures.astro`, `Cast.astro`, `OpenIssues.astro`; `check-data.mjs` (shape, inventories against `.upstream/`); `content-map.mjs` |
+| `src/data/journey.json` | The 28 steps in both directions: label, title, plain and protocol narration, which diagram nodes light up, spec references | `Journey.astro` (renders cards and lists server-side, drives the animation client-side), `check-anchors.mjs` (refs) |
+| `src/data/sources.json` | The upstream repositories, their pinned commits and dates, their roles, the paths worth watching | `lib/sources.ts` (all pinned links), `Provenance.astro`, the engine's `kse` sync and check commands, `checks/check-data.mjs` |
 
 Changing a section title, adding a step to the journey, re-pinning a commit, or describing a new
 verifier is an edit to one of these files; the pages regenerate from them, and `docs/content-map.md`
@@ -68,11 +67,14 @@ is regenerated from their `refs` by `pnpm run content-map`.
 
 ## Pinned links
 
-`src/lib/sources.ts` exports four helpers, all reading `sources.json`:
+`src/lib/sources.ts` exports one helper per specification document registered in `pack.json`
+`docs` (`overview`, `conventions`, `ledgerConfig`, `manifest`, `channelSetup`, `connectorSetup`,
+`messaging`, `bundle`, `verifierIface`, `transitions`, `endpointSync`, `schema`, `openIssues`,
+`service`, `stakes`, `economics`), plus `sol()` and the engine's `pinned()`, all reading `sources.json`:
 
 ```ts
-design('23-trust-model')   // clpr-service.md#23-trust-model at the pinned clpr-spec commit
-spec('42-bundle-verification-algorithm')
+overview('4-trust-model')   // clpr-overview.md#4-trust-model at the pinned clpr-spec commit
+messaging('4-running-hash')   // protocol/messaging.md#4-running-hash
 sol('src/interfaces/IClprApplication.sol', 12)   // optional line number
 pinned('clpr-endpoint', 'docs/architecture.md')   // any file in any registered source
 ```
@@ -116,7 +118,7 @@ and restyled to the site's tokens.
 `pnpm run build` writes `dist/index.html`, `dist/developers/index.html`, `dist/_astro/*` (one CSS
 bundle per page plus one JS chunk per simulation that needs one; small scripts are inlined) and
 `dist/favicon.svg`. The `base` option in `astro.config.mjs` is read from `BASE_PATH` so the same
-build works at the root of a domain (Netlify) or under `/<repo>/` (GitHub Pages).
+build works standalone at `/` (the copy the gates check) or under `/plumbing/`, where `embed.mjs` builds it for the website.
 
 ## Scripts
 
