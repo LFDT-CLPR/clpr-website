@@ -34,6 +34,7 @@ const columns = [
     { label: 'Smart contracts', href: 'https://github.com/LFDT-CLPR/clpr-smart-contracts' },
     { label: 'Endpoint', href: 'https://github.com/LFDT-CLPR/clpr-endpoint' },
     { label: 'Native Hiero integration', href: 'https://github.com/hiero-ledger/hiero-consensus-node/pull/27029' },
+    { label: 'HIP-1535: CLPR for Hiero', href: 'https://github.com/hiero-ledger/hiero-improvement-proposals/blob/main/HIP/hip-1535.md' },
     { label: 'All repositories', href: 'https://github.com/LFDT-CLPR' },
   ] },
   { title: 'Lab', links: [
@@ -133,7 +134,7 @@ const hexagon = 'M0 -8.5L7.4 -4.25V4.25L0 8.5L-7.4 4.25V-4.25Z';
       <div>
         {PACK.footer.map((html) => <p class="about" set:html={html.replace('{{orgUrl}}', SOURCES.org.url).replace('{{labUrl}}', SOURCES.org.labUrl ?? '')} />)}
         <p class="affiliation">An LF Decentralized Trust Lab</p>
-        <p>Code is licensed under Apache-2.0; the Labs charter calls for specifications under the Community Specification License 1.0.</p>
+        <p>Code is licensed under Apache-2.0; the specification is developed under the Community Specification License 1.0.</p>
         <p>© {year} The Linux Foundation. All rights reserved.<br />The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our <a href="https://www.linuxfoundation.org/legal/trademark-usage" target="_blank" rel="noreferrer">Trademark Usage<span class="visually-hidden"> (opens in a new tab)</span></a> page.</p>
       </div>
       <a href="#main">Back to top<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7" /><path d="M12 19V5" /></svg></a>

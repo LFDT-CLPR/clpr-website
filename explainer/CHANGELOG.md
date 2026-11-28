@@ -2,6 +2,69 @@
 
 Newest first. Each sync entry lists the upstream commit range it was reviewed against.
 
+## 2026-11-28 - re-base on the reorganised specification, and whole-repository audit
+
+Upstream: clpr-spec 945082d → da68222 (1 commit), org-profile 528e9c0 → d8987e9 (1 commit).
+clpr-smart-contracts@1c558a4, clpr-endpoint@2747dc0 and governance@5251371 have not moved.
+
+The specification was reorganised under CLIP-0001 as version 0.2: an overview, eleven Protocol
+modules, Ledger Specifications, three Recommendations and a list of open issues. The two documents
+every page cited, the decision records, the verifier documents and the options document moved to an
+archive that upstream keeps for reference only. Every reference on the site (394 in the explainer,
+and every block of the website's copy) now points at the new documents, and every claim was re-read
+against them. The archive is not a source for any claim.
+
+- References: one document key in `pack.json` and one link helper in `src/lib/sources.ts` per
+  specification file replace `design()` and `spec()`; references to a ledger specification name the
+  file. The watch list covers the new folders.
+- Endpoints post no bond, are not slashed and have no reputation → general money, failures, limits
+  and who; developers endpoints, connectors, security and operate; the Money and Failures
+  simulations; the roles and cast rows; the website's custody row. Stakes and slashing apply to
+  connectors and are stated as the recommended design, as are execution charges and queue quotas.
+- Bundle processing, progress, the channel statuses and their transitions, pause and resume, and the
+  two closes follow the new Protocol modules → developers bundles, verify, ordering and channels;
+  the BundleVerify, Ordering and ChannelLife simulations; the journey's delivery and reply steps.
+- One payload format and one running hash on both ledgers → developers queue, general running hash,
+  the RunningHash simulation; the implementation notes that described a different hash are deleted.
+- Finality is the verifier's choice → developers model, verifiers and security; the phantom message
+  figure.
+- Trust anchors: a change has a new id and makes progress, an update keeps the id and does not;
+  catch-up takes one cycle per transition bundle; the anchor differs per proof scheme → developers
+  verifiers, the TrustAnchor simulation, the journey's verification steps in both directions.
+- Endpoint sync is the four-step exchange on one stream per cycle, with TLS decided by the manifest
+  entry → developers sync, the SyncCycle simulation, the journey's sync steps.
+- Ledgers and proof schemes come from the Ledger Specifications: Hiero with two schemes, EVM ledgers
+  running QBFT with three, and an EVM family → the ledgers table, developers verifiers and extend,
+  general extend, the two-state-trees figure. Verifier code without a Ledger Specification keeps its
+  row, marked as such.
+- Open questions are the eight numbered open issues → `open.json` has one row each; cautions that
+  are now rules or recommendations (self-asserted chain id, verifier choice, queue quotas, endpoint
+  admission) are stated where they belong.
+- Three application patterns, not four → both patterns sections, `patterns.json`, the patterns
+  figure, the website's use cases.
+- How the specification changes: CLIPs, Editors and Maintainers, versions, and the Community
+  Specification License 1.0 → developers evolution, general lives, the specification row of the
+  map, the document map figure. The decision record table and its two figures are removed.
+- `checks/check-data.mjs` compares the data rows with the new layout: ledger directories, verifier
+  code directories, open issues, roles, patterns, parts and recovery rows.
+- org-profile: one sentence about temporary website hosting. The pages state no hosting address;
+  nothing changes.
+
+The audit judged every surface against the new pins. Besides the re-base it found, and this entry
+fixes: drawings that sent the bundle to the Verifier before the CLPR Service or placed Connectors
+above the Service (the architecture map, the verifier figures, the trust anchor simulation, the
+connector-choice figure); recommendations stated as rules; statements whose section did not cite
+the passage behind them; and function, module, field and file names in figures, simulations and
+implementation notes, which are deleted.
+
+How the pages read upstream where its own documents differ: the overview says endpoints on EVM
+ledgers register and are admitted by the administrator, and the CLPR Service recommendation makes
+that advice, so the pages state it as the recommended design; the overview says a connector on the
+source ledger is charged for delivering the reply on some ledgers, and Channel economics describes
+it for both documented ledgers, so the pages state it without the qualifier of the overview; the
+CLIP index lists CLIP-0001 as a draft and the README says the repository is governed by it, so the
+pages name it without a status.
+
 ## 2026-11-19 - sync and whole-repository audit
 
 Upstream: clpr-smart-contracts 276c8d5 → 1c558a4 (53 commits), clpr-endpoint 2ccd48d → 2747dc0

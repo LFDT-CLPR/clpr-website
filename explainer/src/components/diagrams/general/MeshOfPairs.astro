@@ -1,12 +1,12 @@
 ---
-/** A mesh built from pairs: four ledgers, a channel between every two. The site's own illustration of what pairwise channels allow (design §2.1); each pair agrees separately, with no trusted party in the middle, and joining means opening a channel to each partner you want. General page section 12. Static markup for scripts/preview-diagram.mjs. */
+/** A mesh built from pairs: four ledgers, a channel between every two. The site's own illustration of what pairwise channels allow (Overview §2, Channel setup §1: a channel connects the CLPR Services of two ledgers, with its own id, verifier contract and queues); each pair agrees separately, with no trusted party in the middle, and joining means opening a channel to each partner you want, with no change to the protocol or to other ledgers (Overview §5). General page section 12. Static markup for scripts/preview-diagram.mjs. */
 import Figure from '@kse/components/Figure.astro';
-import { design } from '../../../lib/sources';
+import { overview, channelSetup } from '../../../lib/sources';
 ---
 <Figure
   lead="A mesh is six pairs."
   caption="Four ledgers, a channel between every two: six agreements, each with its own queues and a verifier named on each side, and no trusted party in the middle. A fifth ledger joins by opening a channel to each partner it wants; each of those partners gains a channel and a verifier for it, and the channels already there are unchanged."
-  source={[{ label: 'design §2.1', href: design('21-common-terminology') }]}
+  source={[{ label: 'Overview §1', href: overview('1-purpose') }, { label: 'Overview §2', href: overview('2-major-parts') }, { label: 'Channel setup §1', href: channelSetup('1-channel-identity') }]}
   kind="plain"
   minWidth={760}
 >

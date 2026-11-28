@@ -6,22 +6,27 @@
     "lab": "LF Decentralized Trust Labs",
     "labUrl": "https://www.lfdecentralizedtrust.org/"
   },
-  "lastSynced": "2026-11-19",
+  "lastSynced": "2026-11-28",
   "sources": [
     {
       "id": "clpr-spec",
       "repo": "https://github.com/LFDT-CLPR/clpr-spec",
       "branch": "main",
-      "commit": "945082d69e65dd0fd9e9bdf8d59cb8121579f6fd",
-      "committedAt": "2026-08-31T11:59:29-05:00",
-      "role": "Protocol specification (clpr-service.md, clpr-service-spec.md), ADRs and verifier documents. The primary source for every protocol claim on both pages.",
+      "commit": "da68222b9b7732e925062dc17bc142d6ebff657b",
+      "committedAt": "2026-11-23T11:47:47-06:00",
+      "role": "The CLPR Specification: the overview, the Protocol modules, the Ledger Specifications, the Recommendations and the CLIP process. The primary source for every protocol claim on both pages.",
       "watch": [
-        "clpr-service.md",
-        "clpr-service-spec.md",
-        "ADR/",
-        "verifiers/",
-        "clpr-options-to-consider.md",
-        "*.svg"
+        "README.md",
+        "clpr-overview.md",
+        "protocol/",
+        "ledgers/",
+        "recommendations/",
+        "clips/",
+        "releases/",
+        "GOVERNANCE.md",
+        "MAINTAINERS.md",
+        "SCOPE.md",
+        "LICENSE.md"
       ]
     },
     {
@@ -77,8 +82,8 @@
       "id": "org-profile",
       "repo": "https://github.com/LFDT-CLPR/.github",
       "branch": "main",
-      "commit": "528e9c0b1a82f07debd494a52c76642b758582d9",
-      "committedAt": "2026-10-28T04:11:01-07:00",
+      "commit": "d8987e961f442dd71de6f80f8acfb61db4371114",
+      "committedAt": "2026-11-23T09:09:19-06:00",
       "role": "Organization profile README: lab scope, terminology, the four layers and the extension process. Source for the 'what CLPR is' framing and the LFDT section.",
       "watch": [
         "profile/README.md"

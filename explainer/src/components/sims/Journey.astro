@@ -8,14 +8,13 @@
  * mode = 'both'     → plain first, protocol underneath
  */
 import journey from '../../data/journey.json';
-import { design, spec, pinned } from '../../lib/sources';
+import { docLink, pinned } from '../../lib/sources';
 
 interface Props { mode?: 'plain' | 'protocol' | 'both'; id?: string; }
 const { mode = 'plain', id = 'journey-sim' } = Astro.props;
 
 function refHref(r: any) {
-  if (r.doc === 'design') return design(r.anchor);
-  if (r.doc === 'spec') return spec(r.anchor);
+  if (r.doc !== 'repo') return docLink(r.doc, r.anchor);
   return pinned(r.id, r.path, r.anchor);
 }
 const phaseOf = (p: string) => journey.phases.find((x) => x.id === p)!;
@@ -51,24 +50,27 @@ const phaseOf = (p: string) => journey.phases.find((x) => x.id === p)!;
         <text x="115" y="108" class="t small center">sends, gets the reply</text>
       </g>
       <g data-node="svcA" class="node">
-        <rect x="40" y="132" width="320" height="150" rx="10" class="d-a" fill-opacity="0.35" />
+        <rect x="40" y="132" width="156" height="150" rx="10" class="d-a" fill-opacity="0.35" />
         <text x="52" y="150" class="t b">CLPR Service</text>
         <g data-node="qA" class="node">
-          <rect x="52" y="160" width="140" height="44" rx="6" class="d-surface" />
-          <text x="122" y="178" class="t center">Outbound queue</text>
-          <text x="122" y="194" class="t small center mono">running hash</text>
+          <rect x="52" y="160" width="132" height="44" rx="6" class="d-surface" />
+          <text x="118" y="178" class="t center">Outbound queue</text>
+          <text x="118" y="194" class="t small center mono">running hash</text>
         </g>
-        <g data-node="verA" class="node">
-          <rect x="208" y="160" width="140" height="44" rx="6" class="d-surface" />
-          <text x="278" y="178" class="t center">Verifier</text>
-          <text x="278" y="194" class="t small center">for QBFT proofs</text>
-        </g>
-        <g data-node="conA" class="node">
-          <rect x="52" y="218" width="140" height="44" rx="6" class="d-money" />
-          <text x="122" y="236" class="t center">Connector</text>
-          <text x="122" y="252" class="t small center">authorizes &amp; pays</text>
-        </g>
-        <text x="278" y="246" class="t small center">sync data · trust anchor</text>
+        <text x="118" y="236" class="t small center">channel record</text>
+        <text x="118" y="252" class="t small center">trust anchor</text>
+      </g>
+      <!-- The Service calls its ledger's verifier; the connector sits beside the Service. -->
+      <line x1="196" y1="242" x2="214" y2="242" class="line" marker-end={`url(#${id}-arrow)`} />
+      <g data-node="conA" class="node">
+        <rect x="216" y="132" width="144" height="60" rx="6" class="d-money" />
+        <text x="288" y="158" class="t center">Connector</text>
+        <text x="288" y="176" class="t small center">authorizes &amp; pays</text>
+      </g>
+      <g data-node="verA" class="node">
+        <rect x="216" y="212" width="144" height="60" rx="6" class="d-surface" />
+        <text x="288" y="238" class="t center">Verifier</text>
+        <text x="288" y="256" class="t small center">for QBFT proofs</text>
       </g>
       <g data-node="epA" class="node">
         <rect x="210" y="300" width="150" height="46" rx="8" class="d-c" />
@@ -92,24 +94,26 @@ const phaseOf = (p: string) => journey.phases.find((x) => x.id === p)!;
         <text x="805" y="108" class="t small center">receives, answers</text>
       </g>
       <g data-node="svcB" class="node">
-        <rect x="576" y="132" width="308" height="150" rx="10" class="d-b" fill-opacity="0.35" />
-        <text x="588" y="150" class="t b">CLPR Service</text>
-        <g data-node="verB" class="node">
-          <rect x="588" y="160" width="140" height="44" rx="6" class="d-surface" />
-          <text x="658" y="178" class="t center">Verifier</text>
-          <text x="658" y="194" class="t small center">for Hiero proofs</text>
-        </g>
+        <rect x="736" y="132" width="148" height="150" rx="10" class="d-b" fill-opacity="0.35" />
+        <text x="748" y="150" class="t b">CLPR Service</text>
         <g data-node="qB" class="node">
-          <rect x="736" y="160" width="140" height="44" rx="6" class="d-surface" />
-          <text x="806" y="178" class="t center">Outbound queue</text>
-          <text x="806" y="194" class="t small center mono">running hash</text>
+          <rect x="746" y="160" width="128" height="44" rx="6" class="d-surface" />
+          <text x="810" y="178" class="t center">Outbound queue</text>
+          <text x="810" y="194" class="t small center mono">running hash</text>
         </g>
-        <g data-node="conB" class="node">
-          <rect x="736" y="218" width="140" height="44" rx="6" class="d-money" />
-          <text x="806" y="236" class="t center">Connector</text>
-          <text x="806" y="252" class="t small center">pays on arrival</text>
-        </g>
-        <text x="658" y="246" class="t small center">sync data · trust anchor</text>
+        <text x="810" y="236" class="t small center">channel record</text>
+        <text x="810" y="252" class="t small center">trust anchor</text>
+      </g>
+      <line x1="736" y1="242" x2="718" y2="242" class="line" marker-end={`url(#${id}-arrow)`} />
+      <g data-node="conB" class="node">
+        <rect x="576" y="132" width="140" height="60" rx="6" class="d-money" />
+        <text x="646" y="158" class="t center">Connector</text>
+        <text x="646" y="176" class="t small center">pays on arrival</text>
+      </g>
+      <g data-node="verB" class="node">
+        <rect x="576" y="212" width="140" height="60" rx="6" class="d-surface" />
+        <text x="646" y="238" class="t center">Verifier</text>
+        <text x="646" y="256" class="t small center">for Hiero proofs</text>
       </g>
       <g data-node="chainB" class="node">
         <rect x="576" y="358" width="308" height="30" rx="6" class="d-grey" />
@@ -124,9 +128,7 @@ const phaseOf = (p: string) => journey.phases.find((x) => x.id === p)!;
       </g>
       <g data-node="wire" class="node">
         <line x1="360" y1="323" x2="428" y2="323" class="line c" />
-        <text x="404" y="346" class="t small center">gRPC</text>
-        <line x1="548" y1="323" x2="576" y2="290" class="line dash" />
-        <text x="575" y="312" class="t small">JSON-RPC</text>
+        <line x1="548" y1="323" x2="750" y2="282" class="line dash" />
       </g>
 
       <!-- Token -->
@@ -211,14 +213,14 @@ const phaseOf = (p: string) => journey.phases.find((x) => x.id === p)!;
   import { scrollListTo } from '@kse/lib/scroll';
 
   // Token parks at the top-right corner of the active node so labels stay readable; on the wire it
-  // sits on the gRPC line itself so the hop between the two endpoints is visibly along the wire.
+  // sits on the line between the endpoints so the hop between the two endpoints is visibly along the wire.
   const POS: Record<string, [number, number]> = {
-    appA: [212, 98], svcA: [348, 134], qA: [180, 162], verA: [336, 162], conA: [180, 220], epA: [348, 302], chainA: [348, 360],
-    wire: [394, 323], epB: [542, 299], svcB: [872, 134], verB: [716, 162], qB: [864, 162], conB: [864, 220], appB: [868, 74], chainB: [872, 360],
+    appA: [212, 98], svcA: [184, 134], qA: [172, 162], verA: [348, 214], conA: [348, 134], epA: [348, 302], chainA: [348, 360],
+    wire: [394, 323], epB: [542, 299], svcB: [872, 134], verB: [704, 214], qB: [862, 162], conB: [704, 134], appB: [868, 74], chainB: [872, 360],
   };
-  // A waypoint on the JSON-RPC line, so Endpoint B's token follows that line into its ledger
-  // instead of cutting diagonally across the drawing.
-  const VIA: Record<string, [number, number]> = { 'epB>svcB': [562, 290], 'svcB>epB': [562, 290] };
+  // A waypoint at the end of the line from Endpoint B to its CLPR Service, so the token follows
+  // that line into the ledger instead of cutting diagonally across the drawing.
+  const VIA: Record<string, [number, number]> = { 'epB>svcB': [744, 284], 'svcB>epB': [744, 284] };
   const TOKEN_AT: Record<'forward' | 'reverse', Record<number, string>> = {
     forward: {
       1: 'appA', 2: 'svcA', 3: 'conA', 4: 'conA', 5: 'qA', 6: 'qA', 7: 'chainA', 8: 'epA', 9: 'epA', 10: 'wire', 11: 'epB',

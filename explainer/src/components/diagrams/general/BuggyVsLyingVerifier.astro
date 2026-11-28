@@ -1,16 +1,16 @@
 ---
-/** A buggy verifier is caught by the running hash check; a lying verifier that fabricates matching running hashes is not: design §2.3 (trust model) and spec §8.2 (no verifier allow-list). */
+/** A buggy verifier is caught by the CLPR Service's own checks (message ids, running hash, reply order), which run after the verifier returns; a compromised verifier that fabricates matching running hashes is not. Overview §4, Verifier interface §3 (the verifier does not check the running hash), CLPR Service §6.1 (no verifier allow-list). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { overview, verifierIface, service } from '../../../lib/sources';
 ---
 <Figure
   lead="Buggy versus lying."
-  caption="A verifier bug that garbles messages is caught: the garbled messages do not match the running hashes and the bundle is rejected. A verifier that lies produces running hashes that match its own lies, and nothing in the protocol can tell. Anyone can create a channel with any verifier, so vetting verifiers is human work."
-  source={[{ label: 'design §2.3', href: design('23-trust-model') }, { label: 'spec §8.2', href: spec('82-trust-model') }]}
+  caption="A verifier bug that garbles messages is caught by the CLPR Service's own checks of message ids, running hash and reply order: the garbled messages do not match the running hashes and the bundle is rejected. A verifier that lies produces running hashes that match its own lies, and nothing in the protocol can tell. Anyone can open a channel with any verifier, so vetting verifiers is human work."
+  source={[{ label: 'Overview §4', href: overview('4-trust-model') }, { label: 'Verifier interface §3', href: verifierIface('3-verifybundle') }, { label: 'CLPR Service §6.1', href: service('61-verifier-choice') }]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 300" role="img" aria-label="Two rows. Top: a buggy verifier returns garbled messages, the running hash check finds expected not equal to computed, the bundle is rejected, and the protocol is who catches it. Bottom: a lying verifier fabricates messages with matching running hashes, the check passes, the bundle is accepted, and only a human vetting the verifier can catch it.">
+  <svg viewBox="0 0 760 300" role="img" aria-label="Two rows. Top: a buggy verifier returns garbled messages, the running hash check finds expected not equal to computed, the bundle is rejected, and the CLPR Service's own checks catch it. Bottom: a lying verifier fabricates messages with matching running hashes, the check passes, the bundle is accepted, and only a human vetting the verifier can catch it.">
     <defs>
       <marker id="bl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)"/></marker>
       <marker id="bl-arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker>
@@ -37,7 +37,7 @@ import { design, spec } from '../../../lib/sources';
     <text x="514" y="100" class="t small center">bundle refused</text>
 
     <rect x="610" y="50" width="138" height="76" rx="8" class="d-surface"/>
-    <text x="679" y="84" class="t b center">The protocol</text>
+    <text x="679" y="84" class="t b center">CLPR Service</text>
     <text x="679" y="104" class="t small center">its own checks</text>
 
     <line x1="222" y1="88" x2="258" y2="88" class="line" marker-end="url(#bl-arrow)"/>

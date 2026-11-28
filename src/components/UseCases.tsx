@@ -22,7 +22,7 @@ export function UseCases() {
     <section aria-labelledby={useCases.id} className="shell py-24 lg:py-32">
       <SectionHeading id={useCases.id} eyebrow={useCases.eyebrow} title={useCases.title} lead={useCases.lead} split />
 
-      <ol className="mt-14 grid gap-4 md:grid-cols-2 lg:mt-20">
+      <ol className="mt-14 grid gap-4 md:grid-cols-3 lg:mt-20">
         {useCases.patterns.map((pattern, index) => {
           const Diagram = USE_CASE_ART[index];
           return (

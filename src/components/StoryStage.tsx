@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 /** Seconds between two bundles leaving Ledger A, and for one to cross. */
 const BUNDLE_EVERY = 1.9;
 const CROSSING = 2.6;
-/** Seconds the Verifier takes before the responses leave Ledger B. */
+/** Seconds Ledger B takes to check a bundle before the responses leave it. */
 const CHECK = 0.45;
 const QUEUE = 6;
 const CHANNEL_SAMPLES = 240;
@@ -39,7 +39,6 @@ type LedgerArt = {
   side: 1 | -1;
   validators: Validator[];
   endpoint: Point;
-  verifier: Point | null;
   bundles: Float32Array[][];
   /** Seconds between two heartbeats of the ledger's own consensus. */
   heartbeat: number;
@@ -63,13 +62,12 @@ function nearest(points: Point[], to: Point): Point {
 }
 
 /** A ring of eight validators around three inner ones, in unit space (radius 1). */
-function buildLedger(side: 1 | -1, withVerifier: boolean, heartbeat: number, random: Random): LedgerArt {
+function buildLedger(side: 1 | -1, heartbeat: number, random: Random): LedgerArt {
   const ring = Array.from({ length: 8 }, (_, k) =>
     polar(0.8 + (random() - 0.5) * 0.08, 22.5 + k * 45 + (random() - 0.5) * 12),
   );
   const inner = Array.from({ length: 3 }, (_, k) => polar(0.36, 90 + k * 120 + (random() - 0.5) * 20));
   const endpoint = { x: side * 0.98, y: 0 };
-  const verifier = withVerifier ? { x: side * 0.5, y: 0.32 } : null;
 
   const links: [Point, Point][] = [];
   ring.forEach((point, k) => {
@@ -81,7 +79,6 @@ function buildLedger(side: 1 | -1, withVerifier: boolean, heartbeat: number, ran
     (p, q) => Math.hypot(p.x - endpoint.x, p.y - endpoint.y) - Math.hypot(q.x - endpoint.x, q.y - endpoint.y),
   );
   links.push([endpoint, byDistance[0]], [endpoint, byDistance[1]], [endpoint, nearest(inner, endpoint)]);
-  if (verifier) links.push([verifier, endpoint], [verifier, nearest(inner, verifier)]);
 
   const bundles = links.map(([p, q]) =>
     buildStrands(p, q, { strands: 10, bow: (random() - 0.5) * 0.24, spread: 0.2, twist: 0.04 }, random),
@@ -93,7 +90,7 @@ function buildLedger(side: 1 | -1, withVerifier: boolean, heartbeat: number, ran
     beat: ((Math.atan2(point.y, point.x) + Math.PI) / TAU) * 0.8,
     flare: 0,
   }));
-  return { side, validators, endpoint, verifier, bundles, heartbeat };
+  return { side, validators, endpoint, bundles, heartbeat };
 }
 
 /** Membrane, rim and fibres of one ledger, drawn once into its own canvas. */
@@ -258,15 +255,6 @@ function hexagon(ctx: CanvasRenderingContext2D, x: number, y: number, radius: nu
   ctx.closePath();
 }
 
-function diamond(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number) {
-  ctx.beginPath();
-  ctx.moveTo(x, y - radius);
-  ctx.lineTo(x + radius, y);
-  ctx.lineTo(x, y + radius);
-  ctx.lineTo(x - radius, y);
-  ctx.closePath();
-}
-
 /** A short burst, 0 → 1 → 0 over `length` seconds after `at`. */
 function pulse(time: number, at: number, length: number): number {
   const t = (time - at) / length;
@@ -298,7 +286,7 @@ export function StoryStage({ className }: { className?: string }) {
       },
     };
     const warm = makeStar("rgb(255 228 196 / 0.95)", "rgb(255 170 110 / 0.34)");
-    const ledgers = { a: buildLedger(1, false, 2.6, random), b: buildLedger(-1, true, 3.3, random) };
+    const ledgers = { a: buildLedger(1, 2.6, random), b: buildLedger(-1, 3.3, random) };
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let width = 0;
@@ -316,7 +304,7 @@ export function StoryStage({ className }: { className?: string }) {
 
     const bundles: Bundle[] = [];
     const waves: Wave[] = [];
-    const flares = { a: 0, b: 0, verifier: 0 };
+    const flares = { a: 0, b: 0 };
     /** Seconds the Channel has been open; drives the queue and the bundles. */
     let openFor = 0;
     let time = 0;
@@ -392,8 +380,9 @@ export function StoryStage({ className }: { className?: string }) {
         const beat = (time - validator.beat) % ledger.heartbeat;
         const heartbeat = beat > 0 && beat < 0.6 ? Math.pow(Math.sin((Math.PI * beat) / 0.6), 2) : 0;
         let verified = 0;
-        if (key === "b" && ledger.verifier) {
-          const distance = Math.hypot(validator.x - ledger.verifier.x, validator.y - ledger.verifier.y);
+        if (key === "b") {
+          // The verified state spreads through B from where its Endpoint took the bundle in.
+          const distance = Math.hypot(validator.x - ledger.endpoint.x, validator.y - ledger.endpoint.y);
           for (const wave of waves) verified = Math.max(verified, pulse(wave.age, distance * 0.55, 0.6));
         }
         const twinkle = 0.85 + 0.15 * Math.sin(time * 1.4 + validator.phase);
@@ -413,20 +402,6 @@ export function StoryStage({ className }: { className?: string }) {
       const glow = Math.max(10, layout.r * 0.2) * (1 + flare);
       ctx.globalAlpha = show * (0.6 + 0.4 * flare);
       ctx.drawImage(tone.star, endpoint.x - glow / 2, endpoint.y - glow / 2, glow, glow);
-
-      if (ledger.verifier) {
-        const verifier = world(center, ledger.verifier);
-        ctx.globalAlpha = show;
-        ctx.strokeStyle = "rgb(255 140 192)";
-        ctx.lineWidth = 1.4;
-        diamond(ctx, verifier.x, verifier.y, Math.max(5, layout.r * 0.085) * (1 + flares.verifier * 0.3));
-        ctx.stroke();
-        if (flares.verifier > 0.02) {
-          const v = Math.max(12, layout.r * 0.3) * (1 + flares.verifier);
-          ctx.globalAlpha = flares.verifier;
-          ctx.drawImage(tones.b.star, verifier.x - v / 2, verifier.y - v / 2, v, v);
-        }
-      }
     };
 
     const drawQueue = (show: number, head: number) => {
@@ -571,10 +546,7 @@ export function StoryStage({ className }: { className?: string }) {
           continue;
         }
         flares.b = 1;
-        if (bundle.proof) {
-          flares.verifier = 1;
-          waves.push({ age: 0 });
-        }
+        if (bundle.proof) waves.push({ age: 0 });
         bundles.push({ age: -CHECK, response: true, proof: false });
       }
       for (let i = waves.length - 1; i >= 0; i--) {
@@ -584,7 +556,6 @@ export function StoryStage({ className }: { className?: string }) {
       const decay = Math.exp(-delta * 3);
       flares.a *= decay;
       flares.b *= decay;
-      flares.verifier *= decay;
     };
 
     const tick = (now: number) => {

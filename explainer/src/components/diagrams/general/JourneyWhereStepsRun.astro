@@ -1,16 +1,16 @@
 ---
-/** Where the twenty-eight journey steps run: three on-chain stretches (steps 1-6 one transaction on Ledger A, 12-19 one transaction on Ledger B, 22-28 back on A) and two off-chain endpoint gaps (7-11, 20-21) whose work happens off-chain and is re-checked at 13-14 and 23-24. Step numbers are the page's own; the flow follows design §2.2 and the all-or-nothing bundle check in spec §4.2. */
+/** Where the twenty-eight journey steps run: three on-chain stretches (steps 1-6 one transaction on Ledger A, 12-19 one transaction on Ledger B, 22-28 back on A) and two off-chain endpoint gaps (7-11, 20-21) whose work happens off-chain and is re-checked at 13-14 and 23-24. Step numbers are the page's own (src/data/journey.json), in the default direction (Hiero to EVM ledger); the reverse direction numbers its steps differently; the flow follows Overview §3 and the atomic bundle processing of Channel state transitions §2, where a connector's or application's failure affects only that message's reply. */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { overview, transitions } from '../../../lib/sources';
 ---
 <Figure
   lead="Three on-chain stretches, two off-chain gaps."
-  caption="Steps 1-6 are one transaction on the sending ledger and steps 12-19 one transaction on the receiving ledger; a bundle that fails its checks is rejected whole, while one message's failure becomes a failure reply. The work in between (7-11, 20-21) happens off-chain: the ledger's validators sign, then an endpoint fetches, carries and dry-runs it, and it is re-checked the moment it comes back on chain."
-  source={[{ label: 'design §2.2', href: design('22-high-level-message-flow') }, { label: 'spec §4.2', href: spec('42-bundle-verification-algorithm') }]}
+  caption="Step numbers are those of the default direction, Hiero to EVM ledger. Steps 1-6 are one transaction on the sending ledger and steps 12-19 one transaction on the receiving ledger; a bundle that fails its checks is rejected whole, while one message's failure becomes a failure reply. The work in between (7-11, 20-21) happens off-chain: the ledger's validators sign, then an endpoint fetches, carries and dry-runs it, and it is re-checked the moment it comes back on chain."
+  source={[{ label: 'Overview §3', href: overview('3-message-flow') }, { label: 'Channel state transitions §2', href: transitions('2-bundle-processing') }]}
   kind="plain"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 222" role="img" aria-label="Five boxes in a row: Ledger A one transaction (steps 1 to 6), endpoints off-chain (7 to 11), Ledger B one transaction (12 to 19), endpoints off-chain (20 to 21), Ledger A back on chain (22 to 28). Arrows from each endpoint box lead to a re-checked badge above the next on-chain box.">
+  <svg viewBox="0 0 760 222" role="img" aria-label="In the default direction, five boxes in a row: Ledger A one transaction (steps 1 to 6), endpoints off-chain (7 to 11), Ledger B one transaction (12 to 19), endpoints off-chain (20 to 21), Ledger A back on chain (22 to 28). Arrows from each endpoint box lead to a re-checked badge above the next on-chain box.">
     <defs>
       <marker id="jws-arrow-c" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--c)"/></marker>
       <marker id="jws-arrow-ok" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--ok)"/></marker>
@@ -28,7 +28,7 @@ import { design, spec } from '../../../lib/sources';
     <text x="78" y="92" class="t mono center">steps 1-6</text>
     <text x="78" y="112" class="t small center">one transaction:</text>
     <text x="78" y="128" class="t small center">checks,</text>
-    <text x="78" y="144" class="t small center">payer says yes,</text>
+    <text x="78" y="144" class="t small center">connector says yes,</text>
     <text x="78" y="160" class="t small center">queue + running hash</text>
 
     <!-- span 2: endpoints, off-chain -->
@@ -46,8 +46,8 @@ import { design, spec } from '../../../lib/sources';
     <text x="378" y="92" class="t mono center">steps 12-19</text>
     <text x="378" y="112" class="t small center">one transaction:</text>
     <text x="378" y="128" class="t small center">check the proof,</text>
-    <text x="378" y="144" class="t small center">pay the endpoint,</text>
-    <text x="378" y="160" class="t small center">run the app, reply</text>
+    <text x="378" y="144" class="t small center">run the app,</text>
+    <text x="378" y="160" class="t small center">charge and reply</text>
 
     <!-- span 4: endpoints, off-chain -->
     <rect x="464" y="52" width="140" height="120" rx="10" class="d-c"/>
@@ -78,6 +78,6 @@ import { design, spec } from '../../../lib/sources';
     <path d="M534,52 C534,25 568,25 618,25" class="line ok" marker-end="url(#jws-arrow-ok)"/>
 
     <!-- takeaway -->
-    <text x="380" y="206" class="t take center">Steps 7-11 and 20-21 happen off-chain; nothing counts until 13-14 and 23-24 have checked it.</text>
+    <text x="380" y="206" class="t take center">In the default direction, 7-11 and 20-21 run off-chain; nothing counts until 13-14 and 23-24 check it.</text>
   </svg>
 </Figure>

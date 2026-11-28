@@ -1,17 +1,30 @@
 ---
-/** Adding a new ledger type, following the eight steps in the LFDT-CLPR organization profile. */
+/**
+ * Adding a new ledger type, following the eight steps of the LFDT-CLPR organization profile's
+ * extension process, read against Overview §5 (adding a ledger: its Ledger Specifications, a CLPR
+ * Service, verifier contracts for its proof schemes) and the Ledger Specifications index.
+ */
 import Refs from '@kse/components/Refs.astro';
 const { id = 'extend-sim' } = Astro.props as { id?: string };
 const steps = [
-  { t: 'Implement a CLPR Service and CLPR Endpoints for the new ledger type', d: 'The Service can be native to the node or a smart contract; either way it must conform to the behavior in the specification. The Endpoints read the new ledger\'s CLPR state, build state-proven bundles in the ledger\'s own data format, and speak the common sync protocol.' , show: ['svcX', 'epX'], line: 'service + endpoints on the new ledger' },
-  { t: 'Implement a Hiero verifier that runs on the new ledger', d: 'So the new ledger can check proofs coming from Hiero.', show: ['verHonX'], line: 'Hiero verifier, runs on the new ledger' },
-  { t: 'Implement a verifier for the new ledger that runs on Hiero', d: 'So Hiero can check proofs coming from the new ledger. This verifier also translates the new ledger\'s bundle format into what the receiving Service expects.', show: ['verXonH'], line: 'new-ledger verifier, runs on Hiero' },
-  { t: 'Deploy each verifier to the opposite network', d: 'Verifiers are ordinary contracts on the receiving side. Deploying one is permissionless.', show: ['deployed'], line: 'both verifiers deployed' },
-  { t: 'Set up a Channel between the two CLPR Services', d: 'Commit on both ledgers, then reveal on both, naming the verifier each side will use. The verifier\'s address is fixed for the channel\'s lifetime, though the contract behind it may be upgradeable.', show: ['channel'], line: 'channel: verifier address fixed on each side' },
-  { t: 'Share each network\'s endpoints with the other', d: 'The endpoint list is on-chain state on each side and is proved into the channel at creation; later changes travel inside bundle proofs.', show: ['manifest'], line: 'endpoint lists proved into the channel' },
-  { t: 'Set up a common Connector bonded to the Channel', d: 'The same connector identity is registered on both ledgers: it authorizes on the sending side and pays on the receiving side.', show: ['conX', 'conH'], line: 'one connector, registered on both ledgers' },
-  { t: 'Deploy applications that use the Connector and Channel', d: 'Applications implement two callbacks and never touch proofs, relays or verification.', show: ['appX', 'appH'], line: 'applications on both ledgers' },
+  { t: 'Write its Ledger Specifications; implement a CLPR Service and CLPR Endpoints', d: 'The new ledger\'s contributors write its Ledger Specifications: how bundle content is gathered from the ledger, how it is proven and laid out on the wire, how it is verified on another ledger, and how its CLPR Service calls verifiers. The Service can be native to the node or a smart contract; either way it follows the Protocol. The Endpoints read the new ledger\'s CLPR state, build state-proven bundles in its proof scheme, and speak endpoint sync.', show: ['svcX', 'epX'], line: 'service + endpoints on the new ledger' },
+  { t: 'Implement a Hiero verifier that runs on the new ledger', d: 'So the new ledger can check proofs coming from Hiero. A verifier contract combines one proof scheme of the source ledger with the verifier API of the destination ledger.', show: ['verHonX'], line: 'Hiero verifier, runs on the new ledger' },
+  { t: 'Implement a verifier for the new ledger that runs on Hiero', d: 'So Hiero can check proofs coming from the new ledger. The verifier decodes the new ledger\'s bundles and returns their content in the form every CLPR Service acts on. On Hiero it can be a deployed contract or a built-in verifier, as Hiero has for the one EVM ledger its specifications cover.', show: ['verXonH'], line: 'new-ledger verifier, runs on Hiero' },
+  { t: 'Deploy each verifier to the opposite network', d: 'A verifier lives on the ledger that receives the proofs. There is no allow-list of verifiers: anyone can open a channel with any verifier, so applications evaluate a channel\'s verifier before using it.', show: ['deployed'], line: 'both verifiers deployed' },
+  { t: 'Set up a Channel between the two CLPR Services', d: 'Commit on both ledgers, then reveal on both, naming the verifier each side will use. The verifier binding is fixed for the channel\'s life, though the contract behind it may be upgradeable.', show: ['channel'], line: 'channel: verifier fixed on each side' },
+  { t: 'Share each network\'s endpoints with the other', d: 'Each CLPR Service keeps an endpoint manifest of its own endpoints. A proof of it should accompany the channel\'s reveal on the other ledger, and later versions travel inside bundles.', show: ['manifest'], line: 'endpoint manifests proven to each side' },
+  { t: 'Register a Connector on both ledgers of the Channel', d: 'The same connector id is registered on both ledgers: it authorizes messages on the sending side and pays for their execution on the receiving side. In the recommended design it posts a stake, which can be slashed when messages fail because a connector is missing or cannot pay.', show: ['conX', 'conH'], line: 'one connector, registered on both ledgers' },
+  { t: 'Deploy applications that use the Connector and Channel', d: 'Applications send messages through their CLPR Service and receive messages and replies through its callbacks. They never handle proofs or endpoints themselves; they vet the channel and its verifier.', show: ['appX', 'appH'], line: 'applications on both ledgers' },
 ];
+const refs = [
+  { doc: 'overview', anchor: '5-roles', label: 'Overview §5' },
+  { doc: 'repo', id: 'clpr-spec', path: 'ledgers/README.md', label: 'Ledger Specifications index' },
+  { doc: 'channelSetup', anchor: '4-verifier-binding', label: 'Channel setup §4' },
+  { doc: 'manifest', anchor: '5-manifest-proofs', label: 'Endpoint manifest §5' },
+  { doc: 'connectorSetup', anchor: '3-connectors-on-both-ledgers', label: 'Connector setup §3' },
+  { doc: 'service', anchor: '61-verifier-choice', label: 'CLPR Service §6.1' },
+  { doc: 'repo', id: 'org-profile', path: 'profile/README.md', label: 'organization profile README, "Example of Extension Process"' },
+] as const;
 ---
 <div class="sim extend" id={id}>
   <div class="sim__head">
@@ -21,7 +34,7 @@ const steps = [
   </div>
   <div class="sim__body">
     <div class="sim__scroll">
-      <svg viewBox="0 0 760 280" role="img" aria-label="A new ledger on the left and Hiero on the right, drawn as mirror images. On each ledger the Endpoints sit at the top of the column that faces the other ledger, the CLPR Service below them and that ledger's verifier below the Service; the Connector sits beside the Service and the Application above the Connector. The Channel joins the two CLPR Services and the endpoint lists join the two sets of Endpoints. Components appear as the steps progress.">
+      <svg viewBox="0 0 760 280" role="img" aria-label="A new ledger on the left and Hiero on the right, drawn as mirror images. On each ledger the Endpoints sit at the top of the column that faces the other ledger, the CLPR Service below them and that ledger's verifier below the Service; the Connector sits beside the Service and the Application above the Connector. The Channel joins the two CLPR Services and the endpoint manifests join the two sets of Endpoints. Components appear as the steps progress.">
         <rect x="20" y="20" width="304" height="240" rx="12" class="d-surface" stroke-dasharray="6 5" />
         <text x="36" y="44" class="t b" style="fill:var(--b)">New ledger type</text>
         <rect x="436" y="20" width="304" height="240" rx="12" class="d-surface" stroke-dasharray="6 5" />
@@ -46,15 +59,15 @@ const steps = [
           <rect x="491" y="224" width="70" height="16" rx="8" class="d-ok" /><text x="526" y="236" class="t mono center" style="fill:var(--ok)">deployed</text>
         </g>
         <g data-part="channel" class="part"><line x1="308" y1="138" x2="452" y2="138" pathLength="1" class="line ok" stroke-width="3" /><text x="380" y="128" class="t small center b" style="fill:var(--ok)">Channel</text><text x="380" y="156" class="t small center" style="fill:var(--ok)">verifier fixed</text><text x="380" y="170" class="t small center" style="fill:var(--ok)">on each side</text></g>
-        <g data-part="manifest" class="part"><path d="M308,78 H452" class="line c dash" /><text x="380" y="68" class="t small center" style="fill:var(--c)">endpoint lists,</text><text x="380" y="96" class="t small center" style="fill:var(--c)">proved on-chain</text></g>
+        <g data-part="manifest" class="part"><path d="M308,78 H452" class="line c dash" /><text x="380" y="68" class="t small center" style="fill:var(--c)">endpoint manifests,</text><text x="380" y="96" class="t small center" style="fill:var(--c)">proven to the peer</text></g>
       </svg>
     </div>
     <p class="sim__scroll-note">Wider than a phone; scroll it sideways if you need to.</p>
     <div class="step-card" data-role="card" style="--card-min: 160px">
-      <div data-card="0"><div class="phase">Before you start</div><h4>The pattern that makes CLPR extensible</h4><p>The CLPR Service implementation on existing ledgers does not change when a new one joins; they only gain a verifier and a Channel. The alignment between the new ledger's endpoint (which builds bundles in that ledger's format) and the verifier it ships for other ledgers (which reads that format) is the whole trick.</p></div>
+      <div data-card="0"><div class="phase">Before you start</div><h4>The pattern that makes CLPR extensible</h4><p>Adding a ledger needs no change to the Protocol or to other ledgers: existing ledgers gain a verifier for the new ledger's proofs and a channel, then connectors and applications. What makes this work is the alignment between the new ledger's proof scheme, in which its endpoints build bundles, and the verifier contracts on other ledgers that check that scheme.</p></div>
       {steps.map((s, i) => <div data-card={i + 1} hidden><div class="phase">Step {i + 1} of 8</div><h4>{s.t}</h4><p>{s.d}</p></div>)}
     </div>
-    <Refs refs={[{ doc: 'repo', id: 'org-profile', path: 'profile/README.md', label: 'organization profile README, "Example of Extension Process"' }]} />
+    <Refs refs={[...refs]} />
   </div>
   <div class="sim__controls">
     <button class="btn" type="button" data-role="prev">◀ Prev</button>

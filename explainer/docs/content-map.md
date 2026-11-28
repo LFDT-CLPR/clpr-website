@@ -9,108 +9,198 @@ every site location on the right. `general §id` and `dev §id` are sections of 
 and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a step in
 `journey.json`; a `.astro` name is a component that links to that heading or file directly.
 
-## clpr-spec/clpr-service.md (design document)
+## clpr-spec/clpr-overview.md (Overview)
 
 | Heading anchor | Site locations |
 |---|---|
-| `1-executive-summary` | PrivateToPublic.astro; SixDifferences.astro; TwoIslands.astro; WhatBChecks.astro; dev §model; dev §why; general §bridges; general §different; general §lives; general §shapes |
-| `2-core-concepts-and-terminology` | general §islands |
-| `21-common-terminology` | MeshOfPairs.astro; StarOfPairs.astro; WhoLivesWhere.astro; cast.json cast[Application]; cast.json cast[Bundle]; cast.json cast[CLPR Service admin]; cast.json cast[CLPR Service]; cast.json cast[Channel]; cast.json cast[Connector]; cast.json cast[Endpoint]; cast.json cast[Message]; cast.json cast[Running hash]; cast.json cast[State proof]; cast.json cast[Trust anchor]; cast.json cast[Verifier contract]; dev §glossary; general §cast; general §ledger; general §shapes |
-| `22-high-level-message-flow` | JourneyWhereStepsRun.astro; dev §journey; dev §why; general §journey; general §proof; journey step 21 |
-| `23-trust-model` | BuggyVsLyingVerifier.astro; EndpointCarriesProof.astro; SafetyVsLiveness.astro; SixDifferences.astro; StateProofAnatomy.astro; TrustList.astro; dev §model; failures.json cases[consensus]; general §bridges; general §different; general §limits; general §proof; journey step 28 |
-| `24-participant-roles` | RolesWheel.astro; TrustChainExposure.astro; VettingChain.astro; catalog.json components[appB]; dev §operate; general §who |
-| `3-architecture` | FourKinds.astro; FourLayerStack.astro; dev §layers |
-| `310-the-clpr-service` | WhoLivesWhere.astro; catalog.json components[svcA]; general §cast; general §different |
-| `311-ledger-identity-and-configuration` | CompoundPeerIdentity.astro; dev §identity; journey step 2; open.json open[ledger-configuration] |
-| `312-endpoint-manifest` | PrivateToPublic.astro; ProvenManifest.astro; SyncCycle.astro; TwoManifests.astro; catalog.json components[epA]; dev §endpoints; general §shapes; open.json open[sybil-endpoints] |
-| `313-establishing-and-updating-channels` | CommitReveal.astro; CommitRevealRegistration.astro; TwoSidedClose.astro; dev §channels |
-| `314-endpoint-communication-protocol` | EndpointLoop.astro; PrivateNetworkDial.astro; PullNotPush.astro; SyncCycle.astro; dev §sync; journey step 10; journey step 11; journey step 21; journey step 8 |
-| `315-verifier-contracts` | PhantomMessage.astro; SixDifferences.astro; TrustAnchor.astro; VerifierIo.astro; catalog.json components[verB]; dev §extend; dev §implementations; dev §verifiers; general §different; general §extend; general §limits; general §proof; general §shapes; open.json open[upgradeable-verifiers] |
-| `321-channel-queue-data` | journey step 19 |
-| `322-message-storage` | BundleVerify.astro; QueueWindow.astro; RunningHashChain.astro; VerifiedMeans.astro; dev §queue; general §running-hash; journey step 6 |
-| `323-bundle-transport` | BundlePrefixAnchor.astro; BundleVerify.astro; SyncCycle.astro; dev §bundles; journey step 10; journey step 11; journey step 22; journey step 9 |
-| `324-bundle-progress-criteria` | BundleVerify.astro |
-| `325-bundle-verification` | BundleVerify.astro; VerifierVsService.astro; dev §verify; journey step 12 |
-| `326-bundle-size-and-throughput-limits` | BundleVerify.astro; dev §bundles; failures.json cases[big] |
-| `327-message-lifecycle` | BundleVerify.astro; Ordering.astro |
-| `328-response-ordering-and-correlation` | BundleVerify.astro; Ordering.astro; TwoConfirmations.astro; dev §ordering; general §failures; journey step 18 |
-| `33-payment--routing-layer` | BilateralConnector.astro; dev §connectors; general §money |
-| `331-connectors` | CommitReveal.astro; ConnectorTwoJobs.astro; WhoPicksWhom.astro; catalog.json components[conB]; general §cast; journey step 4 |
-| `332-sending-a-message` | journey step 1 |
-| `333-receiving-routing-and-paying` | BundleVerify.astro; ChecksEffectsDispatch.astro; ConnectorTwoJobs.astro; SendAndTwoCallbacks.astro; failures.json cases[app]; general §journey; journey step 15; journey step 16 |
-| `334-failure-consequences-and-slashing` | BundleVerify.astro; general §failures; open.json open[stake-sizing] |
-| `335-open-economic-design-issues` | general §limits; general §money; journey step 3; open.json open[queue-monopolization] |
-| `34-application-layer` | catalog.json components[appB]; dev §api; dev §why; general §patterns; patterns.json channelChoice |
-| `341-remote-smart-contract-call` | FourPatterns.astro; patterns.json patterns[remote-call] |
-| `342-escrow-mint-then-burn` | FourPatterns.astro; patterns.json patterns[escrow-mint-burn] |
-| `343-n-ledger-atomic-swap-2pc` | FourPatterns.astro; patterns.json patterns[atomic-swap] |
-| `344-native-hiero-asset-management` | FourPatterns.astro; patterns.json patterns[hiero-assets] |
-| `4-roles-and-operations` | RolesWheel.astro; VettingChain.astro; dev §operate; general §who |
-| `41-end-user` | roles.json roles[end-user] |
-| `42-application-developer` | roles.json roles[application-developer] |
-| `43-connector-operator` | roles.json roles[connector-operator] |
-| `44-verifier-developer` | dev §extend; roles.json roles[verifier-developer] |
-| `45-endpoint-operator` | roles.json roles[endpoint-operator] |
-| `46-clpr-service-admin` | open.json open[admin-incentive]; roles.json roles[service-admin] |
-| `47-cross-role-scenarios` | NewChannelMigration.astro; dev §operate; failures.json cases[format]; general §who |
-| `5-recovery-scenarios` | FailureTriage.astro; NewChannelMigration.astro; ProvenManifest.astro; dev §recovery; failures.json cases[down]; failures.json cases[offline]; failures.json cases[rotate]; failures.json cases[verifier]; general §failures |
-| `connector-withdrawal-under-load` | roles.json scenarios[connector-withdrawal] |
-| `proof-format-upgrade` | roles.json scenarios[proof-format-upgrade] |
-| `responding-to-a-compromised-verifier` | roles.json scenarios[compromised-verifier] |
-| `setting-up-a-new-cross-ledger-route` | roles.json scenarios[new-route] |
+| `1-purpose` | MeshOfPairs.astro; SixDifferences.astro; StateProofAnatomy.astro; TwoIslands.astro; WhatBChecks.astro; cast.json cast[State proof]; dev §why; general §bridges; general §different; general §islands; general §lives; general §money; general §shapes |
+| `2-major-parts` | FourKinds.astro; FourLayerStack.astro; MeshOfPairs.astro; StarOfPairs.astro; WhoLivesWhere.astro; cast.json cast[Application]; cast.json cast[Bundle]; cast.json cast[CLPR Service]; cast.json cast[Channel]; cast.json cast[Connector]; cast.json cast[Endpoint]; cast.json cast[Ledger]; cast.json cast[Message]; cast.json cast[Verifier contract]; dev §glossary; dev §identity; dev §layers; dev §why; general §cast; general §ledger; general §lives |
+| `3-message-flow` | EndpointCarriesProof.astro; JourneyWhereStepsRun.astro; dev §journey; dev §why; general §journey; general §proof; journey step 21 |
+| `4-trust-model` | BuggyVsLyingVerifier.astro; EndpointCarriesProof.astro; SafetyVsLiveness.astro; SixDifferences.astro; TrustChainExposure.astro; TrustList.astro; VerifiedMeans.astro; VettingChain.astro; dev §model; dev §verify; dev §why; failures.json cases[consensus]; failures.json cases[offline]; failures.json cases[tamper]; failures.json cases[verifier]; general §bridges; general §different; general §limits; general §lives; general §proof; general §who; journey step 28 |
+| `5-roles` | FourKinds.astro; NewChannelMigration.astro; RolesWheel.astro; SixDifferences.astro; TrustChainExposure.astro; VettingChain.astro; WhoLivesWhere.astro; cast.json cast[Endpoint]; catalog.json components[appB]; dev §extend; dev §layers; dev §model; dev §operate; failures.json cases[verifier]; general §cast; general §different; general §extend; general §lives; general §money; general §who; ledgers.json ledgers[qbft]; roles.json roles[application-developer]; roles.json roles[connector-operator]; roles.json roles[end-user]; roles.json roles[endpoint-operator]; roles.json roles[service-admin]; roles.json roles[verifier-developer]; roles.json scenarios[connector-withdrawal]; roles.json scenarios[new-route] |
+| `6-how-the-specification-is-organized` | SpecDocumentMap.astro; catalog.json components[spec]; dev §evolution |
+| `7-vocabulary` | StateProofAnatomy.astro; cast.json cast[Running hash]; cast.json cast[State proof]; cast.json cast[Trust anchor]; dev §glossary; dev §ordering; general §ledger |
+| `8-application-patterns` | FourLayerStack.astro; FourPatterns.astro; PhantomMessage.astro; catalog.json components[appB]; dev §channels; dev §layers; dev §why; general §patterns; patterns.json channelChoice; patterns.json patterns[atomic-swap]; patterns.json patterns[escrow-mint-burn]; patterns.json patterns[remote-call] |
 
-## clpr-spec/clpr-service-spec.md (protocol specification)
+## clpr-spec/protocol/conventions.md (Conventions)
 
 | Heading anchor | Site locations |
 |---|---|
-| `11-ledger-identity-and-configuration` | BundleVerify.astro; CompoundPeerIdentity.astro; SyncCycle.astro; dev §identity |
-| `12-endpoint-identity` | SyncCycle.astro; dev §endpoints |
-| `13-control-messages` | BundleVerify.astro; journey step 5 |
-| `14-message-queue` | BundleVerify.astro; QueueWindow.astro; dev §queue; journey step 18; journey step 26 |
-| `15-sync-protocol` | EndpointLoop.astro; PrivateNetworkDial.astro; PullNotPush.astro; SyncCycle.astro; catalog.json components[wire]; dev §sync; journey step 10; journey step 8; journey step 9 |
-| `21-channel` | ChannelVsSyncdata.astro; CommitReveal.astro; TwoSidedClose.astro; dev §channels |
-| `211-channel-status-transitions` | BundleVerify.astro; CommitReveal.astro; Ordering.astro; roles.json scenarios[compromised-verifier] |
-| `212-bundle-progress-criteria` | BundleVerify.astro; SyncCycle.astro; TrustAnchor.astro; dev §bundles; journey step 14 |
-| `22-connector` | BilateralConnector.astro; CommitReveal.astro; dev §connectors; journey step 4 |
-| `24-endpoint-manifest` | TwoManifests.astro; dev §endpoints |
-| `241-local-endpoint-manifest` | BundleVerify.astro; ProvenManifest.astro |
-| `242-peer-manifest-on-ledger-per-channel` | BundleVerify.astro; ProvenManifest.astro |
-| `31-verifier-contract-interface` | BundleVerify.astro; CommitReveal.astro; CompleteChannelStores.astro; EndpointCarriesProof.astro; TrustAnchor.astro; VerifierIo.astro; dev §verifiers |
-| `32-endpoint-trust-anchor-rotation-obligations` | TrustAnchor.astro; dev §verifiers |
-| `33-connector-authorization-interface` | BilateralConnector.astro; ConnectorTwoJobs.astro; WhoPicksWhom.astro; dev §connectors; journey step 4 |
-| `41-running-hash-computation` | BundlePrefixAnchor.astro; BundleVerify.astro; QueueWindow.astro; RedactionHashCollision.astro; RunningHashChain.astro; dev §queue; general §running-hash; journey step 6 |
-| `42-bundle-verification-algorithm` | BundleVerify.astro; FailureTriage.astro; JourneyWhereStepsRun.astro; Ordering.astro; SyncCycle.astro; TrustAnchor.astro; VerifierVsService.astro; dev §verify; failures.json cases[replay]; failures.json cases[tamper]; general §running-hash; journey step 13; journey step 14; journey step 24 |
-| `43-message-enqueue-algorithm` | dev §queue; journey step 1; journey step 2; journey step 5 |
-| `44-message-lifecycle` | BundleVerify.astro; Ordering.astro; TwoConfirmations.astro; dev §ordering; journey step 27 |
-| `45-response-ordering-verification` | BundleVerify.astro; FailureTriage.astro; Ordering.astro; dev §ordering; failures.json cases[order]; journey step 25 |
-| `46-slashing-decision` | BundleVerify.astro; FailureTriage.astro; dev §connectors; failures.json cases[nf]; failures.json cases[uf]; general §money; journey step 15; journey step 17 |
-| `51-channel-registration` | CommitReveal.astro; dev §channels |
-| `511-anti-squatting-rationale` | CommitReveal.astro; CommitRevealRegistration.astro |
-| `512-phase-1--claim-registerchannel` | CommitReveal.astro; CommitRevealRegistration.astro |
-| `513-phase-2--reveal-completechannel` | CommitReveal.astro; CommitRevealRegistration.astro; CompleteChannelStores.astro |
-| `514-admin-cleanup` | CommitReveal.astro |
-| `515-verifier-immutability` | CommitReveal.astro |
-| `52-endpoint-discovery` | SyncCycle.astro |
-| `62-channel-management` | CommitReveal.astro |
-| `63-connector-management` | CommitReveal.astro; catalog.json components[conB]; dev §connectors |
-| `64-messaging` | SendAndTwoCallbacks.astro; dev §api; journey step 12; journey step 22 |
-| `65-endpoint-management` | dev §endpoints |
-| `7-configuration-parameters` | dev §identity |
-| `8-security-considerations` | dev §security; general §limits |
-| `810-endpoint-pre-funding` | general §proof |
-| `811-queue-monopolization` | journey step 3 |
-| `82-trust-model` | BuggyVsLyingVerifier.astro; SafetyVsLiveness.astro; StateProofAnatomy.astro; dev §model |
-| `83-reorg-risk` | PhantomMessage.astro |
-| `85-reentrancy` | ChecksEffectsDispatch.astro |
-| `86-untrusted-payloads` | VerifiedMeans.astro |
-| `87-no-confidentiality` | VerifiedMeans.astro |
-| `88-upgradeable-verifier-contracts` | cast.json cast[Verifier contract]; general §proof |
-| `9-recovery-scenarios` | dev §recovery |
-| `application-delivery` | SendAndTwoCallbacks.astro; cast.json cast[Application]; dev §api |
-| `catch-up-across-multiple-missed-rotations` | TrustAnchor.astro |
-| `grpc-endpoint-service` | SyncCycle.astro |
-| `timing-depends-on-trust-anchor-encoding` | TrustAnchor.astro |
-| `transition-bundle` | TrustAnchor.astro |
+| `3-abstract-data-structures` | dev §evolution; dev §identity |
+
+## clpr-spec/protocol/ledger-configuration.md (Ledger configuration)
+
+| Heading anchor | Site locations |
+|---|---|
+| `ledgerConfig#1-ledger-identity` | CompoundPeerIdentity.astro; dev §glossary; dev §identity |
+| `ledgerConfig#2-ledger-configuration` | CompoundPeerIdentity.astro; dev §identity |
+| `ledgerConfig#3-throttles` | BundleVerify.astro; SyncCycle.astro; dev §bundles; dev §identity; failures.json cases[big]; journey step 2 |
+| `ledgerConfig#4-protocol-version` | dev §evolution; dev §identity; open.json open[protocol-version-setup] |
+| `ledgerConfig#5-configuration-propagation` | dev §queue |
+| `ledgerConfig#51-configupdate` | TwoManifests.astro |
+| `ledgerConfig#52-sending` | BundleVerify.astro; dev §verify; journey step 5 |
+| `ledgerConfig#53-receiving` | BundleVerify.astro; dev §verify |
+
+## clpr-spec/protocol/endpoint-manifest.md (Endpoint manifest)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-endpoint` | PrivateNetworkDial.astro; PrivateToPublic.astro; SyncCycle.astro; dev §endpoints; dev §sync; general §shapes |
+| `2-endpoint-manifest` | catalog.json components[epA]; dev §endpoints |
+| `3-local-manifest` | ProvenManifest.astro; TwoManifests.astro; dev §endpoints |
+| `4-peer-manifest` | BundleVerify.astro; ProvenManifest.astro; TwoManifests.astro; dev §endpoints; failures.json cases[rotate] |
+| `5-manifest-proofs` | ProvenManifest.astro; TwoManifests.astro; dev §endpoints |
+| `6-endpoint-discovery` | PrivateNetworkDial.astro; SyncCycle.astro |
+
+## clpr-spec/protocol/channel-setup.md (Channel setup)
+
+| Heading anchor | Site locations |
+|---|---|
+| `channelSetup#1-channel-identity` | CommitReveal.astro; CommitRevealRegistration.astro; MeshOfPairs.astro; StarOfPairs.astro; cast.json cast[Channel]; dev §channels; general §shapes |
+| `channelSetup#2-registration` | CommitReveal.astro; CommitRevealRegistration.astro; dev §channels; dev §layers |
+| `channelSetup#21-registerchannel` | CommitReveal.astro; CommitRevealRegistration.astro |
+| `channelSetup#22-completechannel` | CommitReveal.astro; CommitRevealRegistration.astro; CompleteChannelStores.astro |
+| `channelSetup#3-channel-context` | CompoundPeerIdentity.astro; TrustAnchor.astro |
+| `channelSetup#4-verifier-binding` | CommitReveal.astro; CommitRevealRegistration.astro; NewChannelMigration.astro; catalog.json components[verB]; dev §api; dev §channels; dev §extend; dev §operate; dev §recovery; failures.json cases[format]; general §proof; roles.json scenarios[proof-format-upgrade] |
+| `channelSetup#5-initial-peer-state` | CommitReveal.astro; CompleteChannelStores.astro; dev §channels |
+| `channelSetup#6-shared-channel-state` | ChannelVsSyncdata.astro; CommitReveal.astro; dev §channels; journey step 19 |
+
+## clpr-spec/protocol/connector-setup.md (Connector setup)
+
+| Heading anchor | Site locations |
+|---|---|
+| `connectorSetup#1-connector-identity` | BilateralConnector.astro; CommitReveal.astro; ConnectorTwoJobs.astro; WhoPicksWhom.astro; catalog.json components[conB]; dev §connectors; general §cast; general §money; journey step 4 |
+| `connectorSetup#2-registration` | CommitReveal.astro; dev §connectors |
+| `connectorSetup#3-connectors-on-both-ledgers` | BilateralConnector.astro; CommitReveal.astro; ConnectorTwoJobs.astro; cast.json cast[Connector]; dev §connectors; failures.json cases[nf]; general §money |
+| `connectorSetup#4-authorization-of-outbound-messages` | BilateralConnector.astro; ConnectorTwoJobs.astro; WhoPicksWhom.astro; dev §connectors; general §money; journey step 4; roles.json scenarios[connector-withdrawal] |
+| `connectorSetup#5-removal` | CommitReveal.astro; catalog.json components[conB]; dev §operate; roles.json scenarios[connector-withdrawal] |
+
+## clpr-spec/protocol/messaging.md (Messaging)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-message-types` | VerifiedMeans.astro; cast.json cast[Message]; dev §queue; general §limits; general §shapes; journey step 1 |
+| `2-message-identifiers-and-queue` | BundleVerify.astro; Ordering.astro; QueueWindow.astro; VerifiedMeans.astro; dev §channels; dev §queue; general §running-hash; journey step 18 |
+| `3-payload-encoding` | BundleVerify.astro; RunningHashChain.astro; dev §queue; journey step 6 |
+| `4-running-hash` | BundlePrefixAnchor.astro; BundleVerify.astro; QueueWindow.astro; RunningHashChain.astro; VerifiedMeans.astro; cast.json cast[Running hash]; dev §queue; general §lives; general §running-hash; journey step 6 |
+| `5-enqueue` | BilateralConnector.astro; FourLayerStack.astro; SendAndTwoCallbacks.astro; WhoPicksWhom.astro; dev §api; dev §queue; dev §verify; failures.json cases[big]; journey step 1; journey step 2; journey step 3; journey step 5; journey step 6 |
+| `6-delivery-to-the-application` | BilateralConnector.astro; BundleVerify.astro; ChecksEffectsDispatch.astro; SendAndTwoCallbacks.astro; VerifierVsService.astro; cast.json cast[Application]; dev §api; dev §verify; failures.json cases[app]; general §journey; journey step 15; journey step 16; journey step 26 |
+| `7-replies` | BundleVerify.astro; FailureTriage.astro; SendAndTwoCallbacks.astro; TwoConfirmations.astro; cast.json cast[Message]; dev §api; dev §verify; dev §why; failures.json cases[app]; general §failures; general §journey; general §patterns; journey step 18; journey step 26 |
+| `8-response-ordering` | BundleVerify.astro; FailureTriage.astro; Ordering.astro; TwoConfirmations.astro; dev §ordering; dev §verify; failures.json cases[order]; general §failures; general §patterns; journey step 18; journey step 25 |
+| `9-acknowledgement` | BundleVerify.astro; Ordering.astro; QueueWindow.astro; TwoConfirmations.astro; dev §ordering; dev §verify; journey step 19; journey step 27 |
+
+## clpr-spec/protocol/bundle.md (Bundle)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-bundle-content` | BundlePrefixAnchor.astro; BundleVerify.astro; cast.json cast[Bundle]; dev §bundles; journey step 10; journey step 9 |
+| `2-queue-metadata` | ChannelVsSyncdata.astro; SyncCycle.astro; TwoConfirmations.astro; dev §bundles |
+| `3-partial-bundles` | BundlePrefixAnchor.astro; BundleVerify.astro; PullNotPush.astro; SyncCycle.astro; dev §bundles; journey step 10 |
+| `4-proof-requirements` | BundlePrefixAnchor.astro; BundleVerify.astro; PhantomMessage.astro; RunningHashChain.astro; StateProofAnatomy.astro; SyncCycle.astro; cast.json cast[Bundle]; dev §api; dev §bundles; dev §verifiers; dev §why; general §ledger; general §limits; general §running-hash; patterns.json channelChoice |
+
+## clpr-spec/protocol/verifier-interface.md (Verifier interface)
+
+| Heading anchor | Site locations |
+|---|---|
+| `verifierIface#1-verifier-contracts-and-trust-anchors` | EndpointCarriesProof.astro; SendAndTwoCallbacks.astro; SixDifferences.astro; TrustAnchor.astro; VerifierIo.astro; VerifierVsService.astro; WhoLivesWhere.astro; cast.json cast[Trust anchor]; cast.json cast[Verifier contract]; catalog.json components[verB]; dev §layers; dev §verifiers; general §different; general §extend; general §lives; general §proof |
+| `verifierIface#2-verifyconfig` | CommitReveal.astro; CompleteChannelStores.astro; open.json open[config-proof-scope] |
+| `verifierIface#3-verifybundle` | BuggyVsLyingVerifier.astro; BundleVerify.astro; EndpointCarriesProof.astro; TrustAnchor.astro; VerifierIo.astro; VerifierVsService.astro; dev §verifiers; dev §verify; journey step 13; journey step 23 |
+| `verifierIface#4-trust-anchor-changes` | BundleVerify.astro; TrustAnchor.astro; VerifierIo.astro; cast.json cast[Trust anchor]; dev §glossary; dev §verifiers; general §proof; journey step 12; journey step 13; journey step 23 |
+| `verifierIface#5-rejection` | BundleVerify.astro |
+
+## clpr-spec/protocol/channel-state-transitions.md (Channel state transitions)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-channel-status` | BundleVerify.astro; ChannelVsSyncdata.astro; CommitReveal.astro; dev §channels; roles.json scenarios[compromised-verifier] |
+| `2-bundle-processing` | BundleVerify.astro; CommitReveal.astro; FailureTriage.astro; JourneyWhereStepsRun.astro; Ordering.astro; SyncCycle.astro; TrustAnchor.astro; VerifierIo.astro; VerifierVsService.astro; dev §journey; dev §verify; failures.json cases[big]; failures.json cases[replay]; failures.json cases[tamper]; general §failures; general §journey; general §lives; general §running-hash; journey step 12; journey step 14; journey step 19; journey step 22; journey step 24 |
+| `3-progress` | BundleVerify.astro; SyncCycle.astro; TrustAnchor.astro; dev §bundles; dev §verify; failures.json cases[replay]; general §running-hash; journey step 11; journey step 14; journey step 24 |
+| `4-status-transitions` | BundleVerify.astro; Ordering.astro; TwoSidedClose.astro |
+| `5-closing-and-draining` | BundleVerify.astro; TwoSidedClose.astro; dev §channels; dev §recovery; general §who |
+| `6-pause-and-resume` | BundleVerify.astro; FailureTriage.astro; Ordering.astro; dev §ordering; dev §verify; failures.json cases[order]; general §failures; journey step 25; open.json open[undrained-replies] |
+
+## clpr-spec/protocol/endpoint-sync.md (Endpoint sync)
+
+| Heading anchor | Site locations |
+|---|---|
+| `endpointSync#1-purpose-and-roles` | EndpointLoop.astro; PrivateToPublic.astro; SyncCycle.astro; cast.json cast[Endpoint]; dev §endpoints; dev §sync; general §shapes |
+| `endpointSync#2-transport` | EndpointLoop.astro; EndpointTwoLanes.astro; PrivateToPublic.astro; SyncCycle.astro; catalog.json components[wire]; dev §endpoints; dev §implementations; dev §sync; journey step 8 |
+| `endpointSync#3-exchange` | EndpointLoop.astro; PullNotPush.astro; SyncCycle.astro; catalog.json components[wire]; dev §endpoints; dev §sync; journey step 8 |
+| `endpointSync#31-messages` | SyncCycle.astro; general §lives |
+| `endpointSync#32-rules` | SyncCycle.astro |
+| `endpointSync#33-sequence` | PrivateNetworkDial.astro; SyncCycle.astro; journey step 10; journey step 21; journey step 9 |
+| `endpointSync#4-message-range` | BundlePrefixAnchor.astro; PullNotPush.astro; SyncCycle.astro; dev §bundles; dev §endpoints; dev §sync; journey step 9 |
+| `endpointSync#5-endpoint-obligations` | SyncCycle.astro |
+| `endpointSync#51-trust-anchor-catch-up` | TrustAnchor.astro; dev §glossary; dev §verifiers |
+| `endpointSync#53-channel-status` | CommitReveal.astro; dev §sync |
+| `endpointSync#6-misbehavior` | SyncCycle.astro |
+
+## clpr-spec/protocol/schema.md (Schema)
+
+| Heading anchor | Site locations |
+|---|---|
+
+
+## clpr-spec/protocol/open-issues.md (Open issues)
+
+| Heading anchor | Site locations |
+|---|---|
+| `openIssues#oi-1-what-the-configuration-proof-must-authenticate` | dev §verifiers; open.json open[config-proof-scope] |
+| `openIssues#oi-2-configuration-proof-format-for-the-qbft-epoch-scheme` | open.json open[qbft-epoch-config-proof] |
+| `openIssues#oi-3-messages-left-without-replies-when-a-channel-cannot-drain` | NewChannelMigration.astro; dev §operate; dev §recovery; failures.json cases[verifier]; general §who; open.json open[undrained-replies]; roles.json scenarios[compromised-verifier] |
+| `openIssues#oi-4-compensation-for-sending-bundles` | dev §connectors; general §money; open.json open[sending-compensation] |
+| `openIssues#oi-5-calibration-of-the-connector-stake` | dev §connectors; general §money; open.json open[stake-sizing] |
+| `openIssues#oi-6-qbft-epoch-catch-up-across-a-validator-change` | TrustAnchor.astro; open.json open[qbft-epoch-catch-up] |
+| `openIssues#oi-7-protocol-version-at-channel-setup` | dev §identity; open.json open[protocol-version-setup] |
+| `openIssues#oi-8-hints-and-wraps-verification-parameters` | open.json open[hints-wraps-parameters] |
+
+## clpr-spec/recommendations/clpr-service.md (CLPR Service)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-structure-and-internal-state` | QueueWindow.astro; WhoLivesWhere.astro; cast.json cast[CLPR Service]; catalog.json components[svcA]; dev §queue |
+| `11-channel-record` | dev §channels |
+| `13-connector-record-and-counters` | catalog.json components[conB] |
+| `14-enqueue` | dev §queue |
+| `23-initialization-and-kill-switch` | dev §identity |
+| `25-closing-a-channel` | CommitReveal.astro; dev §channels; dev §recovery |
+| `3-endpoint-admission` | ProvenManifest.astro |
+| `32-registration-and-admission` | dev §endpoints; ledgers.json ledgers[qbft] |
+| `33-roster-derived-manifest` | catalog.json components[epA] |
+| `4-configuration-parameters` | dev §bundles; dev §identity |
+| `5-bundle-submission` | BundleVerify.astro; SyncCycle.astro; dev §verify |
+| `51-who-submits` | dev §endpoints; dev §operate; general §proof; journey step 11; journey step 22 |
+| `52-checks-before-submitting` | EndpointLoop.astro; SyncCycle.astro; TrustAnchor.astro; dev §bundles; dev §endpoints; dev §sync; journey step 10; journey step 11; journey step 21 |
+| `53-peer-selection` | SyncCycle.astro; dev §endpoints |
+| `6-security-considerations` | dev §security |
+| `61-verifier-choice` | BuggyVsLyingVerifier.astro; SafetyVsLiveness.astro; TrustAnchor.astro; TrustList.astro; cast.json cast[Verifier contract]; catalog.json components[epB]; catalog.json components[verB]; dev §channels; dev §extend; dev §model; dev §recovery; dev §verifiers; general §limits; general §proof; general §who |
+| `62-finality` | PhantomMessage.astro; dev §verifiers; general §limits; patterns.json channelChoice |
+| `63-endpoint-admission` | dev §endpoints; general §failures; general §who |
+| `64-reentrancy-and-external-calls` | ChecksEffectsDispatch.astro; dev §security |
+| `65-application-payloads` | VerifiedMeans.astro; dev §api; general §limits |
+| `66-service-upgrades` | EvmRouterModules.astro |
+| `67-queue-monopolization` | journey step 3 |
+| `68-transport-and-sync-hygiene` | PrivateNetworkDial.astro; SyncCycle.astro; dev §security; dev §sync |
+| `7-recovery-scenarios` | FailureTriage.astro; NewChannelMigration.astro; ProvenManifest.astro; TwoManifests.astro; dev §api; dev §endpoints; dev §operate; dev §recovery; failures.json cases[down]; failures.json cases[format]; failures.json cases[offline]; failures.json cases[order]; failures.json cases[rotate]; failures.json cases[verifier]; general §failures; general §who; roles.json scenarios[compromised-verifier]; roles.json scenarios[proof-format-upgrade] |
+
+## clpr-spec/recommendations/stakes-and-bonds.md (Stakes and bonds)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-connector-stake` | ConnectorTwoJobs.astro; catalog.json components[conB]; general §different; general §money; open.json open[stake-sizing]; roles.json scenarios[connector-withdrawal] |
+| `2-slashing-and-bans` | ConnectorTwoJobs.astro; dev §model; dev §verify; general §failures; general §lives |
+| `21-when-a-connector-is-slashed` | BilateralConnector.astro; BundleVerify.astro; FailureTriage.astro; dev §connectors; failures.json cases[app]; failures.json cases[nf]; failures.json cases[uf]; general §money; journey step 15; journey step 26; journey step 4 |
+| `22-penalty` | catalog.json components[conB]; dev §connectors; failures.json cases[uf]; general §money |
+| `23-proceeds` | failures.json cases[nf]; general §money |
+| `3-endpoints` | dev §endpoints; general §failures; roles.json roles[endpoint-operator] |
+
+## clpr-spec/recommendations/channel-economics.md (Channel economics)
+
+| Heading anchor | Site locations |
+|---|---|
+| `1-execution-charges` | BundleVerify.astro; ChecksEffectsDispatch.astro; ConnectorTwoJobs.astro; SixDifferences.astro; VerifierVsService.astro; WhoPicksWhom.astro; dev §connectors; dev §journey; dev §queue; dev §verify; dev §why; failures.json cases[app]; general §lives; general §money; journey step 15; journey step 17; journey step 26 |
+| `2-payment-to-the-bundle-submitter` | BundleVerify.astro; ConnectorTwoJobs.astro; dev §connectors; dev §verify; general §money; journey step 12; journey step 17; open.json open[sending-compensation] |
+| `3-queue-quotas` | catalog.json components[conB]; dev §connectors; general §money; journey step 3 |
 
 ## clpr-endpoint (files)
 
@@ -118,80 +208,80 @@ and `developers.mdx`; `file.json key[id]` is a data row; `journey step N` is a s
 |---|---|
 | `clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java` | ledgers.json ledgers[avalanche]; ledgers.json ledgers[ethereum]; ledgers.json ledgers[qbft]; ledgers.json ledgers[tempo] |
 | `clpr-relay-app/src/main/resources/relay-config-example.yaml` | catalog.json components[epB] |
+| `clpr-relay-core/src/main/java/org/hiero/clpr/relay/core/BundleTrimmer.java` | EndpointTwoLanes.astro |
+| `clpr-relay-grpc-client/src/main/java/org/hiero/clpr/relay/grpc/client/ClprEndpointClient.java` | EndpointTwoLanes.astro; dev §implementations; dev §sync |
 | `clpr-relay-grpc-server/src/main/java/org/hiero/clpr/relay/grpc/server/ClprSyncService.java` | catalog.json components[wire] |
+| `clpr-relay-grpc-server/src/main/java/org/hiero/clpr/relay/grpc/server/ClprSyncSession.java` | EndpointTwoLanes.astro; dev §implementations |
 | `clpr-relay-proto` | catalog.json components[wire] |
-| `clpr-relay-sync/src/main/java/org/hiero/clpr/relay/sync/PeerSelector.java` | dev §implementations |
+| `clpr-relay-sync/src/main/java/org/hiero/clpr/relay/sync/ChannelSyncTask.java` | EndpointTwoLanes.astro; dev §implementations |
+| `clpr-relay-sync/src/main/java/org/hiero/clpr/relay/sync/PeerSelector.java` | EndpointTwoLanes.astro; dev §implementations |
 | `docs/architecture.md` | EndpointTwoLanes.astro; catalog.json components[epB] |
-| `docs/sync-protocol.md` | EndpointTwoLanes.astro; catalog.json components[epB]; dev §sync |
+| `docs/sync-protocol.md` | EndpointLoop.astro; EndpointTwoLanes.astro; catalog.json components[epB]; dev §sync; journey step 8 |
 | `README.md` | catalog.json components[epB]; dev §implementations |
 
 ## clpr-smart-contracts (files)
 
 | Path | Site locations |
 |---|---|
-| `docs/architecture.md` | EvmRouterModules.astro; catalog.json components[svcB]; dev §implementations |
-| `docs/bundle-flow.md` | BundleVerify.astro; dev §verify; journey step 19; journey step 2; journey step 22; journey step 27 |
-| `docs/evm-platform-spec.md` | journey step 3 |
-| `docs/lifecycle.md` | CommitReveal.astro; dev §channels; general §lives |
+| `.github/workflows/600-flow-pull-request-checks.yaml` | EvmRouterModules.astro |
+| `docs/architecture.md` | EvmRouterModules.astro; catalog.json components[svcB]; dev §implementations; dev §security |
+| `docs/bundle-flow.md` | BundleVerify.astro; dev §security; journey step 19; journey step 22; journey step 27; journey step 28 |
+| `docs/lifecycle.md` | CommitReveal.astro |
 | `README.md` | catalog.json components[svcB]; dev §implementations |
 | `src/ClprService.sol` | EvmRouterModules.astro; catalog.json components[svcB] |
-| `src/interfaces/IClprApplication.sol` | SendAndTwoCallbacks.astro; catalog.json components[appB]; dev §api; journey step 16; journey step 26 |
-| `src/interfaces/IClprConnector.sol` | catalog.json components[conB]; journey step 4 |
-| `src/interfaces/IClprService.sol` | catalog.json components[appB]; catalog.json components[svcB]; journey step 12 |
+| `src/interfaces/IClprApplication.sol` | catalog.json components[appB]; dev §api |
+| `src/interfaces/IClprConnector.sol` | catalog.json components[conB] |
+| `src/interfaces/IClprService.sol` | catalog.json components[appB]; catalog.json components[svcB] |
 | `src/interfaces/IClprVerifier.sol` | catalog.json components[verB] |
-| `src/libraries/ClprTypes.sol` | journey step 26 |
-| `src/libraries/crypto/ECDSA.sol` | CommitReveal.astro |
-| `src/libraries/service/BundleLib.sol` | BundleVerify.astro; dev §connectors; dev §verify; failures.json cases[app]; general §running-hash; journey step 14; journey step 24; journey step 27 |
-| `src/libraries/service/ConnectorLib.sol` | journey step 12 |
+| `src/libraries/service/BundleLib.sol` | BundleVerify.astro; dev §security; journey step 27 |
+| `src/logic/BundleLogic.sol` | dev §security |
 | `src/logic/ChannelLogic.sol` | CommitReveal.astro |
-| `src/logic/MessagingLogic.sol` | journey step 2; journey step 3; journey step 6 |
+| `src/logic/MessagingLogic.sol` | journey step 6 |
 | `src/verifiers/evm/avalanche/MockAvalancheVerifier.sol` | ledgers.json ledgers[avalanche] |
-| `src/verifiers/evm/common/ClprEvmBundleVerifier.sol` | dev §bundles |
 | `src/verifiers/evm/ethereum/EthMainnetVerifier.sol` | ledgers.json ledgers[ethereum] |
 | `src/verifiers/evm/ethereum/README.md` | ledgers.json ledgers[ethereum] |
-| `src/verifiers/evm/qbft/qbft-verifier.md` | TrustAnchor.astro; catalog.json components[verB]; dev §verifiers; journey step 12; journey step 23; ledgers.json ledgers[qbft] |
+| `src/verifiers/evm/qbft/qbft-verifier.md` | catalog.json components[verB]; ledgers.json ledgers[qbft] |
 | `src/verifiers/evm/sei/README.md` | ledgers.json ledgers[sei] |
 | `src/verifiers/evm/sei/SeiCometBftVerifier.sol` | ledgers.json ledgers[sei] |
 | `src/verifiers/evm/tempo/tempo-verifier.md` | ledgers.json ledgers[tempo] |
 | `src/verifiers/evm/tempo/TempoVerifier.sol` | ledgers.json ledgers[tempo] |
-| `src/verifiers/hiero/HieroVerifier.sol` | catalog.json components[verB]; dev §verifiers; journey step 13; journey step 23; ledgers.json ledgers[hiero] |
+| `src/verifiers/hiero/HieroVerifier.sol` | catalog.json components[verB]; ledgers.json ledgers[hiero] |
 | `test/E2EApplication.sol` | catalog.json components[appB] |
 
 ## clpr-spec (files)
 
 | Path | Site locations |
 |---|---|
-| `(repository root)` | AdrTable.astro; SpecDocumentMap.astro |
-| `ADR` | catalog.json components[spec] |
-| `ADR/2026-07-02-channel-context-verifier-interface.md` | TrustAnchor.astro; VerifierIo.astro; adrs.json adrs[2026-07-02-channel-context-verifier-interface.md]; dev §verifiers |
-| `ADR/2026-07-03-clpr-endpoint-manifests.md` | TwoManifests.astro; adrs.json adrs[2026-07-03-clpr-endpoint-manifests.md]; dev §endpoints |
-| `ADR/2026-07-14-endpoint-sync-streaming-and-mtls.md` | SyncCycle.astro; adrs.json adrs[2026-07-14-endpoint-sync-streaming-and-mtls.md]; catalog.json components[wire]; dev §sync |
-| `ADR/2026-07-17-queue-metadata-and-partial-bundle-proofs.md` | BundlePrefixAnchor.astro; SyncCycle.astro; adrs.json adrs[2026-07-17-queue-metadata-and-partial-bundle-proofs.md]; dev §bundles |
-| `ADR/2026-08-01-remove-message-redaction.md` | AdrLifecycle.astro; RedactionHashCollision.astro; adrs.json adrs[2026-08-01-remove-message-redaction.md] |
-| `ADR/README.md` | AdrLifecycle.astro; SpecDocumentMap.astro; dev §evolution |
-| `clpr-options-to-consider.md` | SpecDocumentMap.astro; dev §evolution; open.json optionsDoc |
-| `clpr-service-spec.md` | catalog.json components[spec] |
-| `clpr-service.md` | catalog.json components[spec] |
-| `LICENSE` | catalog.json components[spec] |
-| `verifiers` | catalog.json components[spec] |
-| `verifiers/hiero/state_proof.md` | TwoStateTrees.astro; catalog.json components[epA]; journey step 20; journey step 21; journey step 7; journey step 9; ledgers.json ledgers[hiero] |
-| `verifiers/hiero/trust_anchor.md` | TrustAnchor.astro |
-| `verifiers/hiero/verifier_contract.md` | journey step 13; journey step 23; ledgers.json ledgers[hiero] |
-| `verifiers/qbft/state_proof.md` | TwoStateTrees.astro; journey step 11; journey step 13; journey step 20; journey step 24; journey step 7; ledgers.json ledgers[qbft] |
-| `verifiers/qbft/trust_anchor.md` | journey step 12; journey step 23 |
-| `verifiers/qbft/verifier_contract.md` | journey step 12; ledgers.json ledgers[qbft] |
-| `verifiers/README.md` | SpecDocumentMap.astro; catalog.json components[verB]; dev §extend; dev §verifiers; general §extend |
+| `(repository root)` | TrustAnchor.astro |
+| `clips/clip-0001.md` | SpecDocumentMap.astro; catalog.json components[spec]; dev §evolution; dev §extend; dev §implementations; general §lives |
+| `clips/README.md` | dev §evolution |
+| `ledgers/besu/bundle-aggregation.md` | journey step 20; journey step 7 |
+| `ledgers/besu/ledger.md` | EvmRouterModules.astro; TwoStateTrees.astro; general §extend; journey step 12; journey step 13; journey step 20; journey step 23; journey step 24; journey step 7; ledgers.json ledgers[qbft] |
+| `ledgers/besu/proof-schemes/qbft-contract.md` | journey step 12; journey step 23 |
+| `ledgers/besu/proof-schemes/qbft-epoch.md` | dev §verifiers |
+| `ledgers/besu/proof-schemes/qbft-header.md` | journey step 12; journey step 20; journey step 23; journey step 7 |
+| `ledgers/evm/ledger-family.md` | CommitReveal.astro; SendAndTwoCallbacks.astro; dev §api; dev §channels; journey step 1; journey step 12; journey step 15; journey step 16; journey step 22; journey step 26; journey step 4 |
+| `ledgers/evm/verifier-api.md` | journey step 13; journey step 23; ledgers.json ledgers[qbft] |
+| `ledgers/hiero/bundle-aggregation.md` | catalog.json components[epA]; journey step 20; journey step 21; journey step 7; journey step 9 |
+| `ledgers/hiero/ledger.md` | CommitReveal.astro; SendAndTwoCallbacks.astro; catalog.json components[epA]; catalog.json components[svcA]; catalog.json components[verB]; dev §api; dev §endpoints; dev §identity; dev §implementations; general §failures; journey step 1; journey step 11; journey step 15; journey step 16; journey step 22; journey step 26; journey step 4; journey step 7; ledgers.json ledgers[hiero] |
+| `ledgers/hiero/proof-schemes/hints-wraps.md` | TwoStateTrees.astro; dev §verifiers; ledgers.json ledgers[hiero]; open.json open[hints-wraps-parameters] |
+| `ledgers/hiero/proof-schemes/hints.md` | TwoStateTrees.astro; journey step 13; journey step 20; journey step 21; journey step 23; journey step 7; journey step 9; ledgers.json ledgers[hiero] |
+| `ledgers/README.md` | FourKinds.astro; SpecDocumentMap.astro; TrustAnchor.astro; cast.json cast[Ledger]; catalog.json components[spec]; catalog.json components[verB]; dev §extend; dev §verifiers; general §extend; general §journey; ledgers.json ledgers[qbft] |
+| `LICENSE.md` | catalog.json components[spec]; general §lives |
+| `protocol/open-issues.md` | general §limits |
+| `README.md` | SpecDocumentMap.astro; catalog.json components[spec]; dev §evolution; general §lives |
+| `releases/v0.2.md` | catalog.json components[spec]; dev §evolution; dev §implementations |
 
 ## governance (files)
 
 | Path | Site locations |
 |---|---|
 | `GOVERNANCE.md` | dev §governance |
-| `lf-decentralized-trust-labs_Charter.pdf` | catalog.json components[lab]; catalog.json components[spec]; dev §governance; general §lives |
+| `lf-decentralized-trust-labs_Charter.pdf` | catalog.json components[lab]; dev §governance; general §lives |
 | `teams.yml` | catalog.json components[lab]; dev §governance; general §lives |
 
 ## org-profile (files)
 
 | Path | Site locations |
 |---|---|
-| `profile/README.md` | FourKinds.astro; FourLayerStack.astro; SixDifferences.astro; cast.json cast[Application]; cast.json cast[Bundle]; cast.json cast[CLPR Service admin]; cast.json cast[CLPR Service]; cast.json cast[Channel]; cast.json cast[Connector]; cast.json cast[Endpoint]; cast.json cast[Message]; cast.json cast[Running hash]; cast.json cast[State proof]; cast.json cast[Trust anchor]; cast.json cast[Verifier contract]; catalog.json components[lab]; catalog.json components[svcA]; dev §extend; dev §governance; dev §implementations; dev §layers; general §bridges; general §cast; general §different; general §extend; general §limits; general §lives |
+| `profile/README.md` | FourKinds.astro; FourLayerStack.astro; SixDifferences.astro; catalog.json components[lab]; catalog.json components[svcA]; dev §governance; dev §implementations; general §bridges; general §cast; general §different; general §extend; general §lives |

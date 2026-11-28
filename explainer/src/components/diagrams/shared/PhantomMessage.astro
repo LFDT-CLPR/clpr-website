@@ -1,12 +1,12 @@
 ---
-/** Latest or finalized: the phantom message. The final frame of the story: on a ledger whose recent blocks can still be undone, the newest block held "send 5 to Bo" and was then replaced by a different block. A channel whose verifier accepts the latest block delivered the message, which is now a phantom on Ledger B; a channel whose verifier waits for finalized blocks never delivered it. Draws from design §3.1.5 (one verifier per commitment level) and spec §8.3 (reorg risk). Shared with the developer page's commitment-level gotcha. */
+/** Latest or finalized: the phantom message. The final frame of the story: on a ledger whose recent blocks can still be undone, the newest block held "send 5 to Bo" and was then replaced by a different block. A channel whose verifier accepts the latest block delivered the message, which is now a phantom on Ledger B; a channel whose verifier waits for finalized blocks never delivered it. Draws from Bundle §4 (the commitment level is the verifier's choice; a verifier should accept only final or safe state, and a channel whose verifier accepts earlier state is used at its users' own risk), CLPR Service §6.2 and Overview §8 (several channels with different finality can connect the same ledgers). Shared with the developer page's commitment-level gotcha. */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { overview, bundle, service } from '../../../lib/sources';
 ---
 <Figure
   lead="How sure is sure enough."
-  caption="On ledgers where recent blocks can be undone, a verifier that accepts the latest block is fast but can deliver a phantom message. One that accepts finalized blocks only waits for finality and does not deliver a block that can still be undone. Two channels between the same ledgers can use different verifiers."
-  source={[{ label: 'design §3.1.5', href: design('315-verifier-contracts') }, { label: 'spec §8.3', href: spec('83-reorg-risk') }]}
+  caption="On ledgers where recent blocks can be undone, a verifier that accepts the latest block is fast but can deliver a phantom message. One that accepts finalized blocks only waits for finality and does not deliver a block that can still be undone. How final is the verifier's choice: it should accept only final or safe state, and a channel whose verifier accepts anything earlier is used at its users' own risk. Two channels between the same ledgers can use different verifiers."
+  source={[{ label: 'Bundle §4', href: bundle('4-proof-requirements') }, { label: 'CLPR Service §6.2', href: service('62-finality') }, { label: 'Overview §8', href: overview('8-application-patterns') }]}
   kind="spec"
   minWidth={760}
 >
@@ -82,6 +82,6 @@ import { design, spec } from '../../../lib/sources';
     <text x="630" y="272" class="t small center">still waiting; it does not deliver it</text>
 
     <!-- takeaway -->
-    <text x="380" y="312" class="t take center">The verifier sets how final a block must be; anything high-value belongs on a finalized-only channel.</text>
+    <text x="380" y="312" class="t take center">The verifier sets how final a block must be; anything earlier than safe is at its users' own risk.</text>
   </svg>
 </Figure>

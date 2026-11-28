@@ -70,7 +70,7 @@ export function Hero({ repos }: { repos: RepoStats[] | null }) {
       <div className="shell pb-10">
         <div data-hero-reveal className="flex flex-col gap-5 border-t border-fg/[0.07] pt-6 md:flex-row md:items-center md:justify-between">
           <p className="max-w-md text-[0.8125rem] leading-relaxed text-faint">{origins.label}</p>
-          <ul className="flex flex-wrap items-center gap-x-8 gap-y-4" aria-label="Organizations behind CLPR">
+          <ul className="flex flex-wrap items-center gap-x-8 gap-y-4" aria-label="Where CLPR comes from">
             {origins.logos.map((logo) => (
               <li key={logo.name}>
                 <a

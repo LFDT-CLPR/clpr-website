@@ -1,6 +1,7 @@
 ---
 /**
- * The whole system on one map: the specification, the two CLPR Service implementations, the
+ * The whole system on one map: the specification (overview, Protocol, Ledger Specifications,
+ * Recommendations, CLIPs), the two CLPR Service implementations, the
  * verifiers, the endpoints, connectors, applications and the lab. Tap a component to read what it
  * is and where its code lives (pinned links). Same component on both pages; `detail` adds the
  * implementation-level notes.
@@ -15,82 +16,92 @@ const parts = catalog.components.map((c) => ({ ...c, links: c.refs.map((r) => ({
   <div class="sim__head"><div><span class="kind">Map</span><h3>Everything CLPR is made of. Tap a piece.</h3></div><span class="pill grey" data-role="which">nothing selected</span></div>
   <div class="sim__body">
     <div class="sim__scroll">
-    <svg viewBox="0 0 940 470" role="img" aria-label="Map of the CLPR system: the specification above, two ledgers with their CLPR Services, verifiers, connectors and applications, the endpoints between them, and the lab below.">
+    <svg viewBox="0 0 940 470" role="img" aria-label="Map of the CLPR system: the specification above; two ledgers, each with its Endpoints, then its CLPR Service, then its verifiers, and the connectors beside the Service with the applications above them; endpoint sync between the two sets of endpoints, a channel between the two Services, and the lab below.">
       <g data-part="spec" data-tone="ok" class="part" tabindex="0" role="button" aria-label="The specification">
         <rect x="20" y="16" width="900" height="54" rx="10" class="d-ok" />
         <text x="470" y="38" class="t b center">The specification</text>
-        <text x="470" y="56" class="t small center">design document · protocol specification · verifier specs (Hiero, QBFT) · decision records</text>
+        <text x="470" y="56" class="t small center">overview · Protocol · Ledger Specifications · Recommendations · CLIPs</text>
       </g>
-      <line x1="190" y1="70" x2="190" y2="90" class="line dash" /><line x1="750" y1="70" x2="750" y2="90" class="line dash" />
+      <line x1="205" y1="70" x2="205" y2="90" class="line dash" /><line x1="735" y1="70" x2="735" y2="90" class="line dash" />
 
-      <!-- Ledger A -->
-      <rect x="20" y="90" width="340" height="290" rx="14" class="d-surface" stroke-dasharray="6 5" />
+      <!-- Ledger A: the column facing the other ledger holds the Endpoints, then the CLPR Service, then
+           the verifiers; the connectors sit beside the Service and the applications above them. -->
+      <rect x="20" y="90" width="370" height="290" rx="14" class="d-surface" stroke-dasharray="6 5" />
       <text x="36" y="112" class="t b" style="fill:var(--a)">Hiero network</text>
       <g data-part="appB" data-tone="a" class="part" tabindex="0" role="button" aria-label="Applications on Hiero">
-        <rect x="36" y="122" width="144" height="40" rx="8" class="d-a" /><text x="108" y="147" class="t center b">Applications</text>
+        <rect x="36" y="122" width="120" height="56" rx="8" class="d-a" /><text x="96" y="155" class="t center b">Applications</text>
       </g>
       <g data-part="conB" data-tone="money" class="part" tabindex="0" role="button" aria-label="Connectors on Hiero">
-        <rect x="196" y="122" width="148" height="40" rx="8" class="d-money" /><text x="270" y="147" class="t center b">Connectors</text>
-      </g>
-      <g data-part="svcA" data-tone="a" class="part" tabindex="0" role="button" aria-label="CLPR Service, native">
-        <rect x="36" y="174" width="308" height="86" rx="10" class="d-a" />
-        <text x="190" y="196" class="t center b">CLPR Service · native service</text>
-        <text x="190" y="214" class="t small center">channels · queues · connectors · locked funds</text>
-        <text x="190" y="232" class="t small center">inside the consensus node, state in the Merkle tree</text>
-      </g>
-      <g data-part="verB" data-tone="ok" class="part" tabindex="0" role="button" aria-label="Verifiers on Hiero">
-        <rect x="36" y="272" width="308" height="34" rx="8" class="d-ok" /><text x="190" y="294" class="t small center">Verifiers for peers' proofs (system contract / native)</text>
+        <rect x="36" y="190" width="120" height="86" rx="8" class="d-money" /><text x="96" y="238" class="t center b">Connectors</text>
       </g>
       <g data-part="epA" data-tone="c" class="part" tabindex="0" role="button" aria-label="Endpoints on Hiero">
-        <rect x="36" y="318" width="308" height="48" rx="8" class="d-c" />
-        <text x="190" y="338" class="t center b">Endpoints · every consensus node</text>
-        <text x="190" y="356" class="t small center">fetch state proofs, build bundles</text>
+        <rect x="168" y="122" width="206" height="56" rx="8" class="d-c" />
+        <text x="271" y="142" class="t center b">Endpoints</text>
+        <text x="271" y="158" class="t small center">every consensus node</text>
+        <text x="271" y="172" class="t small center">builds and syncs bundles</text>
+      </g>
+      <g data-part="svcA" data-tone="a" class="part" tabindex="0" role="button" aria-label="CLPR Service, native">
+        <rect x="168" y="190" width="206" height="86" rx="10" class="d-a" />
+        <text x="271" y="210" class="t center b">CLPR Service</text>
+        <text x="271" y="228" class="t small center">native service in the node</text>
+        <text x="271" y="244" class="t small center">channels · queues · connectors</text>
+        <text x="271" y="260" class="t small center">state in the Merkle tree</text>
+      </g>
+      <g data-part="verB" data-tone="ok" class="part" tabindex="0" role="button" aria-label="Verifiers on Hiero">
+        <rect x="168" y="288" width="206" height="50" rx="8" class="d-ok" />
+        <text x="271" y="308" class="t center b">Verifiers</text>
+        <text x="271" y="326" class="t small center">built-in or deployed contracts</text>
       </g>
 
-      <!-- Ledger B -->
-      <rect x="580" y="90" width="340" height="290" rx="14" class="d-surface" stroke-dasharray="6 5" />
-      <text x="596" y="112" class="t b" style="fill:var(--b)">EVM ledger</text>
+      <!-- Ledger B: the mirror image -->
+      <rect x="550" y="90" width="370" height="290" rx="14" class="d-surface" stroke-dasharray="6 5" />
+      <text x="566" y="112" class="t b" style="fill:var(--b)">EVM ledger</text>
       <g data-part="appB" data-tone="b" class="part" tabindex="0" role="button" aria-label="Applications on the EVM network">
-        <rect x="596" y="122" width="144" height="40" rx="8" class="d-b" /><text x="668" y="147" class="t center b">Applications</text>
+        <rect x="784" y="122" width="120" height="56" rx="8" class="d-b" /><text x="844" y="155" class="t center b">Applications</text>
       </g>
       <g data-part="conB" data-tone="money" class="part" tabindex="0" role="button" aria-label="Connectors on the EVM network">
-        <rect x="756" y="122" width="148" height="40" rx="8" class="d-money" /><text x="830" y="147" class="t center b">Connectors</text>
-      </g>
-      <g data-part="svcB" data-tone="b" class="part" tabindex="0" role="button" aria-label="CLPR Service, contract">
-        <rect x="596" y="174" width="308" height="86" rx="10" class="d-b" />
-        <text x="750" y="196" class="t center b">CLPR Service · Solidity contracts</text>
-        <text x="750" y="214" class="t small center">one router → logic modules</text>
-        <text x="750" y="232" class="t small center">channels · messaging · bundles · connectors · admin</text>
-        <text x="750" y="250" class="t small center mono">clpr-smart-contracts</text>
-      </g>
-      <g data-part="verB" data-tone="ok" class="part" tabindex="0" role="button" aria-label="Verifier contracts on the EVM network">
-        <rect x="596" y="272" width="308" height="34" rx="8" class="d-ok" /><text x="750" y="294" class="t small center">Verifier contracts: Hiero, QBFT, …</text>
+        <rect x="784" y="190" width="120" height="86" rx="8" class="d-money" /><text x="844" y="238" class="t center b">Connectors</text>
       </g>
       <g data-part="epB" data-tone="c" class="part" tabindex="0" role="button" aria-label="Endpoint relay">
-        <rect x="596" y="318" width="308" height="48" rx="8" class="d-c" />
-        <text x="750" y="338" class="t center b">Endpoint · separate Java relay</text>
-        <text x="750" y="356" class="t small center mono">clpr-endpoint · JSON-RPC to the node</text>
+        <rect x="566" y="122" width="206" height="56" rx="8" class="d-c" />
+        <text x="669" y="142" class="t center b">Endpoint</text>
+        <text x="669" y="158" class="t small center">separate Java relay</text>
+        <text x="669" y="172" class="t small center mono">clpr-endpoint</text>
+      </g>
+      <g data-part="svcB" data-tone="b" class="part" tabindex="0" role="button" aria-label="CLPR Service, contract">
+        <rect x="566" y="190" width="206" height="86" rx="10" class="d-b" />
+        <text x="669" y="210" class="t center b">CLPR Service</text>
+        <text x="669" y="230" class="t small center">Solidity contracts</text>
+        <text x="669" y="250" class="t small center mono">clpr-smart-contracts</text>
+      </g>
+      <g data-part="verB" data-tone="ok" class="part" tabindex="0" role="button" aria-label="Verifier contracts on the EVM network">
+        <rect x="566" y="288" width="206" height="50" rx="8" class="d-ok" />
+        <text x="669" y="308" class="t center b">Verifier contracts</text>
+        <text x="669" y="326" class="t small center">for Hiero, QBFT, …</text>
       </g>
 
-      <!-- wire -->
+      <!-- between the ledgers: endpoint sync between the endpoints, the channel between the Services -->
       <g data-part="wire" data-tone="c" class="part" tabindex="0" role="button" aria-label="The sync protocol">
-        <rect x="368" y="300" width="204" height="80" rx="8" class="d-surface" />
-        <line x1="344" y1="342" x2="368" y2="342" class="line c" /><line x1="572" y1="342" x2="596" y2="342" class="line c" />
-        <text x="470" y="321" class="t center b">gRPC sync</text>
-        <text x="470" y="339" class="t small center">one stream per cycle</text>
-        <text x="470" y="354" class="t small center">unproven requests,</text>
-        <text x="470" y="369" class="t small center">proven bundles</text>
+        <rect x="402" y="110" width="136" height="80" rx="8" class="d-surface" />
+        <line x1="374" y1="150" x2="402" y2="150" class="line c" /><line x1="538" y1="150" x2="566" y2="150" class="line c" />
+        <text x="470" y="131" class="t center b">gRPC sync</text>
+        <text x="470" y="149" class="t small center">a stream per cycle</text>
+        <text x="470" y="164" class="t small center">unproven requests,</text>
+        <text x="470" y="179" class="t small center">proven bundles</text>
       </g>
-      <text x="470" y="190" class="t small center muted">a Channel on each side: same id,</text>
-      <text x="470" y="206" class="t small center muted">own verifier, own queue,</text>
-      <text x="470" y="222" class="t small center muted">own running hash</text>
-      <line x1="344" y1="236" x2="596" y2="236" class="line dash" data-role="channel" />
+      <line x1="374" y1="233" x2="566" y2="233" class="line dash" data-role="channel" />
+      <text x="470" y="256" class="t small center muted">one channel,</text>
+      <text x="470" y="272" class="t small center muted">same id on both;</text>
+      <text x="470" y="288" class="t small center muted">each side has its</text>
+      <text x="470" y="304" class="t small center muted">own verifier,</text>
+      <text x="470" y="320" class="t small center muted">queue and</text>
+      <text x="470" y="336" class="t small center muted">running hash</text>
 
-      <!-- lab -->
+      <!-- lab: the repositories of governance teams.yml -->
       <g data-part="lab" data-tone="grey" class="part" tabindex="0" role="button" aria-label="The lab">
         <rect x="20" y="400" width="900" height="54" rx="10" class="d-grey" />
         <text x="470" y="422" class="t b center">LF Decentralized Trust lab · github.com/LFDT-CLPR</text>
-        <text x="470" y="440" class="t small center">clpr-spec · clpr-smart-contracts · clpr-endpoint · governance · .github · Apache-2.0, DCO, Labs charter</text>
+        <text x="470" y="440" class="t small center">.github · clpr-e2e · clpr-endpoint · clpr-smart-contracts · clpr-spec · clpr-website · governance</text>
       </g>
     </svg>
     </div>

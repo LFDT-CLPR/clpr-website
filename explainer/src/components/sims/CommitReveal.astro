@@ -1,76 +1,81 @@
 ---
 /**
- * Channel registration by commit-reveal on two ledgers, with a real Keccak-256 computed in the
+ * Channel registration by commit and reveal on two ledgers, with a real Keccak-256 computed in the
  * browser (self-tested at load; shows "(hash unavailable)" rather than a wrong value).
  *
- * Spec §2.1, §5.1, §6.2 (channels), §2.2, §6.3 (connectors); design §3.1.3, §3.3.1. What the EVM
- * reference contracts do differently (docs/lifecycle.md in clpr-smart-contracts) is shown in a
- * separate "Reference implementation" callout and never blended into the spec's own claims.
+ * Channel setup §1, §2, §4 (channels), Connector setup §1, §2, §3, §5 (connectors), CLPR Service
+ * §2.5 (the administrator's close). Registration signatures are ledger-specific (Hiero ledger §5,
+ * EVM ledger family §5). What the EVM reference contracts do differently (docs/lifecycle.md in
+ * clpr-smart-contracts) is shown in a separate "Reference implementation" callout and never
+ * blended into the specification's own claims.
  *
- * The public key is 64 random bytes standing in for an uncompressed secp256k1 key: no real ECDSA
- * runs here, so the reveal signature is shown as a placeholder. Every hash on screen is genuine.
+ * The public key is 64 random bytes standing in for an uncompressed secp256k1 key: no real
+ * signature runs here, so the reveal signature is shown as a placeholder. Every hash on screen is genuine.
  */
-import { design, spec, pinned, sol } from '../../lib/sources';
+import { channelSetup, connectorSetup, verifierIface, transitions, endpointSync, service, sol, pinned } from '../../lib/sources';
 import Callout from '@kse/components/Callout.astro';
 const { id = 'commit-reveal' } = Astro.props as { id?: string };
 
 const LIFECYCLE = pinned('clpr-smart-contracts', 'docs/lifecycle.md', 'channel-commit-reveal');
+const EVM_ID = pinned('clpr-spec', 'ledgers/evm/ledger-family.md', '4-channel-identity');
+const EVM_SIG = pinned('clpr-spec', 'ledgers/evm/ledger-family.md', '5-registration-signatures');
+const HIERO_SIG = pinned('clpr-spec', 'ledgers/hiero/ledger.md', '5-registration-signatures');
 const steps = [
   {
-    phase: 'Step 0 · off-chain',
+    phase: 'Step 0 · off the ledgers',
     t: 'Pick a channel id and a keypair',
-    plain: 'The same channel id must be claimed on both ledgers, and claiming is permissionless, so whoever claimed it first on the second ledger would win. Commit-reveal is the fix. First the registrant picks the channel id, any 32 bytes (here 32 random ones), and generates a keypair for this ledger. Nothing has touched a ledger yet. Every hash you will see is a real Keccak-256 computed by this page; "New random id / keypair" rerolls both inputs.',
-    proto: '<code>channel_id</code> is <code>bytes(32)</code>, an arbitrary value chosen by the registrant and used unchanged on both ledgers. The keypair uses whatever signature scheme the platform supports (ECDSA secp256k1 on Ethereum, Ed25519 on other platforms). Because the id is not derived from a key, a different keypair may be used on each ledger.',
-    refs: [{ h: spec('512-phase-1--claim-registerchannel'), l: 'spec §5.1.2' }, { h: spec('21-channel'), l: 'spec §2.1' }],
+    plain: 'A channel has the same id on both ledgers; that id is what ties its two records together. Registration is open to any caller, so it runs in two phases, commit and reveal: the commit reserves the channel on both ledgers without revealing the id or the key. First the registrant picks the channel id, 32 bytes (here 32 random ones), and a keypair for this ledger. Nothing has touched a ledger yet. Every hash you will see is computed by this page with the hash the specification names; "New random id / keypair" rerolls both inputs.',
+    proto: 'The channel id is 32 bytes chosen by the registrant, the same on both ledgers; within one CLPR Service it identifies at most one channel. A ledger MAY constrain how the id is derived, and the registrant MUST choose an id that satisfies both ledgers. The Protocol does not derive the id from a key, so the registrant MAY use a different key pair on each ledger, of a type that ledger supports, unless the two ledgers\' constraints require the same key. Several channels MAY connect the same pair of CLPR Services, each with its own id, verifier and queues.',
+    refs: [{ h: channelSetup('1-channel-identity'), l: 'Channel setup §1' }, { h: channelSetup('2-registration'), l: 'Channel setup §2' }],
   },
   {
-    phase: 'Step 1 · off-chain',
-    t: 'Commit: the ownership commitment',
-    plain: 'Hash the channel id and the public key together with Keccak-256. The 32-byte result is the ownership commitment. Anyone may see it; nobody can read the id or the key back out of it.',
-    proto: '<code>ownership_commitment = keccak256(channel_id ‖ public_key)</code>. The hash function is fixed cross-platform; the public-key encoding is platform-specific. The value below is a genuine Keccak-256 computed by this page.',
-    refs: [{ h: spec('512-phase-1--claim-registerchannel'), l: 'spec §5.1.2, step 3' }, { h: design('313-establishing-and-updating-channels'), l: 'design §3.1.3' }],
+    phase: 'Step 1 · off the ledgers',
+    t: 'The ownership commitment',
+    plain: 'Hash the channel id and the public key together. The 32-byte result is the ownership commitment. Anyone may see it; nobody can read the id or the key back out of it.',
+    proto: 'The ownership commitment binds a channel id to the registrant\'s key on one ledger: a hash of the channel id followed by the public key, in that ledger\'s key encoding. The value below is the specification\'s commitment, computed by this page.',
+    refs: [{ h: channelSetup('2-registration'), l: 'Channel setup §2' }],
   },
   {
     phase: 'Step 2 · Ledger A · commit',
-    t: 'registerChannel on Ledger A → PENDING',
-    plain: 'The registrant sends only the commitment to Ledger A. The CLPR Service checks that this exact commitment has not been claimed before and creates a channel in PENDING state, filed under the commitment. A PENDING channel can do nothing: no messages, no bundles, no syncing.',
-    proto: '<code>registerChannel(caller, ownership_commitment: bytes(32))</code>, permissionless. The Service (1) verifies the commitment is not already claimed and (2) creates the Channel in PENDING, keyed internally by the commitment until reveal. In PENDING every bundle submission and every <code>sendMessage</code> is rejected.',
-    refs: [{ h: spec('512-phase-1--claim-registerchannel'), l: 'spec §5.1.2' }, { h: spec('62-channel-management'), l: 'spec §6.2' }, { h: spec('211-channel-status-transitions'), l: 'spec §2.1.1' }],
+    t: 'Commit on Ledger A → PENDING',
+    plain: 'The registrant sends only the commitment to Ledger A. The CLPR Service records it as pending. No channel exists yet: a pending commitment with no channel behind it is what the PENDING status means. A PENDING channel can do nothing: a bundle for it is rejected as for an unknown channel, no endpoint syncs it, and no message is sent on it.',
+    proto: 'The commit takes the ownership commitment as its only input; the channel id and the key are first presented at the reveal. Registering a commitment that is already pending or completed has no further effect, and a ledger MAY reject it. An endpoint MUST NOT initiate a sync cycle for a channel that is PENDING on its own ledger, and a responder whose channel is PENDING sends no bundle.',
+    refs: [{ h: channelSetup('21-registerchannel'), l: 'Channel setup §2.1' }, { h: transitions('1-channel-status'), l: 'Channel state transitions §1' }, { h: transitions('2-bundle-processing'), l: 'Channel state transitions §2' }, { h: endpointSync('53-channel-status'), l: 'Endpoint sync §5.3' }],
   },
   {
     phase: 'Step 3 · Ledger B · commit',
-    t: 'registerChannel on Ledger B → PENDING',
-    plain: 'The same claim goes to Ledger B, independently. Both commitments are now on file, and neither shows the name or the key.',
-    proto: 'The registrant repeats the claim on both ledgers before proceeding to the reveal phase, possibly with different keypairs (which would give a different commitment on each side; this page reuses one keypair so there is a single hash to follow).',
-    refs: [{ h: spec('512-phase-1--claim-registerchannel'), l: 'spec §5.1.2' }, { h: design('313-establishing-and-updating-channels'), l: 'design §3.1.3, sequence diagram' }],
+    t: 'Commit on Ledger B → PENDING',
+    plain: 'The same commit goes to Ledger B, independently. Both commitments are now on file, and neither shows the id or the key.',
+    proto: 'The registrant commits on both ledgers before revealing on either. With a different key pair on each ledger the two commitments differ; this page reuses one keypair so there is a single hash to follow.',
+    refs: [{ h: channelSetup('2-registration'), l: 'Channel setup §2' }, { h: channelSetup('21-registerchannel'), l: 'Channel setup §2.1' }],
   },
   {
     phase: 'Step 4 · meanwhile',
     t: 'Someone is watching Ledger A',
-    plain: 'An attacker reads Ledger A and sees the registerChannel transaction. All it carries is the 32-byte hash. To claim the same id on Ledger B they would need the channel id; to ever complete a claim they would need the private key. The hash yields neither. Copying the hash onto Ledger B does not help either: completing it requires the preimage and a signature from the key.',
-    proto: 'Anti-squatting rationale: the commitment hides both <code>channel_id</code> and <code>public_key</code>. An attacker who sees it cannot derive either value, so they cannot complete the reveal phase on either ledger. <code>completeChannel</code> checks <code>keccak256(channel_id ‖ public_key)</code> against the stored commitment and verifies a signature from the keypair.',
-    refs: [{ h: spec('511-anti-squatting-rationale'), l: 'spec §5.1.1' }, { h: design('313-establishing-and-updating-channels'), l: 'design §3.1.3, "Anti-squatting"' }],
+    plain: 'An observer reads Ledger A and sees the commit transaction. All it carries is the 32-byte hash. The hash yields neither the channel id nor the key, so the observer cannot complete this commitment: the reveal must present the id and the key that hash to it, and a signature made with that key.',
+    proto: 'The commit reserves the channel without revealing the channel id or the key. At the reveal the CLPR Service rejects the call unless the hash of the presented id and key is a pending commitment and the signature proves control of the key.',
+    refs: [{ h: channelSetup('2-registration'), l: 'Channel setup §2' }, { h: channelSetup('22-completechannel'), l: 'Channel setup §2.2' }],
   },
   {
     phase: 'Step 5 · Ledger A · reveal',
-    t: 'completeChannel on Ledger A → ACTIVE',
-    plain: 'Now the registrant reveals on Ledger A: the channel id, the public key, a signature proving they hold the matching private key, the address of a verifier contract they deployed on A, and two proofs fetched from Ledger B (its CLPR configuration and its endpoint list). The Service recomputes the hash, checks the signature, and hands both proofs to the verifier. If everything holds, the channel becomes ACTIVE.',
-    proto: '<code>completeChannel(caller, channel_id, public_key, signature, verifier_contract, config_proof_bytes, endpoint_manifest_proof_bytes)</code>, where the signature is over <code>keccak256(channel_id)</code>. The Service: (1) <code>keccak256(channel_id ‖ public_key)</code> matches a stored commitment; (2) the signature verifies, scheme platform-specific; (3) <code>verifyConfig(config_proof_bytes, channel_id, endpoint_manifest_proof_bytes)</code> on <code>verifier_contract</code> returns <code>ctx</code>, <code>chain_id</code>, <code>peer_config_nanos</code>, <code>throttles</code>, the initial trust anchor and its id, and the peer <code>endpoint_manifest</code>; (4–5) it stores <code>channel_context</code>, the trust anchor and the manifest (version ≥ 1, truncated to <code>max_peer_endpoints</code>); (6) PENDING → ACTIVE, and the commitment is removed.',
-    refs: [{ h: spec('513-phase-2--reveal-completechannel'), l: 'spec §5.1.3' }, { h: spec('62-channel-management'), l: 'spec §6.2' }, { h: spec('31-verifier-contract-interface'), l: 'spec §3.1, verifyConfig' }],
+    t: 'Reveal on Ledger A → ACTIVE',
+    plain: 'Now the registrant reveals on Ledger A: the channel id, the public key, a signature proving it holds the matching private key, the address of a verifier for Ledger B\'s proofs, and proofs obtained from Ledger B of its ledger configuration and, optionally, its endpoint manifest. The CLPR Service recomputes the hash, checks the signature, and has the verifier check the proofs. If everything holds, the channel exists, ACTIVE.',
+    proto: 'The CLPR Service MUST reject the reveal if the hash of id and key is not a pending commitment, a channel with the id already exists, the signature does not prove control of the key, the id breaks a constraint of this ledger, the address is not a verifier, the verifier\'s configuration check fails, or the returned configuration has no throttles or an invalid timestamp. Otherwise it creates the channel, ACTIVE, with its channel context, its verifier binding, the peer\'s chain id, configuration, throttles, initial trust anchor and endpoint manifest (all taken from the verifier\'s output), and the initial shared state. The commitment is kept, recorded as completed. The message signed, the signature scheme and the key encoding are ledger-specific.',
+    refs: [{ h: channelSetup('22-completechannel'), l: 'Channel setup §2.2' }, { h: channelSetup('5-initial-peer-state'), l: 'Channel setup §5' }, { h: verifierIface('2-verifyconfig'), l: 'Verifier interface §2' }, { h: HIERO_SIG, l: 'Hiero ledger §5' }, { h: EVM_SIG, l: 'EVM ledger family §5' }],
   },
   {
     phase: 'Step 6 · Ledger B · reveal',
-    t: 'completeChannel on Ledger B → ACTIVE',
-    plain: 'The same reveal on Ledger B, with a verifier deployed on B and proofs fetched from A. Each verifier understands the other ledger\'s proofs, which is why the two are different contracts.',
-    proto: 'The same inputs work on both ledgers. Note the order: commitments on both ledgers first, then reveals. The verifier is a locally deployed contract; the Service only requires that it exists on this ledger.',
-    refs: [{ h: design('313-establishing-and-updating-channels'), l: 'design §3.1.3' }, { h: spec('513-phase-2--reveal-completechannel'), l: 'spec §5.1.3' }],
+    t: 'Reveal on Ledger B → ACTIVE',
+    plain: 'The same reveal on Ledger B, naming a verifier for Ledger A\'s proofs, with proofs obtained from A. Each verifier checks the other ledger\'s proofs, which is why the two are different contracts.',
+    proto: 'The verifier named at the reveal is either a contract on this ledger that implements its verifier API, or a verifier the ledger itself provides, as its Ledger Specifications define. The CLPR Service MUST reject an address at which there is neither.',
+    refs: [{ h: channelSetup('4-verifier-binding'), l: 'Channel setup §4' }, { h: channelSetup('22-completechannel'), l: 'Channel setup §2.2' }],
   },
   {
     phase: 'Step 7 · done',
-    t: 'Both ACTIVE; the verifier is now fixed for life',
-    plain: 'Both sides are ACTIVE and syncing may begin. The verifier each side named cannot be changed later; if the other ledger changes how its proofs look, you register a new channel with a new verifier. The commitment was deleted at reveal, and the channel keeps no registration key.',
-    proto: 'Verifier immutability: <code>verifier_contract</code> is immutable after <code>completeChannel</code>; a proof-format upgrade means a new Channel. Initial values on each side: <code>acked_message_id = 0</code>, both running hashes 32 zero bytes, own <code>ChannelSyncData</code> with <code>received_message_id = 0</code> and <code>next_message_id = 1</code>. An abandoned PENDING claim can be deleted by the admin with <code>closeChannel</code>.',
-    refs: [{ h: spec('515-verifier-immutability'), l: 'spec §5.1.5' }, { h: spec('21-channel'), l: 'spec §2.1' }, { h: spec('514-admin-cleanup'), l: 'spec §5.1.4' }, { h: design('313-establishing-and-updating-channels'), l: 'design §3.1.3, "Who can close"' }],
+    t: 'Both ACTIVE; the verifier is fixed for life',
+    plain: 'Both sides are ACTIVE and syncing may begin. The verifier each side named cannot be changed later; if the other ledger\'s proof scheme changes so that the verifier can no longer check its bundles, a new channel with a new verifier is needed. The registrant has no authority over the channel once it exists: its key served only to coordinate the registration.',
+    proto: 'No operation changes the verifier binding, so applications can evaluate a channel\'s verifier once. The administrator\'s close depends on the status: on a PENDING channel it removes the named commitment; on an ACTIVE or PAUSED channel it is the administrative close; on a DRAINED channel it is the recovery close; on a CLOSING or CLOSED channel it is rejected.',
+    refs: [{ h: channelSetup('4-verifier-binding'), l: 'Channel setup §4' }, { h: channelSetup('6-shared-channel-state'), l: 'Channel setup §6' }, { h: service('25-closing-a-channel'), l: 'CLPR Service §2.5' }],
   },
 ];
 const ledgers = [
@@ -79,7 +84,7 @@ const ledgers = [
 ];
 ---
 <div class="sim commitreveal" id={id}>
-  <div class="sim__head"><div><span class="kind">Step-through</span><h3>Claiming a channel on two ledgers without being front-run</h3></div><span class="pill grey" data-role="clock">step 0 / 7</span>
+  <div class="sim__head"><div><span class="kind">Step-through</span><h3>Registering a channel on two ledgers by commit and reveal</h3></div><span class="pill grey" data-role="clock">step 0 / 7</span>
     <span class="sim__track seg" data-role="track" aria-hidden="true"><i data-tone="c"></i><i data-tone="a"></i><i data-tone="b"></i><i data-tone="bad"></i><i data-tone="a"></i><i data-tone="b"></i><i data-tone="ok"></i></span></div>
   <div class="sim__body">
     <div class="choices cr__tabs" role="group" aria-label="Which registration to show">
@@ -89,7 +94,7 @@ const ledgers = [
 
     <div data-panel="channel">
       <div class="sim__scroll">
-      <svg viewBox="0 0 760 362" role="img" aria-label="Two ledgers side by side. A registrant at the top sends a commitment to each, then reveals on each; an attacker at the bottom watches Ledger A and can do nothing on Ledger B.">
+      <svg viewBox="0 0 760 362" role="img" aria-label="Two ledgers side by side. A registrant at the top sends a commitment to each, then reveals on each; an attacker at the bottom watches Ledger A and sees only the commitment.">
         <defs>
           <marker id={`${id}-arr`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)" /></marker>
           <marker id={`${id}-arr-ok`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)" /></marker>
@@ -98,10 +103,10 @@ const ledgers = [
 
         <g><rect x="295" y="8" width="170" height="46" rx="8" class="d-c" /><text x="380" y="27" class="t b center">Registrant</text><text x="380" y="44" class="t small center">any account, no permission</text></g>
 
-        <g class="part" data-part="regA"><path d="M297,50 L192,88" class="line c" marker-end={`url(#${id}-arr)`} /><text x="212" y="62" class="t small center">registerChannel(commitment)</text></g>
-        <g class="part" data-part="revA"><path d="M297,50 L192,88" class="line ok" stroke-width="2.5" marker-end={`url(#${id}-arr-ok)`} /><text x="212" y="62" class="t small center">completeChannel(reveal)</text></g>
-        <g class="part" data-part="regB"><path d="M463,50 L568,88" class="line c" marker-end={`url(#${id}-arr)`} /><text x="548" y="62" class="t small center">registerChannel(commitment)</text></g>
-        <g class="part" data-part="revB"><path d="M463,50 L568,88" class="line ok" stroke-width="2.5" marker-end={`url(#${id}-arr-ok)`} /><text x="548" y="62" class="t small center">completeChannel(reveal)</text></g>
+        <g class="part" data-part="regA"><path d="M297,50 L192,88" class="line c" marker-end={`url(#${id}-arr)`} /><text x="212" y="62" class="t small center">commit: the hash only</text></g>
+        <g class="part" data-part="revA"><path d="M297,50 L192,88" class="line ok" stroke-width="2.5" marker-end={`url(#${id}-arr-ok)`} /><text x="212" y="62" class="t small center">reveal: id, key, proofs</text></g>
+        <g class="part" data-part="regB"><path d="M463,50 L568,88" class="line c" marker-end={`url(#${id}-arr)`} /><text x="548" y="62" class="t small center">commit: the hash only</text></g>
+        <g class="part" data-part="revB"><path d="M463,50 L568,88" class="line ok" stroke-width="2.5" marker-end={`url(#${id}-arr-ok)`} /><text x="548" y="62" class="t small center">reveal: id, key, proofs</text></g>
 
         {ledgers.map((L) => (
           <g data-ledger={L.k}>
@@ -115,8 +120,8 @@ const ledgers = [
             <text x={L.x + 36} y="164" class="t small" data-role={`${L.k}-r1`}>no channel record</text>
             <text x={L.x + 36} y="180" class="t mono" data-role={`${L.k}-r2`}></text>
             <text x={L.x + 36} y="196" class="t mono" data-role={`${L.k}-r3`}></text>
-            <g class="part" data-part={`ver${L.k.toUpperCase()}`}><rect x={L.x + 14} y="220" width="136" height="50" rx="6" class="d-surface" /><text x={L.x + 82} y="239" class="t small center">Verifier for {L.peer}'s proofs</text><text x={L.x + 82} y="256" class="t small center" style="fill:var(--ok)">verifyConfig ✓</text></g>
-            <g class="part" data-part={`prf${L.k.toUpperCase()}`}><rect x={L.x + 160} y="220" width="148" height="50" rx="6" class={L.k === 'a' ? 'd-b' : 'd-a'} /><text x={L.x + 234} y="239" class="t small center">proofs fetched from {L.peer}</text><text x={L.x + 234} y="256" class="t small center">config · endpoint list</text></g>
+            <g class="part" data-part={`ver${L.k.toUpperCase()}`}><rect x={L.x + 14} y="220" width="136" height="50" rx="6" class="d-surface" /><text x={L.x + 82} y="239" class="t small center">Verifier for {L.peer}'s proofs</text><text x={L.x + 82} y="256" class="t small center" style="fill:var(--ok)">config proof ✓</text></g>
+            <g class="part" data-part={`prf${L.k.toUpperCase()}`}><rect x={L.x + 160} y="220" width="148" height="50" rx="6" class={L.k === 'a' ? 'd-b' : 'd-a'} /><text x={L.x + 234} y="239" class="t small center">proofs fetched from {L.peer}</text><text x={L.x + 234} y="256" class="t small center">config · manifest</text></g>
           </g>
         ))}
 
@@ -124,8 +129,8 @@ const ledgers = [
         <g class="cr__env" data-role="env-a" data-at="reg"><rect width="156" height="16" rx="4" class="d-c" /><text x="78" y="12" class="t mono center cr__envtext"></text></g>
 
         <g class="part" data-part="atk"><rect x="262" y="306" width="236" height="50" rx="8" class="d-bad" /><text x="380" y="325" class="t b center">Attacker watching Ledger A</text><text x="380" y="342" class="t small center mono" data-role="atk-sees">sees only the hash</text></g>
-        <g class="part" data-part="atkWatch"><path d="M177,280 L300,306" class="line bad dash" /><text x="130" y="324" class="t small center">reads the tx: sees the hash only</text></g>
-        <g class="part" data-part="atkX"><path d="M460,306 L583,280" class="line bad dash" marker-end={`url(#${id}-arr-bad)`} /><text x="521" y="299" class="t b center" style="fill:var(--bad);font-size:18px">✕</text><text x="630" y="324" class="t small center">cannot register the id, cannot reveal</text></g>
+        <g class="part" data-part="atkWatch"><path d="M177,280 L300,306" class="line bad dash" /><text x="130" y="324" class="t small center">reads the commit: a hash only</text></g>
+        <g class="part" data-part="atkX"><path d="M460,306 L583,280" class="line bad dash" marker-end={`url(#${id}-arr-bad)`} /><text x="521" y="299" class="t b center" style="fill:var(--bad);font-size:18px">✕</text><text x="630" y="324" class="t small center">learns neither id nor key</text></g>
       </svg>
       </div>
       <p class="sim__scroll-note">Wider than a phone; scroll it sideways if you need to.</p>
@@ -152,40 +157,39 @@ const ledgers = [
           ))}
         </div>
         <div class="cr__vals">
-          <div class="cr__row"><b>channel_id</b><span><code data-role="v-chan">…</code> <span class="small">32 random bytes</span></span></div>
-          <div class="cr__row"><b>public_key</b><span><code data-role="v-pub">…</code> <span class="small">64 random bytes standing in for an uncompressed secp256k1 key</span></span></div>
-          <div class="cr__row" data-from="1"><b>ownership_commitment</b><span><code data-role="v-commit">…</code> <span class="small">= keccak256(channel_id ‖ public_key)</span></span></div>
-          <div class="cr__row" data-from="5"><b>keccak256(channel_id)</b><span><code data-role="v-idhash">…</code> <span class="small">what the reveal signature is over</span></span></div>
-          <div class="cr__row" data-from="5"><b>signature</b><span><code>(placeholder)</code> <span class="small">no real ECDSA runs on this page</span></span></div>
+          <div class="cr__row"><b>channel id</b><span><code data-role="v-chan">…</code> <span class="small">32 random bytes</span></span></div>
+          <div class="cr__row"><b>public key</b><span><code data-role="v-pub">…</code> <span class="small">64 random bytes standing in for an uncompressed secp256k1 key</span></span></div>
+          <div class="cr__row" data-from="1"><b>ownership commitment</b><span><code data-role="v-commit">…</code> <span class="small">a hash of the channel id followed by the public key</span></span></div>
+          <div class="cr__row" data-from="5"><b>signature</b><span><code>(placeholder)</code> <span class="small">no real signature runs on this page; the message signed and the scheme are ledger-specific</span></span></div>
           <details class="cr__full"><summary class="small">Full hex, to check with your own keccak256</summary><pre data-role="full"></pre></details>
         </div>
       </div>
     </div>
 
     <div data-panel="connector" hidden>
-      <p class="small" style="margin:0 0 10px">A Connector is registered with the same commit-reveal, with one extra input (a 32-byte salt) and an id that is derived rather than chosen. Everything below is computed live from the channel id and public key of the other tab.</p>
+      <p class="small" style="margin:0 0 10px">A connector is registered with the same two phases, commit and reveal, on each ledger. Its id is derived rather than chosen, from the channel id, the operator's public key and a 32-byte salt. Everything below is computed live from the channel id and public key of the other tab.</p>
       <div class="cr__vals">
-        <div class="cr__row"><b>channel_id</b><span><code data-role="c-chan">…</code></span></div>
-        <div class="cr__row"><b>public_key</b><span><code data-role="c-pub">…</code></span></div>
-        <div class="cr__row"><b>salt</b><span><code data-role="c-salt">…</code> <button class="btn" type="button" data-role="salt-random">random salt</button> <button class="btn" type="button" data-role="salt-zero">bytes32(0)</button> <span class="small">a label for operators who need several Connectors on one Channel; defaults to 32 zero bytes</span></span></div>
-        <div class="cr__row"><b>connector_id</b><span><code data-role="c-id">…</code> <span class="small">= keccak256(channel_id ‖ public_key ‖ salt); the same on every ledger, so no address translation is ever needed</span></span></div>
-        <div class="cr__row"><b>ownership_commitment</b><span><code data-role="c-commit">…</code> <span class="small">= keccak256(connector_id ‖ public_key), the value passed to registerConnector(channel_id, commitment)</span></span></div>
-        <div class="cr__row"><b>signed at reveal</b><span><code data-role="c-sig">…</code> <span class="small">= keccak256(connector_id ‖ service_address); here with the Hiero CLPR system contract address 0x…016e. On EVM it is address(this) of the CLPR Service. Binding the signature to the deployment stops it being replayed elsewhere.</span></span></div>
+        <div class="cr__row"><b>channel id</b><span><code data-role="c-chan">…</code></span></div>
+        <div class="cr__row"><b>public key</b><span><code data-role="c-pub">…</code></span></div>
+        <div class="cr__row"><b>salt</b><span><code data-role="c-salt">…</code> <button class="btn" type="button" data-role="salt-random">random salt</button> <button class="btn" type="button" data-role="salt-zero">zero salt</button> <span class="small">different salts let one operator register several connectors on the same channel</span></span></div>
+        <div class="cr__row"><b>connector id</b><span><code data-role="c-id">…</code> <span class="small">a hash of the channel id, the public key and the salt; with the same key encoding and salt it is the same on both ledgers, and it belongs to this one channel</span></span></div>
+        <div class="cr__row"><b>ownership commitment</b><span><code data-role="c-commit">…</code> <span class="small">a hash of the connector id followed by the public key; the commit carries it, and a ledger may also require the channel id there</span></span></div>
       </div>
-      <p class="small" style="margin:10px 0 0"><strong>Reveal.</strong> <code>completeConnector(channel_id, public_key, salt, signature, connector_contract, initial_balance, stake)</code> re-derives the id, checks the commitment and the signature, and creates the Connector keyed by <code>(channel_id, connector_id)</code>; the caller becomes its admin. A Connector must be registered on <em>both</em> ledgers with the same <code>public_key</code> and <code>salt</code>, so the ids match: the source side authorises, the destination side pays. Registered on one side only, messages fail with <code>CONNECTOR_NOT_FOUND</code>.</p>
-      <p class="small" style="margin:6px 0 0">Source: <a href={spec('22-connector')} rel="noopener">spec §2.2</a> · <a href={spec('63-connector-management')} rel="noopener">spec §6.3</a> · <a href={design('331-connectors')} rel="noopener">design §3.3.1</a>.</p>
+      <p class="small" style="margin:10px 0 0"><strong>Reveal.</strong> The operator presents the channel, the connector id, the public key, the salt, a signature proving control of the key, the connector's contract on this ledger and the connector's admin; a ledger may require more, such as the stake. The CLPR Service re-derives the id and rejects the reveal if the commitment is not pending, the channel does not exist on this ledger, the connector is already registered on it, the signature fails, the contract is not deployed on this ledger, or the deployment's stake requirement is not met. Otherwise it creates the connector record and keeps the commitment, recorded as completed. A connector carries messages only if it is registered on <em>both</em> ledgers, on the same channel with the same id: on the source ledger it authorises messages, on the destination it pays for executing them. A DATA message that names a connector not registered on the destination is answered with <code>CONNECTOR_NOT_FOUND</code>. The connector's admin may remove it on one ledger, but not while it has messages in flight there.</p>
+      <p class="small" style="margin:6px 0 0">Source: <a href={connectorSetup('1-connector-identity')} rel="noopener">Connector setup §1</a> · <a href={connectorSetup('2-registration')} rel="noopener">§2</a> · <a href={connectorSetup('3-connectors-on-both-ledgers')} rel="noopener">§3</a> · <a href={connectorSetup('5-removal')} rel="noopener">§5</a>.</p>
     </div>
 
+    <p class="small" style="margin:8px 0 0"><strong>On EVM ledgers the channel id is constrained.</strong> The EVM Ledger Specifications derive it from the two ledgers' chain ids, the registrant's key and a salt, and the CLPR Service rejects any other id at the reveal; a channel with an EVM ledger on either side uses that derived id on both ledgers. The EVM registration signature is also bound to the address of the CLPR Service on which the registration completes. See <a href={EVM_ID} rel="noopener">EVM ledger family §4</a> and <a href={EVM_SIG} rel="noopener">§5</a>, and <a href={HIERO_SIG} rel="noopener">Hiero ledger §5</a> for the Hiero signatures.</p>
+
     <Callout kind="impl">
-      <p>The EVM contracts in <a href={LIFECYCLE} rel="noopener">clpr-smart-contracts (docs/lifecycle.md)</a> differ from the platform-neutral spec above in three places that matter here.</p>
+      <p>The EVM reference contracts in <a href={LIFECYCLE} rel="noopener">clpr-smart-contracts (lifecycle notes)</a> differ from the specification in two places that matter here.</p>
       <ul style="margin-bottom:0">
-        <li><strong>The channel id is derived, not chosen.</strong> <code><a href={sol('src/logic/ChannelLogic.sol')} rel="noopener">deriveChannelId(peerChainId, pubKey, salt)</a></code> = <code>keccak256(loChain ‖ hiChain ‖ pubKey ‖ salt)</code>, the two chain ids sorted by their own keccak256 so both ends compute the same value, and <code>completeChannel</code> re-derives it and rejects a mismatch. With the key above, salt <code>bytes32(0)</code> and the spec's CAIP-2 examples <code>hedera:mainnet</code> / <code>eip155:1</code> as illustrative chain ids, that would give <code data-role="evm-id">…</code>, not the free-form id this page picked. The pinned spec still defines the id as an "arbitrary 32-byte value chosen by registrant"; the EVM docs (lifecycle.md) note that the specification does not document the derived form.</li>
-        <li><strong>The commit call also names the id.</strong> <code><a href={sol('src/logic/ChannelLogic.sol')} rel="noopener">registerChannel(channelId, commitment)</a></code> takes the channel id in the clear, only to build a reverse index so that <code>closeChannel</code> can purge an abandoned PENDING commitment; the id is not validated until <code>completeChannel</code>.</li>
-        <li><strong>Key encoding and signature domain.</strong> The public key must be the 64-byte uncompressed secp256k1 key (X‖Y, no 0x04 prefix), and the reveal signature is over <code>keccak256(channelId ‖ address(this))</code>, bound to the specific service deployment, wrapped in the EIP-191 prefix <code>"\x19Ethereum Signed Message:\n32"</code> and checked with <code>ecrecover</code> against <code>address(keccak256(pubKey))</code> (<a href={sol('src/libraries/crypto/ECDSA.sol', 11)} rel="noopener">ECDSA.sol</a>). The spec's signature is over <code>keccak256(channel_id)</code> alone.</li>
+        <li><strong>The commit also names the channel id.</strong> The reference contracts' commit takes the channel id in the clear next to the commitment, only to keep an index from id to commitment so that the owner's close can remove an abandoned pending commitment; the id is not checked until the reveal. In the specification the commit carries the commitment alone.</li>
+        <li><strong>The commitment is deleted at the reveal.</strong> The reference contracts delete the pending commitment when the channel is completed (<a href={sol('src/logic/ChannelLogic.sol')} rel="noopener">channel logic</a>); the specification keeps it, recorded as completed.</li>
       </ul>
     </Callout>
 
-    <p class="small" style="margin:8px 0 0">Source: <a href={spec('51-channel-registration')} rel="noopener">spec §5.1</a> · <a href={spec('62-channel-management')} rel="noopener">§6.2</a> · <a href={spec('21-channel')} rel="noopener">§2.1</a> · <a href={design('313-establishing-and-updating-channels')} rel="noopener">design §3.1.3</a> · <a href={LIFECYCLE} rel="noopener">lifecycle.md</a> (EVM). Keccak-256 is implemented in this page and self-tested against the standard vectors at load.</p>
+    <p class="small" style="margin:8px 0 0">Source: <a href={channelSetup('2-registration')} rel="noopener">Channel setup §2</a> · <a href={channelSetup('4-verifier-binding')} rel="noopener">§4</a> · <a href={channelSetup('6-shared-channel-state')} rel="noopener">§6</a> · <a href={service('25-closing-a-channel')} rel="noopener">CLPR Service §2.5</a> · <a href={LIFECYCLE} rel="noopener">lifecycle notes</a> (EVM reference contracts). The hash function is implemented in this page and self-tested against standard vectors at load.</p>
   </div>
 </div>
 <style>
@@ -288,7 +292,6 @@ const ledgers = [
 
   const enc = new TextEncoder();
   const hex = (b: Uint8Array): string => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-  const fromHex = (h: string): Uint8Array => new Uint8Array(h.match(/../g)!.map((x) => parseInt(x, 16)));
   const cat = (...parts: Uint8Array[]): Uint8Array => { const o = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let k = 0; for (const p of parts) { o.set(p, k); k += p.length; } return o; };
   const rnd = (n: number): Uint8Array => crypto.getRandomValues(new Uint8Array(n));
   // Self-test against the standard Keccak-256 vectors. If this fails, no hash is ever shown.
@@ -302,9 +305,6 @@ const ledgers = [
   const short = (b: Uint8Array): string => '0x' + hex(b.subarray(0, 4)) + '…' + hex(b.subarray(b.length - 3));
   const hs = (b: Uint8Array | null): string => (b ? short(b) : UNAVAILABLE);
   const hf = (b: Uint8Array | null): string => (b ? '0x' + hex(b) : UNAVAILABLE);
-  const HIERO_SERVICE = fromHex('000000000000000000000000000000000000016e');
-  const CHAIN_IDS = [enc.encode('hedera:mainnet'), enc.encode('eip155:1')];
-  const ZERO32 = new Uint8Array(32);
 
   // Which SVG parts are visible at each step 0..7 (not cumulative: each step is a full picture).
   const SHOW: string[][] = [
@@ -341,17 +341,9 @@ const ledgers = [
 
     function values() {
       const commit = K(cat(chan, pub));
-      const idHash = K(chan);
       const conId = K(cat(chan, pub, salt));
       const conCommit = conId ? K(cat(conId, pub)) : null;
-      const conSig = conId ? K(cat(conId, HIERO_SERVICE)) : null;
-      let evmId: Uint8Array | null = null;
-      if (HASH_OK) {
-        const [x, y] = CHAIN_IDS;
-        const [lo, hi] = hex(keccak256(x)) <= hex(keccak256(y)) ? [x, y] : [y, x];
-        evmId = keccak256(cat(lo, hi, pub, ZERO32));
-      }
-      return { commit, idHash, conId, conCommit, conSig, evmId };
+      return { commit, conId, conCommit };
     }
 
     const lastSt: Record<'a' | 'b', St> = { a: 'none', b: 'none' };
@@ -368,8 +360,8 @@ const ledgers = [
       env.querySelector('rect')!.setAttribute('class', st === 'ACTIVE' ? 'd-ok' : 'd-c');
       env.querySelector('text')!.textContent = st === 'ACTIVE' ? `reveal ${short(chan)}` : `commit ${hs(commit)}`;
       if (st === 'none') { text(`${k}-r1`, 'no channel record'); text(`${k}-r2`, ''); text(`${k}-r3`, ''); }
-      else if (st === 'PENDING') { text(`${k}-r1`, 'PENDING · filed under the commitment'); text(`${k}-r2`, `commitment ${hs(commit)}`); text(`${k}-r3`, 'channel_id ?  public_key ?  (hidden)'); }
-      else { text(`${k}-r1`, 'ACTIVE · commitment removed'); text(`${k}-r2`, `channel_id ${short(chan)}`); text(`${k}-r3`, 'verifier fixed · peer config stored'); }
+      else if (st === 'PENDING') { text(`${k}-r1`, 'PENDING · a commitment, no channel'); text(`${k}-r2`, `commitment ${hs(commit)}`); text(`${k}-r3`, 'channel id ?  public key ?  (hidden)'); }
+      else { text(`${k}-r1`, 'ACTIVE · commitment kept'); text(`${k}-r2`, `channel id ${short(chan)}`); text(`${k}-r3`, 'verifier fixed · peer config stored'); }
     }
 
     function render() {
@@ -397,42 +389,36 @@ const ledgers = [
       clock.classList.toggle('grey', step !== TOTAL);
       prevBtn.disabled = step === 0;
       nextBtn.disabled = step === TOTAL;
-      code('v-chan', short(chan)); code('v-pub', short(pub)); code('v-commit', hs(v.commit)); code('v-idhash', hs(v.idHash));
+      code('v-chan', short(chan)); code('v-pub', short(pub)); code('v-commit', hs(v.commit));
       text('atk-sees', `sees only ${hs(v.commit)}`);
       code('c-chan', short(chan)); code('c-pub', short(pub)); code('c-salt', short(salt));
-      code('c-id', hs(v.conId)); code('c-commit', hs(v.conCommit)); code('c-sig', hs(v.conSig));
-      code('evm-id', hs(v.evmId));
+      code('c-id', hs(v.conId)); code('c-commit', hs(v.conCommit));
       text('full', [
-        `channel_id            = 0x${hex(chan)}`,
-        `public_key            = 0x${hex(pub)}`,
-        `ownership_commitment  = ${hf(v.commit)}`,
-        `keccak256(channel_id) = ${hf(v.idHash)}`,
-        `salt                  = 0x${hex(salt)}`,
-        `connector_id          = ${hf(v.conId)}`,
-        `connector commitment  = ${hf(v.conCommit)}`,
-        `connector sig message = ${hf(v.conSig)}`,
+        `channel id            = 0x${hex(chan)}`,
+        `public key            = 0x${hex(pub)}`,
+        `ownership commitment  = ${hf(v.commit)}`,
       ].join('\n'));
       const c = hs(v.commit);
       const LOG: string[] = [
-        `The registrant holds <code>channel_id ${short(chan)}</code> and a keypair. Neither ledger knows anything yet. Press <strong>Next</strong>.`,
-        `<strong>commitment = keccak256(channel_id ‖ public_key) = ${c}</strong>, a real Keccak-256 computed by this page.`,
-        `Ledger A: <strong>PENDING</strong>, filed under ${c}. Ledger B: nothing yet.`,
+        `The registrant holds channel id <code>${short(chan)}</code> and a keypair. Neither ledger knows anything yet. Press <strong>Next</strong>.`,
+        `<strong>ownership commitment = ${c}</strong>, the specification\'s commitment, computed by this page.`,
+        `Ledger A: <strong>PENDING</strong>: commitment ${c} recorded, no channel yet. Ledger B: nothing yet.`,
         `Ledger A: <strong>PENDING</strong>. Ledger B: <strong>PENDING</strong>. Both hold the same 32-byte hash; neither knows the id or the key.`,
-        `<span class="bad">The attacker holds ${c} and nothing else:</span> no channel_id, no public_key, no private key. Ledger B stays as it is.`,
-        `Ledger A: <span class="ok">ACTIVE</span> for channel_id ${short(chan)}; commitment removed; verifier fixed. Ledger B: still PENDING.`,
-        `Ledger B: <span class="ok">ACTIVE</span> too. The same channel_id now exists on both ledgers, each with its own verifier.`,
-        `Done: two ACTIVE channel records, one channel id ${short(chan)}, two verifiers, no commitments left. Syncing may begin.`,
+        `<span class="bad">The attacker holds ${c} and nothing else:</span> not the channel id, not the public key, not the private key. It cannot complete this commitment.`,
+        `Ledger A: <span class="ok">ACTIVE</span> for channel id ${short(chan)}; the commitment is kept, recorded as completed; the verifier is fixed. Ledger B: still PENDING.`,
+        `Ledger B: <span class="ok">ACTIVE</span> too. The same channel id now exists on both ledgers, each with its own verifier.`,
+        `Done: two ACTIVE channel records, one channel id ${short(chan)}, two verifiers. The registrant holds no authority over the channel. Syncing may begin.`,
       ];
-      log.innerHTML = HASH_OK ? LOG[step] : `<span class="bad">Keccak-256 self-test failed in this browser;</span> hash values are shown as "${UNAVAILABLE}". ` + LOG[step];
+      log.innerHTML = HASH_OK ? LOG[step] : `<span class="bad">The hash self-test failed in this browser;</span> hash values are shown as "${UNAVAILABLE}". ` + LOG[step];
       const st = `A: ${aSt} · B: ${bSt}`;
       const LINE: string[] = [
-        `step 0 · off-chain · channel_id ${short(chan)} · ${st}`,
-        `step 1 · ownership_commitment = ${c} · ${st}`,
-        `step 2 · A: registerChannel(${c}) · ${st}`,
-        `step 3 · B: registerChannel(${c}) · ${st}`,
+        `step 0 · off the ledgers · channel id ${short(chan)} · ${st}`,
+        `step 1 · ownership commitment = ${c} · ${st}`,
+        `step 2 · A: commit ${c} · ${st}`,
+        `step 3 · B: commit ${c} · ${st}`,
         `step 4 · attacker sees ${c} only · ${st}`,
-        `step 5 · A: completeChannel(${short(chan)}, …) · ${st}`,
-        `step 6 · B: completeChannel(${short(chan)}, …) · ${st}`,
+        `step 5 · A: reveal ${short(chan)}, … · ${st}`,
+        `step 6 · B: reveal ${short(chan)}, … · ${st}`,
         `step 7 · done · ${st}`,
       ];
       const line = document.createElement('span');

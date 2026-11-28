@@ -1,16 +1,16 @@
 ---
-/** The four CLPR layers as a stack, bottom up, each with its key abstractions and the capability it adds; design §3 and the organization profile. */
+/** The four CLPR layers as a stack, bottom up, each with its parts and the capability it adds; Overview §2, §3 and §8, and the organization profile. */
 import Figure from '@kse/components/Figure.astro';
-import { design, pinned } from '../../../lib/sources';
+import { overview, messaging, pinned } from '../../../lib/sources';
 ---
 <Figure
   lead="Four layers, four capabilities."
-  caption="The table's rows as a stack: Network lets two ledgers connect, Messaging lets them pass ordered and proven messages, Payment & Routing pays for and polices delivery, and Applications sit on top. The sections below follow the same order."
-  source={[{ label: 'design §3', href: design('3-architecture') }, { label: 'organization profile', href: pinned('org-profile', 'profile/README.md') }]}
+  caption="The table's rows as a stack: Network lets two ledgers connect, Messaging lets them pass ordered and proven messages, Payment & Routing pays for delivery and, as the specification recommends, slashes connectors that fail, and Applications sit on top. The sections below follow the same order."
+  source={[{ label: 'Overview §2', href: overview('2-major-parts') }, { label: 'Overview §8', href: overview('8-application-patterns') }, { label: 'Messaging §5', href: messaging('5-enqueue') }, { label: 'organization profile', href: pinned('org-profile', 'profile/README.md') }]}
   kind="spec"
   minWidth={720}
 >
-  <svg viewBox="0 0 720 364" role="img" aria-label="A stack of four layers numbered from the bottom. One, Network: channel, endpoint, verifier contract, gRPC sync, protobuf; two ledgers can connect. Two, Messaging: message queues, bundles, running hashes, state proofs; two ledgers can pass messages. Three, Payment and Routing: connector contracts, application interfaces, slashing; messages are paid for, submitters reimbursed where a connector can pay, misbehaving connectors punishable. Four, Application: remote contract calls, asset movement, atomic swaps; applications address a destination ledger, application and connector.">
+  <svg viewBox="0 0 720 364" role="img" aria-label="A stack of four layers numbered from the bottom. One, Network: ledgers, CLPR Services, channels, verifier contracts and endpoints; two ledgers can connect. Two, Messaging: messages, outbound queues, the running hash and bundles; two ledgers can pass messages. Three, Payment and Routing: connectors, which authorize messages and pay for their execution; in the recommended design, bundle submitters earn a margin and a failing connector is slashed. Four, Application: remote calls through proxy contracts, escrow then mint then burn, and two-phase commit; applications name a channel, a connector and a target application.">
     <defs>
       <marker id="fls-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)" /></marker>
     </defs>
@@ -19,29 +19,29 @@ import { design, pinned } from '../../../lib/sources';
     <circle cx="34" cy="47" r="9" class="d-grey" /><text x="34" y="51" class="t small center b">4</text>
     <rect x="52" y="16" width="368" height="62" rx="8" class="d-surface" />
     <text x="64" y="37" class="t b">Application</text>
-    <text x="64" y="54" class="t mono">remote contract calls · asset movement</text>
-    <text x="64" y="68" class="t mono">atomic swaps</text>
+    <text x="64" y="54" class="t small">remote calls through proxy contracts</text>
+    <text x="64" y="68" class="t small">escrow, mint, then burn · two-phase commit</text>
     <line x1="420" y1="47" x2="434" y2="47" class="line" marker-end="url(#fls-arrow)" />
-    <text x="444" y="43" class="t small">Applications address a destination</text>
-    <text x="444" y="57" class="t small">ledger, application and connector.</text>
+    <text x="444" y="43" class="t small">Applications name a channel, a</text>
+    <text x="444" y="57" class="t small">connector and a target application.</text>
 
     <!-- 3 payment and routing -->
     <circle cx="34" cy="129" r="9" class="d-grey" /><text x="34" y="133" class="t small center b">3</text>
     <rect x="52" y="98" width="368" height="62" rx="8" class="d-money" />
     <text x="64" y="119" class="t b">Payment &amp; Routing</text>
-    <text x="64" y="136" class="t mono">connector contracts · application interfaces</text>
-    <text x="64" y="150" class="t mono">slashing</text>
+    <text x="64" y="136" class="t small">connectors on both ledgers</text>
+    <text x="64" y="150" class="t small">authorize, pay, and stake</text>
     <line x1="420" y1="129" x2="434" y2="129" class="line" marker-end="url(#fls-arrow)" />
-    <text x="444" y="118" class="t small">Messages are paid for, submitters</text>
-    <text x="444" y="132" class="t small">reimbursed where a connector can pay,</text>
-    <text x="444" y="146" class="t small">misbehaving connectors punishable.</text>
+    <text x="444" y="118" class="t small">In the recommended design, connectors</text>
+    <text x="444" y="132" class="t small">pay, bundle submitters earn a margin</text>
+    <text x="444" y="146" class="t small">and a failing connector is slashed.</text>
 
     <!-- 2 messaging -->
     <circle cx="34" cy="211" r="9" class="d-grey" /><text x="34" y="215" class="t small center b">2</text>
     <rect x="52" y="180" width="368" height="62" rx="8" class="d-ok" />
     <text x="64" y="201" class="t b">Messaging</text>
-    <text x="64" y="218" class="t mono">message queues · bundles</text>
-    <text x="64" y="232" class="t mono">running hashes · state proofs</text>
+    <text x="64" y="218" class="t small">messages · outbound queues</text>
+    <text x="64" y="232" class="t small">running hash · bundles</text>
     <line x1="420" y1="211" x2="434" y2="211" class="line" marker-end="url(#fls-arrow)" />
     <text x="444" y="215" class="t small">Two ledgers can pass messages.</text>
 
@@ -49,8 +49,8 @@ import { design, pinned } from '../../../lib/sources';
     <circle cx="34" cy="293" r="9" class="d-grey" /><text x="34" y="297" class="t small center b">1</text>
     <rect x="52" y="262" width="368" height="62" rx="8" class="d-c" />
     <text x="64" y="283" class="t b">Network</text>
-    <text x="64" y="300" class="t mono">channel · endpoint · verifier contract</text>
-    <text x="64" y="314" class="t mono">gRPC sync · protobuf</text>
+    <text x="64" y="300" class="t small">ledgers · CLPR Services · channels</text>
+    <text x="64" y="314" class="t small">verifier contracts · endpoints</text>
     <line x1="420" y1="293" x2="434" y2="293" class="line" marker-end="url(#fls-arrow)" />
     <text x="444" y="297" class="t small">Two ledgers can connect.</text>
 

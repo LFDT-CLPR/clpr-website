@@ -5,53 +5,52 @@
       "k": "spec",
       "name": "The specification",
       "where": "LFDT-CLPR/clpr-spec",
-      "plain": "The rulebook every other piece must follow. Two documents: a design document that explains the why (trust model, layers, roles, recovery) and a protocol specification that fixes the what (wire formats, state, algorithms, a pseudo-API). Alongside them, one folder per supported proof system saying exactly how that ledger's proofs are built and checked, and the decision records that explain the main changes made to the text.",
-      "detail": "clpr-service.md (design), clpr-service-spec.md (normative: protobufs, on-ledger state model, verifier interface, §4 algorithms, §6 pseudo-API), verifiers/{hiero,qbft}/ (state_proof.md, verifier_contract.md, trust_anchor.md), ADR/ (five decision records, the newest in the final form the ADR guide defines) and clpr-options-to-consider.md (thirteen undecided items). The repository's LICENSE file is Apache-2.0; under the Labs charter, specifications are to be developed pursuant to the Community Specification License 1.0.",
+      "plain": "The rules every implementation must follow, with advice for deployments. An overview explains the parts, the message flow, the trust model and the roles. The Protocol states what every implementation must do; the Ledger Specifications state, for each ledger, how its bundles are gathered, proven and verified; and the Recommendations advise on the design of a deployment, which may differ. Changes to the Protocol are made through CLPR Improvement Proposals (CLIPs). Earlier documents are kept in an archive for reference only.",
+      "detail": "The overview is non-normative. The Protocol (MUST) is a set of modules, with a non-normative list of open issues beside them; the Ledger Specifications (MUST for one ledger) cover Hiero and one EVM ledger that reaches consensus with QBFT, each with its bundle aggregation and proof schemes, and a verifier API per ledger or ledger family; the Recommendations (SHOULD) cover the CLPR Service, connector stakes and channel economics. Each version is final once released, and the next is prepared on the main branch; implementations target a final version, never main. CLIP-0001 defines how the specification is governed and changed, by Editors and Maintainers. The specification is under the Community Specification License 1.0; code in the repository is under Apache-2.0.",
       "refs": [
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "clpr-service.md",
-          "label": "design document"
+          "path": "README.md",
+          "label": "specification README"
+        },
+        {
+          "doc": "overview",
+          "anchor": "6-how-the-specification-is-organized",
+          "label": "Overview §6"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "clpr-service-spec.md",
-          "label": "protocol specification"
+          "path": "ledgers/README.md",
+          "label": "ledgers and proof schemes"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers",
-          "label": "verifiers/"
+          "path": "clips/clip-0001.md",
+          "label": "CLIP-0001"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "ADR",
-          "label": "ADR/"
+          "path": "releases/v0.2.md",
+          "label": "v0.2 release notes"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "LICENSE",
-          "label": "LICENSE"
-        },
-        {
-          "doc": "repo",
-          "id": "governance",
-          "path": "lf-decentralized-trust-labs_Charter.pdf",
-          "label": "Labs charter (PDF)"
+          "path": "LICENSE.md",
+          "label": "LICENSE.md"
         }
       ]
     },
     {
       "k": "svcA",
       "name": "CLPR Service, native (Hiero)",
-      "where": "hiero-ledger/hiero-consensus-node",
-      "plain": "On Hiero networks the CLPR Service is built into the node software itself. Its queues and channels live in the node's own state tree, which is what makes them provable with the network's own signature. Contracts reach it through a fixed system address.",
-      "detail": "Reachable from the EVM through a system contract. The state sits in the network's Merkle tree, so the channel record and each queued message are provable with Hiero state proofs. The implementation lives in hiero-ledger/hiero-consensus-node.",
+      "where": "Specified by HIP-1535",
+      "plain": "On Hiero networks the CLPR Service is a native service of the node software. Its queues and channels live in the node's own state tree, which is what makes them provable with the network's own signature. Contracts reach it through a fixed system address.",
+      "detail": "Reachable from the EVM through a system contract. The state sits in the network's Merkle tree, so the channel record and each queued message are provable with Hiero state proofs.",
       "refs": [
         {
           "doc": "repo",
@@ -60,9 +59,15 @@
           "label": "org profile: initial OSS"
         },
         {
-          "doc": "design",
-          "anchor": "310-the-clpr-service",
-          "label": "design §3.1.0"
+          "doc": "service",
+          "anchor": "1-structure-and-internal-state",
+          "label": "CLPR Service §1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         }
       ]
     },
@@ -71,7 +76,7 @@
       "name": "CLPR Service, contract (EVM)",
       "where": "LFDT-CLPR/clpr-smart-contracts",
       "plain": "On EVM ledgers the CLPR Service is a set of Solidity contracts. One immutable front door holds all the state and forwards each call to a module that knows how to handle it: channels, messaging, bundles, connectors, administration. Built and tested with Foundry.",
-      "detail": "One router contract holds the state and delegates each call to a logic module; libraries carry the state changes and the protobuf codecs. Read functions are not view functions (call them via eth_call). A snapshot of the storage layout is checked in CI because the logic modules and the EVM verifiers depend on the slot positions. A deployed service stays disabled until it is explicitly enabled.",
+      "detail": "One router contract holds the state and delegates each call to a logic module; libraries carry the state changes and the protobuf codecs. A snapshot of the storage layout is checked in CI because the logic modules and the EVM verifiers depend on the slot positions. A deployed service stays disabled until it is explicitly enabled.",
       "refs": [
         {
           "doc": "repo",
@@ -102,9 +107,9 @@
     {
       "k": "verB",
       "name": "Verifier contracts",
-      "where": "LFDT-CLPR/clpr-smart-contracts/src/verifiers",
-      "plain": "The specialists that check another ledger's proofs. Each channel names one when it is created and keeps that address for life, though the contract behind it may be upgradeable. Two have verifier specifications in the specification repository: one for Hiero networks (checking the network's joint threshold signature) and one for EVM ledgers running QBFT (checking validator seals on block headers plus storage proofs). The repository also carries verifier code for other consensus families.",
-      "detail": "The Hiero verifier decodes the state proof, derives the block root, checks the network's aggregate threshold signature and walks the leaf paths. The QBFT verifiers check validator seals on block headers, then account and storage proofs; one reads the validator set from block headers, one from a validator contract. The repository also carries an Ethereum verifier (a sync-committee light client), a Sei verifier (CometBFT validator signatures), a Tempo verifier (a threshold-signature finalization certificate) and an Avalanche stand-in used in tests. The spec's verifier documents describe a native verification path on Hiero.",
+      "where": "LFDT-CLPR/clpr-smart-contracts",
+      "plain": "The specialists that check another ledger's proofs. Each channel names one when it is opened and keeps it for life, though the contract behind it may be upgradeable. The specification documents proof schemes for two ledgers: Hiero (paths into its state under the network's threshold signature) and an EVM ledger that reaches consensus with QBFT (validator seals on block headers plus proofs of the CLPR Service contract's storage). A verifier contract combines one proof scheme of the source ledger with the verifier API of the destination ledger. The repository also carries verifier code for other consensus families.",
+      "detail": "The Hiero verifier decodes the state proof, derives the block root, checks the network's aggregate threshold signature and walks the leaf paths. The QBFT verifiers check validator seals on block headers, then account and storage proofs; one reads the validator set from block headers, one from a validator contract. On Hiero, built-in verifiers at fixed system addresses check bundles from Hiero and from QBFT ledgers without a deployed contract.",
       "refs": [
         {
           "doc": "repo",
@@ -127,13 +132,29 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/README.md",
-          "label": "spec verifiers/"
+          "path": "ledgers/README.md",
+          "label": "ledgers and proof schemes"
         },
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
         }
       ]
     },
@@ -141,8 +162,8 @@
       "k": "epB",
       "name": "Endpoint (relay) for EVM ledgers",
       "where": "LFDT-CLPR/clpr-endpoint",
-      "plain": "The endpoint program for EVM ledgers. It watches its own ledger's CLPR Service, talks to endpoints on the other side over gRPC, builds proofs of what its ledger has queued, dry-runs every bundle it receives, and submits the good ones as ordinary transactions. Its key signs and pays for its own transactions. It does not authenticate the endpoints it syncs with: a bundle is accepted on its proof, so nothing an endpoint holds can make a ledger accept a message.",
-      "detail": "It reads the chain over JSON-RPC, polling rather than subscribing to events, signs and submits its own transactions, and runs one sync loop per channel. Peers are chosen at random, weighted by past successes, and failing peers back off. One gRPC listener serves sync and the ledger configuration query, without TLS. Local proof types: QBFT (validators named in block headers, or held in a validator contract), CometBFT and Ethereum proof of stake; Hiero only as a peer.",
+      "plain": "The endpoint program for EVM ledgers. It watches its own ledger's CLPR Service, talks to endpoints on the other side over gRPC, builds proofs of what its ledger has queued, dry-runs every bundle it receives, and submits the good ones as ordinary transactions. Its key signs and pays for its own transactions. It does not authenticate the endpoints it syncs with: a bundle is accepted on its proof, checked by the channel's verifier, so an endpoint can delay a message but cannot forge one.",
+      "detail": "It reads the chain over JSON-RPC, polling rather than subscribing to events, signs and submits its own transactions, and runs one sync loop per channel. Peers are chosen at random, weighted by past successes, and failing peers back off. One gRPC listener serves sync and the ledger configuration query, without TLS. It builds proofs for QBFT ledgers among others, and handles Hiero only as a peer.",
       "refs": [
         {
           "doc": "repo",
@@ -167,6 +188,11 @@
           "id": "clpr-endpoint",
           "path": "clpr-relay-app/src/main/resources/relay-config-example.yaml",
           "label": "relay-config-example.yaml"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
         }
       ]
     },
@@ -174,39 +200,49 @@
       "k": "epA",
       "name": "Endpoints on Hiero",
       "where": "part of the native implementation",
-      "plain": "On a Hiero network there is no separate endpoint program: every consensus node is automatically an endpoint, and the list of them is kept up to date by the network itself. The node builds and signs the proofs itself; the endpoint only fetches the finished proof and carries it.",
-      "detail": "The endpoint manifest is derived from the consensus roster (joins, leaves and identity rotations bump its version; stake-only changes do not). Proofs are built by the node's state-proof machinery and retrieved by the endpoint; the EVM endpoint parses them and submits them untrimmed. Misbehaving nodes are removed by Hiero governance, which removes them from the manifest.",
+      "plain": "On a Hiero network there is no separate endpoint program: every consensus node is an endpoint, and the endpoint manifest is derived from the node roster by the network itself, with no administrator. Each node builds its bundles from a signed snapshot of the ledger's state, proven under the network's threshold signature.",
+      "detail": "Each node publishes its own endpoint, and the manifest's version moves on when the published endpoint list changes; a change in node weights alone does not change it. Bundle content is read from one signed snapshot, the state at the start of a block whose root the ledger's threshold signature signs directly, so the proven state is final. Misbehaving nodes are removed through the ledger's governance of its roster, which removes them from the manifest.",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "312-endpoint-manifest",
-          "label": "design §3.1.2"
+          "doc": "manifest",
+          "anchor": "2-endpoint-manifest",
+          "label": "Endpoint manifest §2"
+        },
+        {
+          "doc": "service",
+          "anchor": "33-roster-derived-manifest",
+          "label": "CLPR Service §3.3"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/state_proof.md",
-          "label": "verifiers/hiero/state_proof.md"
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/bundle-aggregation.md",
+          "label": "Hiero bundle aggregation"
         }
       ]
     },
     {
       "k": "wire",
       "name": "The sync protocol",
-      "where": "spec §1.5; clpr-endpoint proto + grpc modules",
-      "plain": "How two endpoints talk: specified to run over mutual TLS, each sync is one stream for one channel, on which each side says how far it has got and receives the next messages after that point, up to the bundle limits, together with the proof. Requests are cheap and unproven; bundles are proven. Nothing is delivered that the receiver did not ask for.",
-      "detail": "One gRPC stream is one sync cycle for one channel: each payload may carry a request, a response or both, and a payload with neither closes the stream. The specification secures the stream with mutual TLS, rooted in a certificate authority that each endpoint registers on its ledger. Message sizes are bounded by the sync limit the receiving ledger publishes. The reference endpoint serves this stream with the same payload messages, without TLS.",
+      "where": "Endpoint sync; LFDT-CLPR/clpr-endpoint",
+      "plain": "How two endpoints talk: each sync cycle is one stream for one channel, on which each side says how far it has got and receives at most one bundle with the messages after that point, within its own ledger's limits. Requests are unproven hints; bundles are proven. The stream runs over TLS when the serving endpoint lists a certificate in its endpoint manifest entry, and in plaintext otherwise.",
+      "detail": "One gRPC stream is one sync cycle for one channel, in four steps: the initiator's request, the responder's request with its bundle, the initiator's bundle, and the responder's terminal message. Each side sends at most one bundle per cycle, and each cycle uses a new stream. A client must use TLS with an endpoint that lists a certificate and must not fall back to plaintext; no client certificate is required, and TLS authenticates the server only when the client verifies its certificate. A bundle's authenticity rests on its proof, not on the transport. The reference endpoint serves this stream with the same payload messages, without TLS.",
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "15-sync-protocol",
-          "label": "spec §1.5"
+          "doc": "endpointSync",
+          "anchor": "3-exchange",
+          "label": "Endpoint sync §3"
         },
         {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "ADR/2026-07-14-endpoint-sync-streaming-and-mtls.md",
-          "label": "ADR 2026-07-14"
+          "doc": "endpointSync",
+          "anchor": "2-transport",
+          "label": "Endpoint sync §2"
         },
         {
           "doc": "repo",
@@ -225,9 +261,9 @@
     {
       "k": "conB",
       "name": "Connector contracts",
-      "where": "IClprConnector (EVM); native registration on Hiero",
-      "plain": "The account that pays, present on both ledgers under one identity. On the sending side its contract decides whether to approve a message, and later pays for delivering the reply; on the receiving side its balance pays for running the message. On either side its locked stake is what gets fined if it breaks its promise. Anyone can register one on a channel, with a balance and a stake.",
-      "detail": "The connector interface has three calls: one authorizes an outbound message and answers yes or no, one pays the service exactly the amount it asks for, and one is a best-effort notification of an inbound message under a gas stipend. Registration is by commit and reveal, and the connector id is derived from the channel id, the operator's public key and a salt, so it is the same on both ledgers. EVM specifics: a per-connector queue quota and geometric slashing.",
+      "where": "The connector interface (EVM ledgers); native registration on Hiero",
+      "plain": "The account that pays, present on both ledgers under one identity. On the sending side its contract decides whether to approve a message, and later pays for delivering the reply; on the receiving side its balance pays for running the message. Anyone can register one on a channel. Its contract holds the funds that pay for execution, and under the recommended design it also locks a stake, which is slashed when it breaks its promise.",
+      "detail": "The connector interface has three calls: one authorizes an outbound message and answers yes or no, one pays the service exactly the amount it asks for, and one is a best-effort notification of an inbound message under a gas stipend. Registration is by commit and reveal, and the connector id is derived from the channel id, the operator's public key and a salt, so registering with the same key and salt on both ledgers gives the same id. The recommended design adds a per-connector share of the queue and penalties that escalate and end in a ban.",
       "refs": [
         {
           "doc": "repo",
@@ -236,22 +272,42 @@
           "label": "IClprConnector.sol"
         },
         {
-          "doc": "design",
-          "anchor": "331-connectors",
-          "label": "design §3.3.1"
+          "doc": "connectorSetup",
+          "anchor": "1-connector-identity",
+          "label": "Connector setup §1"
         },
         {
-          "doc": "spec",
-          "anchor": "63-connector-management",
-          "label": "spec §6.3"
+          "doc": "connectorSetup",
+          "anchor": "5-removal",
+          "label": "Connector setup §5"
+        },
+        {
+          "doc": "economics",
+          "anchor": "3-queue-quotas",
+          "label": "Channel economics §3"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "22-penalty",
+          "label": "Stakes and bonds §2.2"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "1-connector-stake",
+          "label": "Stakes and bonds §1"
+        },
+        {
+          "doc": "service",
+          "anchor": "13-connector-record-and-counters",
+          "label": "CLPR Service §1.3"
         }
       ]
     },
     {
       "k": "appB",
       "name": "Applications",
-      "where": "IClprApplication; anything you deploy",
-      "plain": "Your program. It calls one function to send and implements two callbacks to receive: one for an incoming message (whatever it returns becomes the reply) and one for the reply to a message it sent. It chooses, and should vet, the channel and the connector for each message; proofs, endpoints, verification and payment are handled below it.",
+      "where": "The application interface; anything you deploy",
+      "plain": "Your program. It calls one function to send and implements two callbacks to receive: one for an incoming message (the data it returns becomes the reply) and one for the reply to a message it sent. It chooses, and should vet, the channel and the connector for each message; proofs, endpoints and verification are handled below it, and it pays its connector on the connector's own terms.",
       "detail": "The send call names the channel, the connector, the target application and the message data, and returns the message id. The reply callback is invoked best-effort and only for senders with code. The repository's end-to-end test application shows a contract acting as both sender and receiver.",
       "refs": [
         {
@@ -267,14 +323,14 @@
           "label": "E2EApplication.sol"
         },
         {
-          "doc": "design",
-          "anchor": "34-application-layer",
-          "label": "design §3.4"
+          "doc": "overview",
+          "anchor": "8-application-patterns",
+          "label": "Overview §8"
         },
         {
-          "doc": "design",
-          "anchor": "24-participant-roles",
-          "label": "design §2.4"
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
         },
         {
           "doc": "repo",
@@ -288,8 +344,8 @@
       "k": "lab",
       "name": "The lab: LF Decentralized Trust",
       "where": "LFDT-CLPR/governance and .github",
-      "plain": "Where the specification, the smart contracts and the EVM endpoint are governed: an incubation space under the Linux Foundation's LF Decentralized Trust, offered by the Hedera Governing Council and open to anyone, with code under the Apache License 2.0 and a Developer Certificate of Origin sign-off on every code contribution.",
-      "detail": "governance/: the signed Labs charter (TAC oversight; Apache-2.0 code; DCO; CSL-1.0 specifications; CC BY 4.0 docs), teams.yml (every team and its rights on each repository) and CODEOWNERS. .github/profile/README.md: scope of the lab, terminology, the four layers, the extension process.",
+      "plain": "Where the specification, the smart contracts and the EVM endpoint are governed: a lab of LF Decentralized Trust Labs, an incubation space for very early open projects, open to anyone, with code under the Apache License 2.0 and a Developer Certificate of Origin sign-off on every code contribution.",
+      "detail": "The governance repository: the signed Labs charter (TAC oversight; Apache-2.0 code; DCO; CSL-1.0 specifications; CC BY 4.0 docs), the team list with each team's rights on each repository, and the code owners. The organization profile: scope of the lab, terminology, the four layers, the extension process.",
       "refs": [
         {
           "doc": "repo",

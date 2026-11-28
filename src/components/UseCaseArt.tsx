@@ -4,7 +4,7 @@ import type { Point } from "@/components/fibres";
 import { Bundle, fibre, Glows, LaneGradient, MiniLedger, Mover, Pulse, Star, TONES, type Tone } from "@/components/fibreSvg";
 import { useCases } from "@/content/site";
 
-// Decorative diagrams for the four application patterns, in the vocabulary and motion of ComponentArt:
+// Decorative diagrams for the three application patterns, in the vocabulary and motion of ComponentArt:
 // the message leaves at the start of the cycle and lands at 42% (2.02s), the response is back by 92% (4.42s).
 
 const WIDTH = 320;
@@ -175,30 +175,5 @@ function SwapArt() {
   );
 }
 
-function HieroArt() {
-  const id = "pattern-hiero";
-  const a = { x: 52, y: 78 };
-  const b = { x: 268, y: 78 };
-  const { upper, lower } = lanes(a, b, 30);
-  return (
-    <Art id={id}>
-      {/* Dashed: the design names this pattern in one sentence and does not yet specify it. */}
-      <path d={fibre(upper.from, upper.to, upper.bow)} stroke={TONES.violet} strokeOpacity={0.55} strokeWidth={1} strokeDasharray="3 4" />
-      <path d={fibre(lower.from, lower.to, lower.bow)} stroke={TONES.warm} strokeOpacity={0.45} strokeWidth={1} strokeDasharray="3 4" />
-      <MiniLedger id={id} tone="violet" x={a.x} y={a.y} r={28} seed={9} />
-      <MiniLedger id={id} tone="violet" x={b.x} y={b.y} r={28} seed={10} />
-      <Mover path={fibre(upper.from, upper.to, upper.bow)} motion="prop-message" at={55}>
-        <Asset tone="violet" />
-      </Mover>
-      <Mover path={fibre(lower.from, lower.to, lower.bow)} motion="prop-response" at={35}>
-        <Response />
-      </Mover>
-      <Label x={160} y={24}>{labels.outlined}</Label>
-      <Label x={a.x} y={140}>{labels.hiero}</Label>
-      <Label x={b.x} y={140}>{labels.hiero}</Label>
-    </Art>
-  );
-}
-
 /** One diagram per pattern, in the order of `useCases.patterns`. */
-export const USE_CASE_ART = [CallArt, EscrowArt, SwapArt, HieroArt];
+export const USE_CASE_ART = [CallArt, EscrowArt, SwapArt];

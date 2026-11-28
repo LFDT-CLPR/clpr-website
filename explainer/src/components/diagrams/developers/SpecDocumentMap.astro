@@ -1,71 +1,77 @@
 ---
-/** What the specification consists of: the design document (the why) and the protocol specification (the what) side by side, one folder per supported proof system under the specification, the decision records that feed changes into both documents, and the options list of undecided ideas. Drawn from the clpr-spec repository layout. */
+/** What the specification consists of: the non-normative overview, then the three categories of normative text (the Protocol modules, the Ledger Specifications and the Recommendations), the open issues list, and CLIPs as the way the Protocol changes. Drawn from the clpr-spec README.md, clpr-overview.md §6 and clips/clip-0001.md §3 and §6. */
 import Figure from '@kse/components/Figure.astro';
-import { pinned } from '../../../lib/sources';
+import { pinned, overview, openIssues } from '../../../lib/sources';
 ---
 <Figure
   lead="The document set."
-  caption="The design document explains the reasoning and the protocol specification fixes the rules. One folder per supported proof system says how that ledger's proofs are built and checked. Decision records carry changes with their reasoning; the options list holds what is undecided."
+  caption="The overview introduces the parts and the vocabulary. The Protocol modules are required of every implementation, the Ledger Specifications of anyone interoperating with that ledger, and the Recommendations are advised for a deployment, which may differ from them. The open issues list known questions; CLIPs are how the Protocol changes."
   source={[
-    { label: 'clpr-spec', href: pinned('clpr-spec') },
-    { label: 'ADR/README.md', href: pinned('clpr-spec', 'ADR/README.md') },
-    { label: 'verifiers/README.md', href: pinned('clpr-spec', 'verifiers/README.md') },
-    { label: 'options to consider', href: pinned('clpr-spec', 'clpr-options-to-consider.md') },
+    { label: 'README.md', href: pinned('clpr-spec', 'README.md') },
+    { label: 'Overview §6', href: overview('6-how-the-specification-is-organized') },
+    { label: 'CLIP-0001', href: pinned('clpr-spec', 'clips/clip-0001.md') },
+    { label: 'Ledger Specifications', href: pinned('clpr-spec', 'ledgers/README.md') },
+    { label: 'Open issues', href: openIssues() },
   ]}
   kind="plain"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 316" role="img" aria-label="Two documents side by side: the design document (the why) and the protocol specification (the what). Below the specification, two folders, verifiers/hiero and verifiers/qbft, each with three short documents. Below the design document, the ADR folder of five dated decision records, with arrows carrying changes into both documents, and beside it the options list of thirteen undecided ideas.">
+  <svg viewBox="0 0 760 316" role="img" aria-label="At the top, the overview, non-normative: parts, message flow, trust model, roles and vocabulary. Below it three categories side by side. The Protocol, required of every implementation, with its modules: conventions, ledger configuration, endpoint manifest, channel setup, connector setup, messaging, bundle, verifier interface, channel state transitions, endpoint sync and schema. The Ledger Specifications, required for one ledger: its ledger specification, verifier API, bundle aggregation and proof schemes; the verifier API is shared within a family. The Recommendations, advised for a deployment, which may differ: CLPR Service, stakes and bonds, channel economics. Under the Protocol, CLIPs, the CLPR Improvement Proposals, with an arrow into the Protocol: they are how it changes. Beside them, the open issues: known open design questions, non-normative.">
     <defs>
       <marker id="sdm-arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--text-3)"/></marker>
       <marker id="sdm-arrow-ok" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--ok)"/></marker>
     </defs>
 
-    <!-- the two documents -->
-    <rect x="40" y="30" width="310" height="80" rx="10" class="d-ok"/>
-    <text x="195" y="54" class="t b center">Design document</text>
-    <text x="195" y="72" class="t mono center">clpr-service.md</text>
-    <text x="195" y="94" class="t small center">the why: problem, layers, roles, trust, failures</text>
+    <!-- the overview, read first -->
+    <line x1="260" y1="70" x2="160" y2="90" class="line dash" marker-end="url(#sdm-arrow)"/>
+    <line x1="380" y1="70" x2="380" y2="90" class="line dash" marker-end="url(#sdm-arrow)"/>
+    <line x1="500" y1="70" x2="600" y2="90" class="line dash" marker-end="url(#sdm-arrow)"/>
+    <rect x="190" y="14" width="380" height="56" rx="10" class="d-surface"/>
+    <text x="380" y="36" class="t b center">Overview (non-normative)</text>
+    <text x="380" y="54" class="t small center">parts, message flow, trust model, roles, vocabulary</text>
 
-    <rect x="410" y="30" width="310" height="80" rx="10" class="d-ok"/>
-    <text x="565" y="54" class="t b center">Protocol specification</text>
-    <text x="565" y="72" class="t mono center">clpr-service-spec.md</text>
-    <text x="565" y="94" class="t small center">the what: byte formats, state, algorithms, operations</text>
+    <!-- Protocol -->
+    <rect x="20" y="92" width="250" height="134" rx="10" class="d-ok"/>
+    <text x="145" y="112" class="t b center">Protocol</text>
+    <text x="145" y="128" class="t small center muted">MUST: every implementation</text>
+    <text x="145" y="146" class="t small center">conventions · ledger configuration</text>
+    <text x="145" y="160" class="t small center">endpoint manifest · channel setup</text>
+    <text x="145" y="174" class="t small center">connector setup · messaging</text>
+    <text x="145" y="188" class="t small center">bundle · verifier interface</text>
+    <text x="145" y="202" class="t small center">channel state transitions</text>
+    <text x="145" y="216" class="t small center">endpoint sync · schema</text>
 
-    <!-- one folder per proof system -->
-    <line x1="485" y1="110" x2="485" y2="168" class="line ok dash" marker-end="url(#sdm-arrow-ok)"/>
-    <line x1="645" y1="110" x2="645" y2="168" class="line ok dash" marker-end="url(#sdm-arrow-ok)"/>
-    <text x="565" y="144" class="t small center muted">one folder per proof system</text>
+    <!-- Ledger Specifications -->
+    <rect x="285" y="92" width="190" height="134" rx="10" class="d-a"/>
+    <text x="380" y="112" class="t b center">Ledger Specifications</text>
+    <text x="380" y="128" class="t small center muted">MUST for one ledger</text>
+    <text x="380" y="146" class="t small center">ledger specification</text>
+    <text x="380" y="160" class="t small center">verifier API</text>
+    <text x="380" y="174" class="t small center">bundle aggregation</text>
+    <text x="380" y="188" class="t small center">proof schemes</text>
+    <text x="380" y="202" class="t small center">verifier API shared</text>
+    <text x="380" y="216" class="t small center">within a family</text>
 
-    <rect x="410" y="170" width="150" height="86" rx="8" class="d-surface"/>
-    <text x="485" y="190" class="t mono center b">verifiers/hiero</text>
-    <text x="485" y="210" class="t mono center muted">state_proof</text>
-    <text x="485" y="226" class="t mono center muted">verifier_contract</text>
-    <text x="485" y="242" class="t mono center muted">trust_anchor</text>
+    <!-- Recommendations -->
+    <rect x="490" y="92" width="250" height="134" rx="10" class="d-b"/>
+    <text x="615" y="112" class="t b center">Recommendations</text>
+    <text x="615" y="128" class="t small center muted">SHOULD: a deployment may differ</text>
+    <text x="615" y="146" class="t small center">CLPR Service</text>
+    <text x="615" y="160" class="t small center">stakes and bonds</text>
+    <text x="615" y="174" class="t small center">channel economics</text>
 
-    <rect x="570" y="170" width="150" height="86" rx="8" class="d-surface"/>
-    <text x="645" y="190" class="t mono center b">verifiers/qbft</text>
-    <text x="645" y="210" class="t mono center muted">state_proof</text>
-    <text x="645" y="226" class="t mono center muted">verifier_contract</text>
-    <text x="645" y="242" class="t mono center muted">trust_anchor</text>
+    <!-- CLIPs change the Protocol -->
+    <line x1="145" y1="240" x2="145" y2="229" class="line ok" marker-end="url(#sdm-arrow-ok)"/>
+    <rect x="20" y="240" width="250" height="44" rx="8" class="d-grey"/>
+    <text x="145" y="258" class="t b center">CLIPs</text>
+    <text x="145" y="275" class="t small center">proposals: how the Protocol changes</text>
 
-    <!-- decision records -->
-    <rect x="40" y="170" width="160" height="66" rx="8" class="d-grey"/>
-    <text x="120" y="192" class="t mono center b">ADR/</text>
-    <text x="120" y="210" class="t small center">five dated</text>
-    <text x="120" y="226" class="t small center">decision records</text>
-    <line x1="120" y1="170" x2="120" y2="112" class="line" marker-end="url(#sdm-arrow)"/>
-    <text x="128" y="146" class="t small muted">changes</text>
-    <path d="M166,170 C166,134 300,134 410,114" class="line" marker-end="url(#sdm-arrow)"/>
-    <text x="296" y="128" class="t small center muted">changes</text>
-
-    <!-- options list -->
-    <rect x="220" y="170" width="160" height="66" rx="8" class="d-grey"/>
-    <text x="300" y="192" class="t b center">Options to consider</text>
-    <text x="300" y="210" class="t small center">thirteen ideas</text>
-    <text x="300" y="226" class="t small center">not yet decided</text>
+    <!-- open issues -->
+    <rect x="285" y="240" width="455" height="44" rx="8" class="d-grey"/>
+    <text x="512" y="258" class="t b center">Open issues</text>
+    <text x="512" y="275" class="t small center">known open design questions; non-normative</text>
 
     <!-- takeaway -->
-    <text x="380" y="296" class="t take center">Two documents carry the rules; the records say why they changed; the options list says what is still open.</text>
+    <text x="380" y="306" class="t take center">Three strengths: MUST everywhere, MUST for one ledger, SHOULD. CLIPs change the Protocol.</text>
   </svg>
 </Figure>

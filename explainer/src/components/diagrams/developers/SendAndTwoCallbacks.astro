@@ -1,92 +1,101 @@
 ---
-/** The application surface in one round trip: sendMessage out, onClprMessage on the peer, onClprResponse back under the same message_id; spec §6.4-6.5, design §3.3.3. */
+/** The application surface in one round trip: a send out, the message delivered to the target application on the peer, the reply back under the same message id; the destination CLPR Service has its own verifier check the bundle and its connector pay. Messaging §5 to §7, Verifier interface §1, and the callbacks of both ledgers' Ledger Specifications (Hiero §6.3, EVM family §3.1). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec, sol } from '../../../lib/sources';
+import { messaging, verifierIface, pinned } from '../../../lib/sources';
 ---
 <Figure
   lead="One call out, two callbacks in."
-  caption="sendMessage returns a message_id; the destination's onClprMessage return value becomes the reply; that reply reaches your onClprResponse under the same message_id. Steps 2, 3, 6 and 7 are the transport the earlier sections describe."
-  source={[{ label: 'spec §6.4', href: spec('64-messaging') }, { label: 'spec §6.5 Application Delivery', href: spec('application-delivery') }, { label: 'design §3.3.3', href: design('333-receiving-routing-and-paying') }, { label: 'IClprApplication.sol', href: sol('src/interfaces/IClprApplication.sol') }]}
+  caption="The send returns a message id; the return data of the destination application becomes the reply; that reply reaches your contract under the same message id, on a best-effort call. CLPR Service B has its own verifier check each bundle and its connector pay for the execution. Steps 2, 3, 6 and 7 are the transport the earlier sections describe."
+  source={[{ label: 'Messaging §5', href: messaging('5-enqueue') }, { label: 'Messaging §6', href: messaging('6-delivery-to-the-application') }, { label: 'Messaging §7', href: messaging('7-replies') }, { label: 'Verifier interface §1', href: verifierIface('1-verifier-contracts-and-trust-anchors') }, { label: 'Hiero: application callbacks', href: pinned('clpr-spec', 'ledgers/hiero/ledger.md') }, { label: 'EVM family: application interface', href: pinned('clpr-spec', 'ledgers/evm/ledger-family.md') }]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 300" role="img" aria-label="Eight numbered steps. Your contract on ledger A calls sendMessage and gets a message_id; CLPR Service A queues the message; endpoints submit the bundle to CLPR Service B; the service calls onClprMessage on the target contract; the returned bytes become the reply; it is queued as a Response Message; endpoints submit it back; CLPR Service A calls onClprResponse on your contract with the same message_id.">
+  <svg viewBox="0 0 760 300" role="img" aria-label="Eight numbered steps. Your contract on ledger A sends a message and gets a message id; CLPR Service A queues the message; endpoints carry the bundle and submit it to CLPR Service B, which has its own verifier check it and its connector pay; the Service invokes the target contract with the channel, the sender and the data; the target's return data becomes the reply; it is queued as a REPLY message; endpoints submit it back; CLPR Service A delivers the reply to your contract with the same message id.">
     <defs>
       <marker id="stc-arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--a)" /></marker>
       <marker id="stc-arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--b)" /></marker>
     </defs>
 
-    <!-- contracts -->
-    <rect x="16" y="16" width="200" height="64" rx="8" class="d-a" />
-    <text x="116" y="38" class="t b center">Your contract on A</text>
-    <text x="116" y="56" class="t small center">calls sendMessage;</text>
-    <text x="116" y="70" class="t small center">receives onClprResponse</text>
+    <!-- arrows first, boxes over them -->
+    <line x1="40" y1="68" x2="40" y2="138" class="line a" marker-end="url(#stc-arrow-a)" />
+    <line x1="174" y1="140" x2="174" y2="70" class="line b" marker-end="url(#stc-arrow-b)" />
+    <line x1="580" y1="140" x2="580" y2="70" class="line a" marker-end="url(#stc-arrow-a)" />
+    <line x1="730" y1="68" x2="730" y2="138" class="line b" marker-end="url(#stc-arrow-b)" />
+    <line x1="208" y1="158" x2="308" y2="158" class="line a" marker-end="url(#stc-arrow-a)" />
+    <line x1="442" y1="158" x2="564" y2="158" class="line a" marker-end="url(#stc-arrow-a)" />
+    <line x1="544" y1="196" x2="422" y2="196" class="line b" marker-end="url(#stc-arrow-b)" />
+    <line x1="288" y1="196" x2="188" y2="196" class="line b" marker-end="url(#stc-arrow-b)" />
+    <line x1="608" y1="212" x2="608" y2="222" class="line" />
+    <line x1="702" y1="212" x2="702" y2="222" class="line money" />
 
-    <rect x="544" y="16" width="200" height="64" rx="8" class="d-b" />
-    <text x="644" y="38" class="t b center">Target contract on B</text>
-    <text x="644" y="56" class="t small center">onClprMessage runs;</text>
-    <text x="644" y="70" class="t small center">returned bytes = the reply</text>
+    <!-- contracts -->
+    <rect x="16" y="12" width="200" height="56" rx="8" class="d-a" />
+    <text x="116" y="31" class="t b center">Your contract on A</text>
+    <text x="116" y="47" class="t small center">sends a message;</text>
+    <text x="116" y="61" class="t small center">receives the reply</text>
+
+    <rect x="544" y="12" width="200" height="56" rx="8" class="d-b" />
+    <text x="644" y="31" class="t b center">Target contract on B</text>
+    <text x="644" y="47" class="t small center">invoked with the message;</text>
+    <text x="644" y="61" class="t small center">return data = the reply</text>
 
     <!-- services and endpoints -->
-    <rect x="16" y="170" width="170" height="84" rx="8" class="d-a" />
-    <text x="101" y="192" class="t b center">CLPR Service A</text>
-    <text x="101" y="210" class="t small center">assigns message_id;</text>
-    <text x="101" y="224" class="t small center">enqueues the message;</text>
-    <text x="101" y="238" class="t small center">delivers the response</text>
+    <rect x="16" y="140" width="170" height="72" rx="8" class="d-a" />
+    <text x="101" y="160" class="t b center">CLPR Service A</text>
+    <text x="101" y="176" class="t small center">assigns the message id;</text>
+    <text x="101" y="190" class="t small center">enqueues the message;</text>
+    <text x="101" y="204" class="t small center">delivers the reply</text>
 
-    <rect x="310" y="170" width="110" height="84" rx="8" class="d-c" />
-    <text x="365" y="192" class="t b center">Endpoints</text>
-    <text x="365" y="210" class="t small center">sync, prove,</text>
-    <text x="365" y="226" class="t mono center">submitBundle</text>
-    <text x="365" y="242" class="t small center">both directions</text>
+    <rect x="310" y="140" width="110" height="72" rx="8" class="d-c" />
+    <text x="365" y="160" class="t b center">Endpoints</text>
+    <text x="365" y="176" class="t small center">sync and submit</text>
+    <text x="365" y="190" class="t small center">bundles, both</text>
+    <text x="365" y="204" class="t small center">directions</text>
 
-    <rect x="566" y="170" width="178" height="84" rx="8" class="d-b" />
-    <text x="655" y="192" class="t b center">CLPR Service B</text>
-    <text x="655" y="210" class="t small center">verifies the bundle;</text>
-    <text x="655" y="224" class="t small center">charges the connector;</text>
-    <text x="655" y="238" class="t small center">queues the reply</text>
+    <rect x="566" y="140" width="178" height="72" rx="8" class="d-b" />
+    <text x="655" y="160" class="t b center">CLPR Service B</text>
+    <text x="655" y="176" class="t small center">its verifier checks the</text>
+    <text x="655" y="190" class="t small center">bundle; the connector</text>
+    <text x="655" y="204" class="t small center">pays; reply queued</text>
+
+    <!-- B's own verifier and connector, beside the Service -->
+    <rect x="566" y="222" width="84" height="40" rx="8" class="d-ok" />
+    <text x="608" y="238" class="t b small center">Verifier</text>
+    <text x="608" y="254" class="t small center">checks</text>
+    <rect x="660" y="222" width="84" height="40" rx="8" class="d-money" />
+    <text x="702" y="238" class="t b small center">Connector</text>
+    <text x="702" y="254" class="t small center">pays</text>
 
     <!-- 1 send -->
-    <line x1="40" y1="80" x2="40" y2="168" class="line a" marker-end="url(#stc-arrow-a)" />
-    <circle cx="26" cy="110" r="9" class="d-grey" /><text x="26" y="114" class="t small center b">1</text>
-    <text x="50" y="118" class="t mono">sendMessage(…)</text>
-    <text x="50" y="132" class="t mono">→ message_id</text>
+    <circle cx="26" cy="96" r="9" class="d-grey" /><text x="26" y="100" class="t small center b">1</text>
+    <text x="50" y="96" class="t small">send</text>
+    <text x="50" y="110" class="t small">→ message id</text>
 
-    <!-- 8 response callback -->
-    <line x1="174" y1="170" x2="174" y2="82" class="line b" marker-end="url(#stc-arrow-b)" />
-    <circle cx="160" cy="110" r="9" class="d-grey" /><text x="160" y="114" class="t small center b">8</text>
-    <text x="184" y="118" class="t mono">onClprResponse(…)</text>
-    <text x="184" y="132" class="t small">same message_id</text>
+    <!-- 8 reply callback -->
+    <circle cx="160" cy="96" r="9" class="d-grey" /><text x="160" y="100" class="t small center b">8</text>
+    <text x="184" y="96" class="t small">reply delivered</text>
+    <text x="184" y="110" class="t small">same message id</text>
 
     <!-- 2, 3: request lane -->
-    <circle cx="197" cy="190" r="9" class="d-grey" /><text x="197" y="194" class="t small center b">2</text>
-    <line x1="208" y1="190" x2="308" y2="190" class="line a" marker-end="url(#stc-arrow-a)" />
-    <text x="258" y="206" class="t small center">bundle + proof</text>
-
-    <circle cx="431" cy="190" r="9" class="d-grey" /><text x="431" y="194" class="t small center b">3</text>
-    <line x1="442" y1="190" x2="564" y2="190" class="line a" marker-end="url(#stc-arrow-a)" />
-    <text x="503" y="206" class="t mono center">submitBundle</text>
+    <circle cx="197" cy="158" r="9" class="d-grey" /><text x="197" y="162" class="t small center b">2</text>
+    <text x="258" y="174" class="t small center">bundle + proof</text>
+    <circle cx="431" cy="158" r="9" class="d-grey" /><text x="431" y="162" class="t small center b">3</text>
+    <text x="503" y="174" class="t small center">submitted</text>
 
     <!-- 4 deliver, 5 reply -->
-    <line x1="580" y1="170" x2="580" y2="82" class="line a" marker-end="url(#stc-arrow-a)" />
-    <circle cx="566" cy="110" r="9" class="d-grey" /><text x="566" y="114" class="t small center b">4</text>
-    <text x="590" y="118" class="t mono">onClprMessage(…)</text>
-    <text x="590" y="132" class="t small">channelId, sender, data</text>
+    <circle cx="566" cy="96" r="9" class="d-grey" /><text x="566" y="100" class="t small center b">4</text>
+    <text x="582" y="100" class="t small">invoked with the message</text>
 
-    <line x1="730" y1="80" x2="730" y2="168" class="line b" marker-end="url(#stc-arrow-b)" />
-    <circle cx="716" cy="150" r="9" class="d-grey" /><text x="716" y="154" class="t small center b">5</text>
-    <text x="702" y="148" class="t small end">returned bytes</text>
-    <text x="702" y="162" class="t small end">= the reply</text>
+    <circle cx="716" cy="124" r="9" class="d-grey" /><text x="716" y="128" class="t small center b">5</text>
+    <text x="702" y="122" class="t small end">return data</text>
+    <text x="702" y="136" class="t small end">= the reply</text>
 
     <!-- 6, 7: response lane -->
-    <circle cx="555" cy="236" r="9" class="d-grey" /><text x="555" y="240" class="t small center b">6</text>
-    <line x1="544" y1="236" x2="422" y2="236" class="line b" marker-end="url(#stc-arrow-b)" />
-    <text x="483" y="252" class="t small center">Response Message</text>
+    <circle cx="555" cy="196" r="9" class="d-grey" /><text x="555" y="200" class="t small center b">6</text>
+    <text x="483" y="212" class="t small center">REPLY message</text>
+    <circle cx="299" cy="196" r="9" class="d-grey" /><text x="299" y="200" class="t small center b">7</text>
+    <text x="238" y="212" class="t small center">submitted</text>
 
-    <circle cx="299" cy="236" r="9" class="d-grey" /><text x="299" y="240" class="t small center b">7</text>
-    <line x1="288" y1="236" x2="188" y2="236" class="line b" marker-end="url(#stc-arrow-b)" />
-    <text x="238" y="252" class="t mono center">submitBundle</text>
-
-    <text x="380" y="284" class="t take center">The message_id from step 1 is the key you match in step 8.</text>
+    <text x="380" y="286" class="t take center">The message id from step 1 is the key you match in step 8.</text>
   </svg>
 </Figure>

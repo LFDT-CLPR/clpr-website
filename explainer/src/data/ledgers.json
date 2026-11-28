@@ -1,33 +1,37 @@
 {
-  "$comment": "The kinds of ledger CLPR can connect, one row per verifier upstream. status: documented = the specification describes the verifier (clpr-spec/verifiers/<specDir>); code = verifier code exists in clpr-smart-contracts without a specification document; mock = a stand-in. check-data.mjs fails when a verifier directory upstream has no row here.",
+  "$comment": "The kinds of ledger CLPR can connect. status: documented = the ledger has a Ledger Specification in clpr-spec/ledgers/<specDir>/ledger.md (the index is clpr-spec/ledgers/README.md); code = verifier code exists in clpr-smart-contracts without a Ledger Specification, and the row's text keeps to what the code's own documents say; mock = a stand-in. check-data.mjs fails when a ledger directory or a verifier code directory upstream has no row here.",
   "ledgers": [
     {
       "id": "hiero",
-      "name": "Hiero networks: Hedera and private HashSpheres",
-      "proof": "A joint threshold signature by the network's validators over a summary of its state, plus the paths down to each record it proves",
+      "name": "Hiero networks, public and private",
+      "proof": "Paths into the network's state under a threshold signature of its nodes on the block root. Two proof schemes: Hiero receivers also check a proof that ties the signing key to the ledger's fixed identity; EVM receivers follow the signing key as the node roster changes",
       "status": "documented",
-      "specDir": "verifiers/hiero",
+      "specDir": "ledgers/hiero",
       "codeDir": "src/verifiers/hiero",
-      "service": "Built into the consensus node",
+      "service": "A native service of the ledger",
       "endpoint": "Every consensus node is one",
       "refs": [
-        { "doc": "repo", "id": "clpr-spec", "path": "verifiers/hiero/state_proof.md", "label": "Hiero state proof" },
-        { "doc": "repo", "id": "clpr-spec", "path": "verifiers/hiero/verifier_contract.md", "label": "Hiero verifier" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/hiero/ledger.md", "label": "Hiero ledger specification" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/hiero/proof-schemes/hints-wraps.md", "label": "Hiero proof scheme: hinTS with WRAPS" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/hiero/proof-schemes/hints.md", "label": "Hiero proof scheme: hinTS" },
         { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/hiero/HieroVerifier.sol", "label": "HieroVerifier.sol" }
       ]
     },
     {
       "id": "qbft",
-      "name": "EVM ledgers running QBFT",
-      "proof": "A block header carrying the validators' seals, plus a proof of the storage slots that hold the data. In the reference code the validator set is named in block headers or held in a validator contract",
+      "name": "An EVM ledger that reaches consensus with QBFT",
+      "proof": "A block header carrying the validators' seals, plus a proof of the CLPR Service contract's storage that holds the data. Three proof schemes differ in where the validator set comes from: epoch boundary headers, every block header, or a validator contract",
       "status": "documented",
-      "specDir": "verifiers/qbft",
+      "specDir": "ledgers/besu",
       "codeDir": "src/verifiers/evm/qbft",
-      "service": "Solidity contracts",
-      "endpoint": "The endpoint program",
+      "service": "A smart contract",
+      "endpoint": "Registered endpoints; under the recommended design, the CLPR Service administrator admits them",
       "refs": [
-        { "doc": "repo", "id": "clpr-spec", "path": "verifiers/qbft/state_proof.md", "label": "QBFT state proof" },
-        { "doc": "repo", "id": "clpr-spec", "path": "verifiers/qbft/verifier_contract.md", "label": "QBFT verifier" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/besu/ledger.md", "label": "EVM ledger specification (QBFT)" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/evm/verifier-api.md", "label": "EVM verifier API" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/README.md", "label": "ledgers and proof schemes" },
+        { "doc": "overview", "anchor": "5-roles", "label": "Overview §5" },
+        { "doc": "service", "anchor": "32-registration-and-admission", "label": "CLPR Service §3.2" },
         { "doc": "repo", "id": "clpr-smart-contracts", "path": "src/verifiers/evm/qbft/qbft-verifier.md", "label": "QBFT verifiers" },
         { "doc": "repo", "id": "clpr-endpoint", "path": "clpr-relay-app/src/main/java/org/hiero/clpr/relay/app/ProofType.java", "label": "endpoint proof types" }
       ]

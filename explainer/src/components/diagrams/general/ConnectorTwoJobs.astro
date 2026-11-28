@@ -1,20 +1,24 @@
 ---
-/** One connector, registered on both ledgers: approves a message before it is queued on the sending side, is charged gas plus a margin on the receiving side (design §3.3.1, §3.3.3; spec §3.3). */
+/** One connector, registered on both ledgers with the same connector id: authorizes a message before it is queued on the sending side, and pays for running it, plus a margin, on the receiving side; its stake can be slashed. Connector setup §1, §3, §4; Channel economics §1, §2 and Stakes and bonds §1, §2 (Recommendations). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { connectorSetup, economics, stakes } from '../../../lib/sources';
 ---
 <Figure
   lead="One connector, two moments."
-  caption="Before a message is queued, the connector on the sending ledger says whether it will cover it. After the message runs, the connector on the receiving ledger is charged the gas used plus a margin, and all of it goes to the account that submitted the bundle. No new token, no treasury."
+  caption="Before a message is queued, the connector on the sending ledger authorizes it, and so commits that its counterpart on the receiving ledger can pay. There, the recommended design charges that connector for running the message plus a margin, and pays all of it to the account that submitted the bundle. Each connector also locks a stake, which the recommended design slashes when a message it answers for cannot be paid for. No new token."
   source={[
-    { label: 'design §3.3.1', href: design('331-connectors') },
-    { label: 'design §3.3.3', href: design('333-receiving-routing-and-paying') },
-    { label: 'spec §3.3', href: spec('33-connector-authorization-interface') },
+    { label: 'Connector setup §1', href: connectorSetup('1-connector-identity') },
+    { label: 'Connector setup §3', href: connectorSetup('3-connectors-on-both-ledgers') },
+    { label: 'Connector setup §4', href: connectorSetup('4-authorization-of-outbound-messages') },
+    { label: 'Channel economics §1', href: economics('1-execution-charges') },
+    { label: 'Channel economics §2', href: economics('2-payment-to-the-bundle-submitter') },
+    { label: 'Stakes and bonds §1', href: stakes('1-connector-stake') },
+    { label: 'Stakes and bonds §2', href: stakes('2-slashing-and-bans') },
   ]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 360" role="img" aria-label="Two ledger frames side by side. On the left, Ledger A: the application asks CLPR Service A to send message 41, the service asks the connector on A to approve it, and the message is queued in the outbound queue. On the right, Ledger B: an endpoint submits the bundle and pays the fee, CLPR Service B runs the application, charges the connector on B the gas used plus a margin, and the whole charge goes to the endpoint. A dashed line joins the two connector boxes: the same identity on both ledgers.">
+  <svg viewBox="0 0 760 360" role="img" aria-label="Two ledger frames side by side. On the left, Ledger A: the application asks CLPR Service A to send message 41, the service asks the connector on A to approve it, and the message is queued in the outbound queue. On the right, Ledger B: an endpoint submits the bundle and pays the fee, CLPR Service B runs the application, charges the connector on B for running it plus a margin, and the whole charge goes to the endpoint. A dashed line joins the two connector boxes: the same identity on both ledgers.">
     <defs>
       <marker id="ctj-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)" /></marker>
       <marker id="ctj-arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--a)" /></marker>
@@ -60,12 +64,12 @@ import { design, spec } from '../../../lib/sources';
 
     <rect x="446" y="156" width="136" height="60" rx="8" class="d-money" />
     <text x="514" y="176" class="t b center">Connector on B</text>
-    <text x="514" y="193" class="t small center">charged the gas used</text>
+    <text x="514" y="193" class="t small center">charged for the run</text>
     <text x="514" y="208" class="t small center">plus a margin</text>
 
     <rect x="606" y="68" width="128" height="48" rx="8" class="d-c" />
     <text x="670" y="88" class="t b center">Endpoint</text>
-    <text x="670" y="105" class="t small center">fronts the fee</text>
+    <text x="670" y="105" class="t small center">pays the fee</text>
 
     <rect x="606" y="156" width="128" height="48" rx="8" class="d-surface" />
     <text x="670" y="176" class="t b center">CLPR Service B</text>

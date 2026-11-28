@@ -1,79 +1,83 @@
 ---
-/** One connector_id registered on both ledgers: authorizes on the source, pays on the destination; spec §2.2 and §3.3, design §3.3. */
+/** One connector id registered on both ledgers, beside each ledger's CLPR Service: the source Service asks it to authorize, the destination Service resolves it and has it pay; Connector setup §1 to §4, Messaging §5 and §6, Stakes and bonds §2.1 (a Recommendation). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { connectorSetup, messaging, stakes } from '../../../lib/sources';
 ---
 <Figure
   lead="Bilateral by construction."
-  caption="The same derived identity is registered on both ledgers of a channel: on the source it authorizes the message, on the destination it pays for executing it. Storage is keyed by (channel_id, connector_id), so a squatter on a third ledger affects only channels there."
-  source={[{ label: 'spec §2.2', href: spec('22-connector') }, { label: 'spec §3.3', href: spec('33-connector-authorization-interface') }, { label: 'design §3.3', href: design('33-payment--routing-layer') }]}
+  caption="The same derived identity is registered on both ledgers of a channel, beside each CLPR Service: on the source the Service asks it to authorize the message, on the destination the Service resolves it and has it pay for the execution. The id includes the channel id, so registering it on one channel reserves nothing on any other. Slashing the source connector for a missing counterpart is what the specification recommends."
+  source={[{ label: 'Connector setup §1', href: connectorSetup('1-connector-identity') }, { label: 'Connector setup §4', href: connectorSetup('4-authorization-of-outbound-messages') }, { label: 'Connector setup §3', href: connectorSetup('3-connectors-on-both-ledgers') }, { label: 'Messaging §5', href: messaging('5-enqueue') }, { label: 'Messaging §6', href: messaging('6-delivery-to-the-application') }, { label: 'Stakes and bonds §2.1', href: stakes('21-when-a-connector-is-slashed') }]}
   kind="spec"
   minWidth={740}
 >
-  <svg viewBox="0 0 740 388" role="img" aria-label="An application on ledger A calls sendMessage with a connector_id. The service asks the connector on A to authorize the message; it returns true. The Data Message carries the connector_id over the channel; the connector with the same id on ledger B is looked up, charged, and then the application on B is called. If no connector with that id is registered on B, the result is CONNECTOR_NOT_FOUND, an error reply goes home, and the source connector is slashed.">
+  <svg viewBox="0 0 740 388" role="img" aria-label="An application on ledger A sends a message to the CLPR Service on A, naming a channel and a connector. The Service asks the connector on A, beside it, to authorize the message; it says yes. The Service enqueues the DATA message, which carries the connector id over the channel to the CLPR Service on B. That Service resolves the connector with the same id on the channel, beside it, charges it, and invokes the application on B only if the connector can pay. If no connector with that id is registered on B, the reply is CONNECTOR_NOT_FOUND, and the source connector is slashed under the recommended design.">
     <defs>
       <marker id="bc-arrow-money" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--money)" /></marker>
       <marker id="bc-arrow-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)" /></marker>
-      <marker id="bc-arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)" /></marker>
+      <marker id="bc-arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--a)" /></marker>
+      <marker id="bc-arrow-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--b)" /></marker>
     </defs>
 
+    <!-- arrows first, boxes over them -->
+    <line x1="111" y1="72" x2="111" y2="98" class="line a" marker-end="url(#bc-arrow-a)" />
+    <line x1="111" y1="180" x2="111" y2="204" class="line money" marker-end="url(#bc-arrow-money)" />
+    <line x1="206" y1="140" x2="268" y2="140" class="line c" marker-end="url(#bc-arrow-c)" />
+    <line x1="470" y1="140" x2="532" y2="140" class="line c" marker-end="url(#bc-arrow-c)" />
+    <line x1="629" y1="100" x2="629" y2="74" class="line b" marker-end="url(#bc-arrow-b)" />
+    <line x1="629" y1="180" x2="629" y2="204" class="line money" marker-end="url(#bc-arrow-money)" />
+
     <!-- applications -->
-    <rect x="16" y="16" width="190" height="64" rx="8" class="d-a" />
-    <text x="111" y="38" class="t b center">Application on A</text>
-    <text x="111" y="56" class="t mono center">sendMessage(channel_id,</text>
-    <text x="111" y="70" class="t mono center">connector_id, …)</text>
+    <rect x="16" y="12" width="190" height="60" rx="8" class="d-a" />
+    <text x="111" y="32" class="t b center">Application on A</text>
+    <text x="111" y="48" class="t small center">names a channel</text>
+    <text x="111" y="62" class="t small center">and a connector</text>
+    <text x="121" y="90" class="t small">sends</text>
 
-    <rect x="534" y="16" width="190" height="64" rx="8" class="d-b" />
-    <text x="629" y="38" class="t b center">Application on B</text>
-    <text x="629" y="56" class="t small center">called only after</text>
-    <text x="629" y="70" class="t small center">the connector pays</text>
+    <rect x="534" y="12" width="190" height="60" rx="8" class="d-b" />
+    <text x="629" y="32" class="t b center">Application on B</text>
+    <text x="629" y="48" class="t small center">invoked only if</text>
+    <text x="629" y="62" class="t small center">the connector can pay</text>
+    <text x="639" y="90" class="t small">invokes</text>
 
-    <!-- the service asks the connector on A -->
-    <line x1="50" y1="80" x2="50" y2="148" class="line money" marker-end="url(#bc-arrow-money)" />
-    <text x="60" y="108" class="t small">the service asks the</text>
-    <text x="60" y="124" class="t small">connector to authorize</text>
+    <!-- the two CLPR Services, in the message path -->
+    <rect x="16" y="100" width="190" height="80" rx="8" class="d-a" />
+    <text x="111" y="122" class="t b center">CLPR Service on A</text>
+    <text x="111" y="140" class="t small center">asks the connector;</text>
+    <text x="111" y="154" class="t small center">if yes, enqueues the</text>
+    <text x="111" y="168" class="t small center">DATA message</text>
 
-    <!-- connector on A -->
-    <rect x="16" y="150" width="190" height="84" rx="8" class="d-money" />
-    <text x="111" y="172" class="t b center">Connector on A</text>
-    <text x="111" y="190" class="t small center">one id, derived from</text>
-    <text x="111" y="204" class="t small center">the channel, the operator's</text>
-    <text x="111" y="218" class="t small center">public key and a salt</text>
+    <rect x="534" y="100" width="190" height="80" rx="8" class="d-b" />
+    <text x="629" y="122" class="t b center">CLPR Service on B</text>
+    <text x="629" y="140" class="t small center">resolves the connector</text>
+    <text x="629" y="154" class="t small center">by channel and id,</text>
+    <text x="629" y="168" class="t small center">then charges it</text>
 
-    <line x1="206" y1="186" x2="268" y2="186" class="line money" marker-end="url(#bc-arrow-money)" />
-    <text x="237" y="178" class="t mono center">true</text>
-    <text x="237" y="200" class="t small center">B can pay</text>
+    <!-- the channel joins the two Services -->
+    <rect x="270" y="108" width="200" height="64" rx="8" class="d-c" />
+    <text x="370" y="130" class="t b center">Channel</text>
+    <text x="370" y="148" class="t small center">DATA message · connector id</text>
 
-    <!-- channel -->
-    <rect x="270" y="150" width="200" height="72" rx="8" class="d-c" />
-    <text x="370" y="172" class="t b center">Channel</text>
-    <text x="370" y="190" class="t mono center">Data Message · connector_id</text>
-    <text x="370" y="208" class="t small center">key: (channel_id, connector_id)</text>
+    <!-- connectors, beside their Services -->
+    <text x="121" y="197" class="t small">authorizes: yes</text>
+    <rect x="16" y="206" width="190" height="74" rx="8" class="d-money" />
+    <text x="111" y="226" class="t b center">Connector on A</text>
+    <text x="111" y="242" class="t small center">one id, derived from</text>
+    <text x="111" y="256" class="t small center">the channel, the operator's</text>
+    <text x="111" y="270" class="t small center">public key and a salt</text>
 
-    <line x1="470" y1="186" x2="532" y2="186" class="line c" marker-end="url(#bc-arrow-c)" />
-    <text x="501" y="178" class="t small center">look up</text>
-
-    <!-- connector on B -->
-    <rect x="534" y="150" width="190" height="84" rx="8" class="d-money" />
-    <text x="629" y="172" class="t b center">Connector on B</text>
-    <text x="629" y="190" class="t mono center">same connector_id</text>
-    <text x="629" y="206" class="t small center">balance pays execution,</text>
-    <text x="629" y="220" class="t small center">locked_stake is slashable</text>
-
-    <line x1="600" y1="150" x2="600" y2="82" class="line money" marker-end="url(#bc-arrow-money)" />
-    <text x="610" y="108" class="t small">charged,</text>
-    <text x="610" y="122" class="t small">then called</text>
+    <text x="639" y="197" class="t small">charges</text>
+    <rect x="534" y="206" width="190" height="74" rx="8" class="d-money" />
+    <text x="629" y="226" class="t b center">Connector on B</text>
+    <text x="629" y="242" class="t small center">same connector id</text>
+    <text x="629" y="256" class="t small center">pays from its contract;</text>
+    <text x="629" y="270" class="t small center">its stake can be slashed</text>
 
     <!-- missing counterpart -->
-    <path d="M430,222 L532,292" class="line bad" marker-end="url(#bc-arrow-bad)" />
-    <text x="456" y="268" class="t small end bad">no counterpart on B</text>
+    <rect x="534" y="290" width="190" height="64" rx="8" class="d-bad" />
+    <text x="629" y="310" class="t b center">No connector on B</text>
+    <text x="629" y="326" class="t mono center">CONNECTOR_NOT_FOUND</text>
+    <text x="629" y="342" class="t small center">source connector slashed</text>
 
-    <rect x="534" y="266" width="190" height="78" rx="8" class="d-bad" />
-    <text x="629" y="288" class="t b center">Not registered on B</text>
-    <text x="629" y="306" class="t mono center">CONNECTOR_NOT_FOUND</text>
-    <text x="629" y="322" class="t small center">error reply goes home;</text>
-    <text x="629" y="336" class="t small center">source connector slashed</text>
-
-    <text x="370" y="372" class="t take center">Registered on one side only: authorizes on the source, CONNECTOR_NOT_FOUND on the destination.</text>
+    <text x="370" y="376" class="t take center">Registered on one side only: authorizes on the source, CONNECTOR_NOT_FOUND on the destination.</text>
   </svg>
 </Figure>

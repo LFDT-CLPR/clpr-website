@@ -2,9 +2,10 @@
 /**
  * Shapes built from pairs: a pair, a star, a mesh, and a private network talking to a public one.
  * Pick a shape, then a sender and a receiver, and the log says whether a channel joins them
- * directly. The site's own illustration of what pairwise channels allow: a channel is an on-ledger
- * entity for one specific peer (design §2.1), CLPR does no routing, and a private network's
- * endpoints carry no dialable address and dial out (design §3.1.2). General page section 12.
+ * directly. The site's own illustration of what pairwise channels allow: a channel connects the
+ * CLPR Services of two ledgers and several may connect the same two (Overview §2, Channel setup §1),
+ * a message goes to an application on the peer ledger (Overview §3), and an endpoint with no address
+ * in its manifest entry only initiates syncs (Endpoint manifest §1, §6). General page section 12.
  */
 import Refs from '@kse/components/Refs.astro';
 const { id = 'shapes-sim' } = Astro.props as { id?: string };
@@ -16,8 +17,11 @@ const nodes = [
   { k: 'E', x: 640, y: 234, cls: 'd-ok' },
 ];
 const refs = [
-  { doc: 'design', anchor: '21-common-terminology', label: 'design §2.1' },
-  { doc: 'design', anchor: '312-endpoint-manifest', label: 'design §3.1.2' },
+  { doc: 'overview', anchor: '2-major-parts', label: 'Overview §2' },
+  { doc: 'overview', anchor: '3-message-flow', label: 'Overview §3' },
+  { doc: 'channelSetup', anchor: '1-channel-identity', label: 'Channel setup §1' },
+  { doc: 'manifest', anchor: '1-endpoint', label: 'Endpoint manifest §1' },
+  { doc: 'manifest', anchor: '6-endpoint-discovery', label: 'Endpoint manifest §6' },
 ] as const;
 ---
 <div class="sim shapes" id={id}>
@@ -85,10 +89,10 @@ const refs = [
   type Shape = 'pair' | 'star' | 'mesh' | 'private';
   const POS: Record<string, [number, number]> = { A: [380, 150], B: [120, 66], C: [640, 66], D: [120, 234], E: [640, 234] };
   const SHAPES: Record<Shape, { nodes: string[]; links: [string, string][]; take: string; status: string; dial?: [string, string] }> = {
-    pair: { nodes: ['B', 'C'], links: [['B', 'C']], take: 'One channel: the simplest shape, and the building block CLPR defines.', status: 'a pair' },
+    pair: { nodes: ['B', 'C'], links: [['B', 'C']], take: 'One channel: the building block CLPR defines; several may join the same two ledgers.', status: 'a pair' },
     star: { nodes: ['A', 'B', 'C', 'D', 'E'], links: [['A', 'B'], ['A', 'C'], ['A', 'D'], ['A', 'E']], take: 'Four channels, each between two ledgers; the hub holds all four.', status: 'a star' },
     mesh: { nodes: ['B', 'C', 'D', 'E'], links: [['B', 'C'], ['B', 'D'], ['B', 'E'], ['C', 'D'], ['C', 'E'], ['D', 'E']], take: 'Six channels: every pair agrees on its own; no intermediary ledger or committee; each channel trusts its own verifier and the two ledgers.', status: 'a mesh' },
-    private: { nodes: ['B', 'C'], links: [['B', 'C']], dial: ['B', 'C'], take: "B's endpoints dial out to C's; messages then flow both ways. B publishes no endpoint address, so C's endpoints cannot dial it.", status: 'private to public' },
+    private: { nodes: ['B', 'C'], links: [['B', 'C']], dial: ['B', 'C'], take: "B's endpoints list no address, so only they open syncs; messages then flow both ways.", status: 'private to public' },
   };
   for (const root of Array.from(document.querySelectorAll<HTMLElement>('.sim.shapes'))) {
     const $ = (s: string) => root.querySelector<HTMLElement>(s)!;

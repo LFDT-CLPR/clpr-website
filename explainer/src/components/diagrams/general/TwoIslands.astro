@@ -1,12 +1,12 @@
 ---
-/** Two ledgers as two islands, drawn as the website draws a ledger (a membrane with its validators on the rim): a program on each wants to know something about the other, and both lookups stop at the water. Page-level framing of the cross-ledger problem (general section 2); design §1 frames the same problem. Replaces the inline two-islands SVG in section 2. */
+/** Two ledgers as two islands, drawn as the website draws a ledger (a membrane with its validators on the rim): a program on each wants to know something about the other, and both lookups stop at the water. Page-level framing of the cross-ledger problem (general section 2); Overview §1 states the answer: each ledger verifies the other's state proofs directly, with no intermediary. Replaces the inline two-islands SVG in section 2. */
 import Figure from '@kse/components/Figure.astro';
-import { design } from '../../../lib/sources';
+import { overview } from '../../../lib/sources';
 ---
 <Figure
   lead="Two islands, by design."
   caption="Each ledger only writes what its own validators can check. A program on A cannot read B's ledger, and a line on B says nothing to A. Every cross-ledger idea needs a way across this water that the receiving side can rely on."
-  source={[{ label: 'design §1', href: design('1-executive-summary') }]}
+  source={[{ label: 'Overview §1', href: overview('1-purpose') }]}
   kind="plain"
   minWidth={760}
 >

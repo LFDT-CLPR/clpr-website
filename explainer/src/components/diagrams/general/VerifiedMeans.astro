@@ -1,12 +1,12 @@
 ---
-/** What "verified" settles and what it leaves to the application: spec §8.6 (untrusted payloads) and §8.7 (no confidentiality), with ordering from design §3.2.2. */
+/** What "verified" settles and what it leaves to the application: integrity and authenticity but no confidentiality (Overview §4), untrusted payloads in plaintext (CLPR Service §6.5), and order from message ids and the running hash (Messaging §2, §4). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { overview, messaging, service } from '../../../lib/sources';
 ---
 <Figure
   lead="What verified does and does not mean."
   caption="The protocol answers three questions: did this come from Ledger A, was it altered, is it in order. It says nothing about whether the message is private, sensible or sent by someone honest. Those stay with the application, which should treat every arrival as input from a stranger."
-  source={[{ label: 'spec §8.6', href: spec('86-untrusted-payloads') }, { label: 'spec §8.7', href: spec('87-no-confidentiality') }, { label: 'design §3.2.2', href: design('322-message-storage') }]}
+  source={[{ label: 'Overview §4', href: overview('4-trust-model') }, { label: 'CLPR Service §6.5', href: service('65-application-payloads') }, { label: 'Messaging §1', href: messaging('1-message-types') }, { label: 'Messaging §2', href: messaging('2-message-identifiers-and-queue') }, { label: 'Messaging §4', href: messaging('4-running-hash') }]}
   kind="spec"
   minWidth={720}
 >
