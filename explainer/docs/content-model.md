@@ -8,8 +8,8 @@ Where words live, how a section is declared, and which components a section may 
 |---|---|---|
 | File | `src/content/general.mdx` | `src/content/developers.mdx` |
 | Reader | Anyone; no prior knowledge | A developer; no prior knowledge of CLPR, comfortable with ledgers, hashes, contracts |
-| Voice | Short plain sentences. The specification's terms are the names, each explained in plain words at first use (see [writing-guide.md](writing-guide.md)) | Precise. Spec terminology, field names, section numbers, code |
-| Each section ends with | Usually a `<Check>` self-test | A generated reference line under the heading; code blocks and tables where the spec has them |
+| Voice | Short plain sentences. The specification's terms are the names, each explained in plain words at first use (see [writing-guide.md](writing-guide.md)) | Precise, in the specification's terms |
+| Each section ends with | Usually a `<Check>` self-test | A generated reference line under the heading; tables where the spec has them |
 | Length (at the initial release) | about 9,500 words | about 15,000 words |
 
 The same simulation often appears on both pages. Props such as `detail` or `mode` switch its
@@ -19,8 +19,8 @@ register; the component's internal data does not change.
 
 Sections are registered, not improvised. `src/data/sections.json` holds, per page, an ordered
 list of `{ id, title, refs, illustration? }`: `refs` are the upstream passages that back the
-section (design or spec heading anchors, or a pinned file path, in the shape `check-anchors.mjs`
-resolves) and `illustration: true` marks a section that contains the site's own illustrations,
+section (heading anchors in a specification document named in `pack.json` `docs`, or a pinned
+file path, in the shape `check-anchors.mjs` resolves) and `illustration: true` marks a section that contains the site's own illustrations,
 which the provenance footer names. On the developer page `Section.astro` renders the refs as a
 "Source:" line under the heading; the general page renders no inline source lines at all and cites
 its sources in the footer. In the MDX file a section is:
@@ -52,13 +52,12 @@ Element ids must be unique per page. Section ids are reserved for sections; simu
 | `<JourneyTrailer mode href />` | The twelve-second wordless loop of the journey in the hero (pure CSS animation; pauses on tap, hover and off screen; static last frame under reduced motion) | `mode` is `plain` or `protocol`; `href` points at the full simulation; mounted from the page files, not the MDX |
 | `<Refs refs={[…]} />` | "Source:" line; renders only on the developer page; duplicates collapsed | `Ref` objects as in `sections.json` |
 | `<SecRef id="…" page? />` | "section N", linked, with N from the registry | Never write a section number in prose |
-| `<AdrTable detail? />` | The decision records from `adrs.json` | `detail` switches to the developer wording |
-| `<Patterns />`, `<Roles />`, `<LedgersTable />`, `<OpenIssues />`, `<Repos />` | Lists and tables rendered from the data files | `{ doc: 'design' \| 'spec', anchor, label }` or `{ doc: 'repo', id, path, label }`; anchors are GitHub heading slugs and are verified by `check-anchors.mjs` |
+| `<Patterns />`, `<Roles />`, `<LedgersTable />`, `<OpenIssues />`, `<Repos />` | Lists and tables rendered from the data files | `{ doc: 'messaging', anchor: '4-running-hash', label: 'Messaging §4' }` (any document key from `pack.json` `docs`) or `{ doc: 'repo', id, path, label }`; anchors are GitHub heading slugs and are verified by `check-anchors.mjs` |
 | `<Check q="…">…</Check>` | Collapsible self-test | General page mainly |
 | `<Cast />` / `<Cast detail />` | The actor cards | Plain-first or spec-first wording |
 | `<Journey mode="plain" \| "both" \| "protocol" />` | The 28-step round trip | Data in `journey.json` |
 | Other sims | See [simulations.md](simulations.md) | Each accepts `id`, some accept `detail` |
-| Inline links | `<a href={design('…')}>`, `{spec('…')}`, `{pinned('id','path')}`, `{sol('path')}` | Import from `'../lib/sources'` at the top of the MDX file; never paste a GitHub URL |
+| Inline links | `<a href={messaging('4-running-hash')}>`, one helper per document key (`{overview('…')}`, `{stakes('…')}`, …), `{pinned('id','path')}`, `{sol('path')}` | Import from `'../lib/sources'` at the top of the MDX file; never paste a GitHub URL |
 
 Tables are plain HTML inside `<div class="table-wrap">…</div>`; give cells that hold running text
 `class="wrap"`. Fenced code blocks (` ```solidity `, ` ```protobuf `, ` ```text `) are
@@ -80,12 +79,12 @@ Every statement about the protocol is one of three things, and the reader can te
    the heading on the developer page) or an inline pinned link; quote only when the exact wording
    matters. Prose never says "the specification says".
 2. **The reference implementation does so.** Say "reference implementation" or "the EVM
-   contracts" and cite the file or the repository's own docs. Where it diverges from the spec,
-   say that too; the contracts repository keeps a list.
+   contracts" and cite the file or the repository's own docs. Where it diverges from the spec in
+   a way that changes what a reader understands, say so.
 3. **The spec marks it open.** Use `kind="open"` and say what is undecided.
 
 Anything that is none of the three (an inference, a demo observation, a reasonable guess) is
-either labelled "inferred" or left out. `journey.json` follows the same discipline in its step text:
+left out. `journey.json` follows the same discipline in its step text:
 implementation behaviour is attributed to the EVM contracts or the reference verifier.
 
 See [writing-guide.md](writing-guide.md) for voice and [provenance.md](provenance.md) for why the

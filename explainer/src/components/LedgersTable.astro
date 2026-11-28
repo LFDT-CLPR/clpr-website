@@ -1,12 +1,12 @@
 ---
-/** The kinds of ledger CLPR can connect, from src/data/ledgers.json: how each one's proofs are checked, where its CLPR Service runs, who its endpoints are, and whether the verifier is documented, code only, or a stand-in. */
+/** The kinds of ledger CLPR can connect, from src/data/ledgers.json: how each one's proofs are checked, where its CLPR Service runs, who its endpoints are, and whether the ledger has a Ledger Specification, verifier code only, or a stand-in. */
 import data from '../data/ledgers.json';
 import Refs from '@kse/components/Refs.astro';
 import type { Ref } from '../lib/sources';
 const status: Record<string, { label: string; cls: string }> = {
-  documented: { label: 'documented and built', cls: 'ok' },
-  code: { label: 'verifier code only', cls: 'b' },
-  mock: { label: 'stand-in only', cls: 'grey' },
+  documented: { label: 'Ledger Specification', cls: 'ok' },
+  code: { label: 'code, no specification', cls: 'b' },
+  mock: { label: 'stand-in, no specification', cls: 'grey' },
 };
 const refs = data.ledgers.flatMap((l) => l.refs) as Ref[];
 ---

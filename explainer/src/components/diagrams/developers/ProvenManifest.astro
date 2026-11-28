@@ -1,21 +1,22 @@
 ---
-/** Where each ledger's endpoint list comes from, how the other ledger stores a proven copy per channel, and the two ways that copy is refreshed (design §3.1.2, §5 R1/R9; spec §2.4). */
+/** Where each ledger's endpoint list comes from, how the other ledger stores a proven copy per channel, and the two ways that copy is refreshed (Endpoint manifest §3 to §5; CLPR Service §3 and §7, R1). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { manifest, service } from '../../../lib/sources';
 ---
 <Figure
   lead="Where the addresses come from."
   caption="Each ledger publishes its own endpoint list on-chain; the other ledger stores a proven copy per channel and refreshes it from bundles. If every endpoint on one side vanishes at once, anyone can prove the new list and submit it directly."
   source={[
-    { label: 'design §3.1.2', href: design('312-endpoint-manifest') },
-    { label: 'spec §2.4.1', href: spec('241-local-endpoint-manifest') },
-    { label: 'spec §2.4.2', href: spec('242-peer-manifest-on-ledger-per-channel') },
-    { label: 'design §5', href: design('5-recovery-scenarios') },
+    { label: 'Endpoint manifest §3', href: manifest('3-local-manifest') },
+    { label: 'Endpoint manifest §4', href: manifest('4-peer-manifest') },
+    { label: 'Endpoint manifest §5', href: manifest('5-manifest-proofs') },
+    { label: 'CLPR Service §3', href: service('3-endpoint-admission') },
+    { label: 'CLPR Service §7', href: service('7-recovery-scenarios') },
   ]}
   kind="spec"
   minWidth={740}
 >
-  <svg viewBox="0 0 740 370" role="img" aria-label="Ledger A keeps its own endpoint list on-chain: on a Hiero network its consensus nodes, on an EVM network endpoints that applied with a bond and were admitted. At channel creation a proof of that list, sealed by Ledger A's validators, is checked by the verifier and stored as Ledger B's copy for the channel. Two paths refresh the copy from below: later changes arrive inside ordinary bundles via the endpoints, and if every endpoint on A is replaced at once, anyone fetches the new list, wraps it in a proof and submits it directly as an ordinary transaction.">
+  <svg viewBox="0 0 740 370" role="img" aria-label="Ledger A keeps its own endpoint list on-chain: on a Hiero network its consensus nodes, from the node roster; on an EVM network endpoints that registered and were admitted by the administrator. At channel creation a proof of that list, proven from Ledger A's state, is checked by the verifier and stored as Ledger B's copy for the channel. Two paths refresh the copy from below: later changes arrive inside ordinary bundles via the endpoints, and if every endpoint on A is replaced at once, anyone fetches the new list, wraps it in a proof and submits it directly as an ordinary transaction.">
     <defs>
       <marker id="pab-arrow-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--a)" /></marker>
       <marker id="pab-arrow-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)" /></marker>
@@ -30,15 +31,15 @@ import { design, spec } from '../../../lib/sources';
     <rect x="14" y="40" width="236" height="96" rx="8" class="d-a" />
     <text x="132" y="64" class="t b center">Ledger A's endpoint list</text>
     <text x="132" y="82" class="t small center">on-chain, kept by its CLPR Service</text>
-    <text x="132" y="98" class="t small center">Hiero: its consensus nodes, automatic</text>
-    <text x="132" y="114" class="t small center">EVM: apply with a bond, admin admits</text>
+    <text x="132" y="98" class="t small center">Hiero: from its node roster</text>
+    <text x="132" y="114" class="t small center">EVM: registered, then admitted</text>
 
     <!-- proof -->
     <line x1="250" y1="88" x2="269" y2="88" class="line a" marker-end="url(#pab-arrow-a)" />
     <rect x="272" y="56" width="176" height="64" rx="8" class="d-ok" />
     <rect x="280" y="71" width="26" height="22" rx="6" class="d-surface" /><circle cx="293" cy="82" r="5" class="d-ok" />
     <text x="378" y="86" class="t b center">Proof of the list</text>
-    <text x="360" y="104" class="t small center">sealed by A's validators</text>
+    <text x="360" y="104" class="t small center">proven from A's state</text>
     <line x1="448" y1="88" x2="487" y2="88" class="line ok" marker-end="url(#pab-arrow-ok)" />
 
     <!-- Ledger B's copy -->

@@ -1,24 +1,29 @@
 #!/usr/bin/env node
 /**
  * Data check. Every data row under src/data/ carries upstream references in the shape
- * check-anchors.mjs resolves, every source id exists, and (when .upstream/ is present) the data
- * inventories match upstream: verifier directories ↔ ledgers.json, ADR files ↔ adrs.json, design
- * §3.4 and §4 headings ↔ patterns.json / roles.json, "‼️" passages ↔ open.json. An inventory
- * failure is the list of new upstream things the site has not described yet.
+ * check-anchors.mjs resolves (doc keys from pack.json, or repo paths), every source id exists, and
+ * (when .upstream/ is present) the data inventories match upstream: ledger directories with a
+ * ledger.md under clpr-spec/ledgers/ and verifier code directories in clpr-smart-contracts ↔
+ * ledgers.json, the "## OI-n." headings of protocol/open-issues.md ↔ open.json, the role rows of the
+ * Overview §5 table ↔ roles.json, the patterns Overview §8 names ↔ patterns.json, the parts of the
+ * Overview §2 table ↔ cast.json, and the R-rows of the CLPR Service §7 recovery table ↔ the
+ * `recovery` fields of roles.json scenarios and failures.json cases. An inventory failure is the
+ * list of upstream things the site has not described yet, or no longer matches.
  */
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join } from 'node:path';
 
-import { root, upstreamDir as up, readData as read } from 'knowledge-site-engine/scripts/lib/pack.mjs';
+import { upstreamDir as up, readData as read, pack } from 'knowledge-site-engine/scripts/lib/pack.mjs';
 const sources = read('sources.json');
 const ids = new Set(sources.sources.map((s) => s.id));
 const errors = [];
-const KEYS = { design: ['doc', 'anchor', 'label'], spec: ['doc', 'anchor', 'label'], repo: ['doc', 'id', 'path', 'label'] };
+const DOC_KEYS = Object.keys(pack.docs);
+const KEYS = { ...Object.fromEntries(DOC_KEYS.map((k) => [k, ['doc', 'anchor', 'label']])), repo: ['doc', 'id', 'path', 'label'] };
 
 function checkRef(where, r) {
   if (!r || typeof r !== 'object') return errors.push(`${where}: ref is not an object`);
   const want = KEYS[r.doc];
-  if (!want) return errors.push(`${where}: ref doc must be design, spec or repo`);
+  if (!want) return errors.push(`${where}: ref doc must be one of ${DOC_KEYS.join(', ')} or repo (got "${r.doc}")`);
   const have = Object.keys(r);
   if (have.slice(0, want.length - 1).join(',') !== want.slice(0, -1).join(',')) errors.push(`${where}: ref keys must be in the order ${want.join(', ')} (got ${have.join(', ')}); check-anchors.mjs matches them textually`);
   if (!r.label) errors.push(`${where}: ref has no label`);
@@ -32,6 +37,12 @@ function checkRows(file, key, rows, min = 1) {
     for (const r of row.refs ?? []) checkRef(where, r);
   }
 }
+// GitHub heading slug: lowercase, punctuation dropped, spaces to hyphens.
+const slug = (heading) => heading.trim().toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s/g, '-');
+// The text of one "## n. Title" section of a markdown file, up to the next "## " heading.
+const section = (text, n) => text.split(new RegExp(`^## ${n}\\. `, 'm'))[1]?.split(/^## /m)[0] ?? '';
+// The bold first cells of a markdown table: "| **Name** | ...".
+const boldRows = (text) => [...text.matchAll(/^\|\s*\*\*([^*]+)\*\*\s*\|/gm)].map((m) => m[1].trim());
 
 const sections = read('sections.json');
 for (const page of ['general', 'developers']) checkRows('sections.json', page, sections[page], 1);
@@ -44,54 +55,73 @@ for (const id of ids) if (!usedIds.has(id)) errors.push(`catalog.json: source "$
 const ledgers = read('ledgers.json');
 checkRows('ledgers.json', 'ledgers', ledgers.ledgers, 2);
 for (const l of ledgers.ledgers) if (!['documented', 'code', 'mock'].includes(l.status)) errors.push(`ledgers.json: "${l.id}" has unknown status "${l.status}"`);
+for (const l of ledgers.ledgers) if ((l.status === 'documented') !== Boolean(l.specDir)) errors.push(`ledgers.json: "${l.id}" must have a specDir exactly when its status is "documented"`);
 const patterns = read('patterns.json');
 checkRows('patterns.json', 'patterns', patterns.patterns, 1);
+checkRows('patterns.json', 'channelChoice', [patterns.channelChoice], 1);
 const roles = read('roles.json');
 checkRows('roles.json', 'roles', roles.roles, 1);
 checkRows('roles.json', 'scenarios', roles.scenarios, 1);
 const open = read('open.json');
 checkRows('open.json', 'open', open.open, 1);
-checkRef('open.json optionsDoc', open.optionsDoc);
-for (const o of open.open) if (!['‼️', 'prose'].includes(o.marker)) errors.push(`open.json: "${o.id}" needs marker "‼️" or "prose"`);
 const failures = read('failures.json');
 checkRows('failures.json', 'cases', failures.cases, 1);
 for (const g of failures.groups) for (const k of g.keys) if (!failures.cases.some((c) => c.k === k)) errors.push(`failures.json: group "${g.kicker}" names unknown case "${k}"`);
 const cast = read('cast.json');
 checkRows('cast.json', 'cast', cast.cast, 1);
-const adrs = read('adrs.json');
-checkRows('adrs.json', 'adrs', adrs.adrs, 1);
 
 if (existsSync(up)) {
+  const spec = (path) => readFileSync(join(up, 'clpr-spec', path), 'utf8');
   const dirs = (p) => (existsSync(p) ? readdirSync(p).filter((e) => statSync(join(p, e)).isDirectory()) : []);
-  const specDirs = dirs(join(up, 'clpr-spec/verifiers'));
+
+  // Ledgers: a directory under ledgers/ with a ledger.md is a documented ledger (a family directory has none).
+  const ledgerDirs = dirs(join(up, 'clpr-spec/ledgers')).filter((d) => existsSync(join(up, 'clpr-spec/ledgers', d, 'ledger.md')));
   const codeDirs = [
     ...dirs(join(up, 'clpr-smart-contracts/src/verifiers/evm')).filter((d) => d !== 'common').map((d) => `src/verifiers/evm/${d}`),
     ...(existsSync(join(up, 'clpr-smart-contracts/src/verifiers/hiero')) ? ['src/verifiers/hiero'] : []),
   ];
-  for (const d of specDirs) if (!ledgers.ledgers.some((l) => l.specDir === `verifiers/${d}`)) errors.push(`ledgers.json: upstream documents a verifier at clpr-spec/verifiers/${d} that has no row`);
+  for (const d of ledgerDirs) if (!ledgers.ledgers.some((l) => l.specDir === `ledgers/${d}`)) errors.push(`ledgers.json: upstream documents a ledger at clpr-spec/ledgers/${d}/ledger.md that has no row`);
   for (const d of codeDirs) if (!ledgers.ledgers.some((l) => l.codeDir === d)) errors.push(`ledgers.json: upstream has verifier code at clpr-smart-contracts/${d} that has no row`);
   for (const l of ledgers.ledgers) {
-    if (l.specDir && !existsSync(join(up, 'clpr-spec', l.specDir))) errors.push(`ledgers.json: "${l.id}" names ${l.specDir}, which no longer exists upstream`);
+    if (l.specDir && !existsSync(join(up, 'clpr-spec', l.specDir, 'ledger.md'))) errors.push(`ledgers.json: "${l.id}" names ${l.specDir}, which has no ledger.md upstream`);
     if (l.codeDir && !existsSync(join(up, 'clpr-smart-contracts', l.codeDir))) errors.push(`ledgers.json: "${l.id}" names ${l.codeDir}, which no longer exists upstream`);
   }
-  const adrFiles = readdirSync(join(up, 'clpr-spec/ADR')).filter((f) => /^\d{4}-\d{2}-\d{2}-.*\.md$/.test(f));
-  for (const f of adrFiles) if (!adrs.adrs.some((a) => a.file === f)) errors.push(`adrs.json: upstream ADR ${f} has no row`);
-  for (const a of adrs.adrs) if (!adrFiles.includes(a.file)) errors.push(`adrs.json: row ${a.file} no longer exists upstream`);
-  const design = readFileSync(join(up, 'clpr-spec/clpr-service.md'), 'utf8');
-  const count = (re) => (design.match(re) ?? []).length;
-  const h34 = count(/^### 3\.4\.\d+ /gm);
-  if (h34 !== patterns.patterns.length) errors.push(`patterns.json: design §3.4 has ${h34} patterns, data has ${patterns.patterns.length}`);
-  const h4 = count(/^## 4\.[1-6] /gm);
-  if (h4 !== roles.roles.length) errors.push(`roles.json: design §4.1-4.6 has ${h4} roles, data has ${roles.roles.length}`);
-  const sec47 = design.split(/^## 4\.7 /m)[1]?.split(/^# /m)[0] ?? '';
-  const h47 = (sec47.match(/^### /gm) ?? []).length;
-  if (h47 !== roles.scenarios.length) errors.push(`roles.json: design §4.7 has ${h47} scenarios, data has ${roles.scenarios.length}`);
-  const marks = count(/^> ‼️/gm);
-  const flagged = open.open.filter((o) => o.marker === '‼️').length;
-  if (marks !== flagged) errors.push(`open.json: the design document has ${marks} "‼️" passages, data has ${flagged} rows with marker "‼️"`);
+
+  // Open issues: one row per "## OI-n. Title" heading, cited by its anchor.
+  const oiAnchors = [...spec('protocol/open-issues.md').matchAll(/^## (OI-\d+\. .+)$/gm)].map((m) => slug(m[1]));
+  const cited = (row) => row.refs.filter((r) => r.doc === 'openIssues' && oiAnchors.includes(r.anchor)).map((r) => r.anchor);
+  for (const a of oiAnchors) {
+    const n = open.open.filter((o) => cited(o).includes(a)).length;
+    if (n !== 1) errors.push(`open.json: open issue #${a} must be cited by exactly one row (found ${n})`);
+  }
+  for (const o of open.open) if (cited(o).length !== 1) errors.push(`open.json: "${o.id}" must cite exactly one open issue heading of protocol/open-issues.md`);
+
+  // Overview §5 roles, §8 patterns and §2 parts.
+  const overview = spec('clpr-overview.md');
+  const roleNames = boldRows(section(overview, 5));
+  for (const n of roleNames) if (!roles.roles.some((r) => r.name === n)) errors.push(`roles.json: Overview §5 has the role "${n}", which has no row`);
+  for (const r of roles.roles) if (!roleNames.includes(r.name)) errors.push(`roles.json: "${r.name}" is not a role of the Overview §5 table`);
+  const named = section(overview, 8).match(/Patterns built on CLPR messages include (.+?)\.\s*$/m);
+  if (!named) errors.push('patterns.json: the sentence naming the patterns in Overview §8 was not found; re-read §8 and adapt this check');
+  else {
+    const count = named[1].split(/;\s*(?:and\s+)?/).length;
+    if (count !== patterns.patterns.length) errors.push(`patterns.json: Overview §8 names ${count} patterns, data has ${patterns.patterns.length}`);
+  }
+  const parts = boldRows(section(overview, 2));
+  for (const p of parts) if (!cast.cast.some((c) => c.name === p || p.endsWith(` ${c.name}`))) errors.push(`cast.json: Overview §2 has the part "${p}", which has no entry`);
+
+  // Recovery table: every R-row a data row follows must exist in CLPR Service §7.
+  const rRows = [...section(spec('recommendations/clpr-service.md'), 7).matchAll(/^\|\s*(R\d+)\s*\|/gm)].map((m) => m[1]);
+  if (rRows.length === 0) errors.push('CLPR Service §7 has no R-rows; re-read the recovery table and adapt this check');
+  const followers = [...roles.scenarios.map((s) => [`roles.json scenario "${s.id}"`, s]), ...failures.cases.map((c) => [`failures.json case "${c.k}"`, c])];
+  for (const [where, row] of followers) {
+    if (row.recovery === undefined) continue;
+    if (!rRows.includes(row.recovery)) errors.push(`${where}: recovery "${row.recovery}" is not a row of the CLPR Service §7 recovery table`);
+    if (!row.refs.some((r) => r.doc === 'service' && r.anchor === '7-recovery-scenarios')) errors.push(`${where}: names recovery "${row.recovery}" but does not cite CLPR Service §7`);
+  }
 } else {
   console.log('check-data: .upstream/ not present, inventory comparison skipped (run npm run sync:fetch).');
 }
 
 if (errors.length) { console.error('Data check failed:\n- ' + errors.join('\n- ')); process.exit(1); }
-console.log(`Data check passed: ${catalog.components.length} components, ${ledgers.ledgers.length} ledgers, ${patterns.patterns.length} patterns, ${roles.roles.length} roles, ${roles.scenarios.length} scenarios, ${open.open.length} open issues, ${failures.cases.length} failure cases, ${cast.cast.length} cast entries, ${adrs.adrs.length} ADRs.`);
+console.log(`Data check passed: ${catalog.components.length} components, ${ledgers.ledgers.length} ledgers, ${patterns.patterns.length} patterns, ${roles.roles.length} roles, ${roles.scenarios.length} scenarios, ${open.open.length} open issues, ${failures.cases.length} failure cases, ${cast.cast.length} cast entries.`);

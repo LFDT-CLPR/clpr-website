@@ -1,16 +1,16 @@
 ---
-/** Each ledger keeps its own Channel record; each side's ChannelSyncData (status, received_message_id, next_message_id) is state-proven and carried in every bundle. Draws on spec §2.1. */
+/** Each ledger keeps its own channel record; each side's queue metadata (status, message ids, running hashes, manifest version) is proven to the peer in its bundles. Draws on Channel setup §6, Bundle §2 and Channel state transitions §1. */
 import Figure from '@kse/components/Figure.astro';
-import { spec } from '../../../lib/sources';
+import { channelSetup, bundle, transitions } from '../../../lib/sources';
 ---
 <Figure
   lead="What a proof actually covers."
-  caption="Each ledger keeps its own Channel record; each side's ChannelSyncData, holding status, received_message_id and next_message_id, is state-proven and carried in every bundle, alongside whatever else the verifier proves. That is how one side's close reaches the other."
-  source={[{ label: 'spec §2.1', href: spec('21-channel') }]}
+  caption="Each ledger keeps its own channel record; each side's queue metadata, holding its status, its next and received message ids, its running hashes and, where the verifier returns it, the manifest version it holds, is proven to the peer in every bundle that carries messages, alongside whatever else the verifier proves. That is how one side's close reaches the other."
+  source={[{ label: 'Channel setup §6', href: channelSetup('6-shared-channel-state') }, { label: 'Bundle §2', href: bundle('2-queue-metadata') }, { label: 'Channel state transitions §1', href: transitions('1-channel-status') }]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 372" role="img" aria-label="Two tall frames, Channel on Ledger A on the left and Channel on Ledger B on the right, each holding its own list of channel fields and, below it, a green ChannelSyncData box with status, received_message_id and next_message_id. A solid arrow carries A's ChannelSyncData, state-proven, in a bundle to Ledger B; a dashed arrow below carries B's back the other way. A note in the middle says: where a rule says Channel.status, read this side's ChannelSyncData.status.">
+  <svg viewBox="0 0 760 372" role="img" aria-label="Two tall frames, Channel on Ledger A on the left and Channel on Ledger B on the right, each holding its own channel record and, below it, a green queue metadata box with the status, the next and received message ids, the running hashes and the manifest version. A solid arrow carries A's queue metadata, proven, in a bundle to Ledger B, which sets its acknowledged id from A's received id and reads A's status; a dashed arrow below carries B's back the other way. A note in the middle says a side's status reaches the peer only in its proven queue metadata.">
     <defs>
       <marker id="cvs-arrow-ok" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--ok)"/></marker>
       <marker id="cvs-arrow-c" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="var(--c)"/></marker>
@@ -22,46 +22,48 @@ import { spec } from '../../../lib/sources';
     <text x="34" y="58" class="t small muted">A's own record of the channel</text>
     <rect x="34" y="68" width="222" height="174" rx="8" class="d-surface"/>
     <text x="46" y="86" class="t small muted">the record, kept on A</text>
-    <text x="46" y="104" class="t mono">channel_id</text>
-    <text x="46" y="120" class="t mono">chain_id</text>
-    <text x="46" y="136" class="t mono">verifier_contract · immutable</text>
-    <text x="46" y="152" class="t mono">trust_anchor</text>
-    <text x="46" y="168" class="t mono">endpoint_manifest</text>
-    <text x="46" y="184" class="t mono">acked_message_id</text>
-    <text x="46" y="200" class="t mono">sent_running_hash</text>
-    <text x="46" y="216" class="t mono">received_running_hash</text>
+    <text x="46" y="104" class="t small">channel id</text>
+    <text x="46" y="120" class="t small">peer chain id</text>
+    <text x="46" y="136" class="t small">verifier binding · fixed</text>
+    <text x="46" y="152" class="t small">trust anchor and its id</text>
+    <text x="46" y="168" class="t small">channel context</text>
+    <text x="46" y="184" class="t small">peer manifest, peer throttles</text>
+    <text x="46" y="200" class="t small">acknowledged message id</text>
+    <text x="46" y="216" class="t small">the outbound queue</text>
     <text x="46" y="232" class="t small muted">… and the rest of the record</text>
-    <rect x="34" y="254" width="222" height="64" rx="8" class="d-ok"/>
-    <text x="46" y="274" class="t b">ChannelSyncData (A's own)</text>
-    <text x="46" y="292" class="t mono">status · received_message_id</text>
-    <text x="46" y="308" class="t mono">next_message_id</text>
+    <rect x="34" y="248" width="222" height="72" rx="8" class="d-ok"/>
+    <text x="46" y="266" class="t b">Queue metadata (A's own)</text>
+    <text x="46" y="282" class="t small">status · next message id</text>
+    <text x="46" y="296" class="t small">received id · running hashes</text>
+    <text x="46" y="310" class="t small">manifest version</text>
 
     <!-- Ledger B (right) -->
     <rect x="490" y="20" width="250" height="312" rx="12" class="d-b"/>
     <text x="504" y="42" class="t b">Channel on Ledger B</text>
-    <text x="504" y="58" class="t small muted">same channel_id, its own record</text>
+    <text x="504" y="58" class="t small muted">same channel id, its own record</text>
     <rect x="504" y="68" width="222" height="174" rx="8" class="d-surface"/>
     <text x="516" y="86" class="t small muted">the record, kept on B</text>
     <text x="516" y="106" class="t small">the same fields,</text>
     <text x="516" y="122" class="t small">its own values</text>
-    <text x="516" y="150" class="t small">from A's sync data, B sets:</text>
-    <text x="516" y="170" class="t mono">acked_message_id</text>
-    <text x="516" y="186" class="t mono">= A's received_message_id</text>
+    <text x="516" y="150" class="t small">from A's metadata, B sets:</text>
+    <text x="516" y="170" class="t small">its acknowledged id</text>
+    <text x="516" y="186" class="t small">= A's received id</text>
     <text x="516" y="210" class="t small muted">and reads A's status</text>
     <text x="516" y="226" class="t small muted">(how a close propagates)</text>
-    <rect x="504" y="254" width="222" height="64" rx="8" class="d-ok"/>
-    <text x="516" y="274" class="t b">ChannelSyncData (B's own)</text>
-    <text x="516" y="292" class="t mono">status · received_message_id</text>
-    <text x="516" y="308" class="t mono">next_message_id</text>
+    <rect x="504" y="248" width="222" height="72" rx="8" class="d-ok"/>
+    <text x="516" y="266" class="t b">Queue metadata (B's own)</text>
+    <text x="516" y="282" class="t small">status · next message id</text>
+    <text x="516" y="296" class="t small">received id · running hashes</text>
+    <text x="516" y="310" class="t small">manifest version</text>
 
     <!-- Middle note: what the spec means by Channel.status -->
-    <text x="380" y="124" class="t small center muted">where a rule says</text>
-    <text x="380" y="140" class="t mono center">Channel.status</text>
-    <text x="380" y="156" class="t small center muted">read this side's</text>
-    <text x="380" y="172" class="t mono center">ChannelSyncData.status</text>
+    <text x="380" y="124" class="t small center muted">a side's status</text>
+    <text x="380" y="140" class="t small center muted">reaches the peer</text>
+    <text x="380" y="156" class="t small center muted">only in its proven</text>
+    <text x="380" y="172" class="t small center">queue metadata</text>
 
     <!-- A's sync data crosses in every bundle, state-proven -->
-    <text x="380" y="250" class="t small center ok">A's ChannelSyncData, state-proven</text>
+    <text x="380" y="250" class="t small center ok">A's queue metadata, proven</text>
     <line x1="258" y1="270" x2="350" y2="270" class="line ok"/>
     <line x1="410" y1="270" x2="502" y2="270" class="line ok" marker-end="url(#cvs-arrow-ok)"/>
     <rect x="350" y="260" width="60" height="20" rx="10" class="d-c"/>
@@ -74,6 +76,6 @@ import { spec } from '../../../lib/sources';
     <text x="380" y="320" class="t small center muted">B's, the same in reverse</text>
 
     <!-- takeaway -->
-    <text x="380" y="356" class="t take center">Each side's ChannelSyncData is proven in every bundle; that is how status crosses the gap.</text>
+    <text x="380" y="356" class="t take center">Each side's queue metadata is proven in its bundles; that is how status crosses the gap.</text>
   </svg>
 </Figure>

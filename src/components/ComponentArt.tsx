@@ -91,8 +91,10 @@ function EndpointsArt() {
         <Star id={id} tone="violet" r={11} />
         <circle r={10} stroke={TONES.pink} strokeWidth={1.2} />
       </Mover>
+      {/* A transition bundle: the trust anchor mark of the Verifier card, carried between the Endpoints. */}
       <Mover path={fibre(lower.from, lower.to, lower.bow)} motion="prop-response" at={35}>
-        <rect x={-5} y={-5} width={10} height={10} rx={2} transform="rotate(45)" fill="var(--art-fill)" stroke={TONES.warm} strokeWidth={1.4} />
+        <circle r={8} fill="var(--art-fill)" stroke={TONES.warm} strokeWidth={1.4} />
+        <circle r={2.5} fill={TONES.warm} />
       </Mover>
       <Label x={160} y={30}>{labels.bundles}</Label>
       <Label x={160} y={148}>{labels.anchor}</Label>
@@ -102,15 +104,18 @@ function EndpointsArt() {
 
 function VerifierArt() {
   const id = "component-verifier";
-  const verifier = { x: 160, y: 96 };
-  const anchor = { x: 160, y: 34 };
-  const inbound = { from: { x: 24, y: 96 }, to: { x: verifier.x - 14, y: verifier.y } };
-  const outbound = { from: { x: verifier.x + 14, y: verifier.y }, to: { x: 296, y: 96 } };
+  // The CLPR Service (star) passes the proof and the stored trust anchor to its Verifier, which returns the verified content.
+  const service = { x: 52, y: 96 };
+  const verifier = { x: 218, y: 96 };
+  const anchor = { x: 218, y: 34 };
+  const inbound = { from: { x: service.x + 18, y: service.y - 6 }, to: { x: verifier.x - 14, y: verifier.y - 6 }, bow: -0.14 };
+  const outbound = { from: { x: verifier.x - 14, y: verifier.y + 6 }, to: { x: service.x + 18, y: service.y + 6 }, bow: -0.14 };
   return (
     <Art id={id}>
       <Bundle {...inbound} strands={6} spread={0.04} seed={7} />
       <Bundle {...outbound} tone="pink" strands={6} spread={0.04} seed={8} />
       <Bundle from={{ x: anchor.x, y: anchor.y + 10 }} to={{ x: verifier.x, y: verifier.y - 14 }} tone="warm" strands={4} spread={0.08} opacity={0.4} seed={9} />
+      <Star id={id} tone="violet" r={18} x={service.x} y={service.y} />
       <path
         d={`M${verifier.x} ${verifier.y - 14}L${verifier.x + 14} ${verifier.y}L${verifier.x} ${verifier.y + 14}L${verifier.x - 14} ${verifier.y}Z`}
         fill="var(--art-fill)"
@@ -124,20 +129,20 @@ function VerifierArt() {
       <Pulse x={verifier.x} y={verifier.y} motion="prop-ring" delay={2.02} rest={0}>
         <circle r={22} stroke={TONES.pink} strokeWidth={1.4} />
       </Pulse>
-      <Mover path={fibre(inbound.from, inbound.to, 0)} motion="prop-message" at={60}>
+      <Mover path={fibre(inbound.from, inbound.to, inbound.bow)} motion="prop-message" at={60}>
         <Star id={id} tone="violet" r={11} />
         <circle r={10} stroke={TONES.pink} strokeWidth={1.2} />
       </Mover>
-      <Mover path={fibre(outbound.from, outbound.to, 0)} motion="prop-response" at={55}>
+      <Mover path={fibre(outbound.from, outbound.to, outbound.bow)} motion="prop-response" at={55}>
         <rect x={-5} y={-5} width={10} height={10} rx={2} fill={TONES.pink} />
       </Mover>
-      <Label x={24} y={128} anchor="start">
+      <Label x={135} y={62}>
         {labels.proof}
       </Label>
       <Label x={anchor.x + 16} y={anchor.y + 4} anchor="start">
         {labels.trustAnchor}
       </Label>
-      <Label x={296} y={128} anchor="end">
+      <Label x={135} y={142}>
         {labels.local}
       </Label>
     </Art>

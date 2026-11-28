@@ -9,14 +9,14 @@ things that move or that the reader can change; figures are for the rest.
 
 ```astro
 ---
-/** What the figure shows and which spec or design section it draws from. */
-import Figure from '../../Figure.astro';
-import { design, spec, sol, pinned } from '../../../lib/sources';
+/** What the figure shows and which specification section it draws from. */
+import Figure from '@kse/components/Figure.astro';
+import { messaging } from '../../../lib/sources';
 ---
 <Figure
   lead="The thing to remember, in a few words."
   caption="One or two sentences that say what the drawing shows."
-  source={[{ label: 'design §3.2.2', href: design('322-message-storage') }]}
+  source={[{ label: 'Messaging §4', href: messaging('4-running-hash') }]}
   kind="spec"
   minWidth={640}
 >
@@ -31,7 +31,7 @@ sources in the provenance footer, and the `source` prop still feeds the anchor c
 map), and a kind tag. `kind` says what sort of claim the figure
 makes: `spec` (the specification says so), `impl` (the reference implementation does so),
 `open` (the specification marks it unresolved), `plain` (an analogy, a process, or a summary of
-the page's own text). The same three labels the callouts use (docs/content-model.md).
+the page's own text). The callouts use the same labels (docs/content-model.md).
 
 ## Drawing rules
 

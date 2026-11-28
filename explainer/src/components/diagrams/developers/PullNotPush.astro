@@ -1,19 +1,20 @@
 ---
-/** One sync between two endpoints: the receiver says how far it has got, the sender answers with the missing messages, up to the bundle limits, plus a proof; the request itself is unproven and cannot change any ledger (spec §1.5; design §3.1.4). */
+/** One sync between two endpoints: the receiver says how far it has got, the sender answers with the missing messages, up to the receiver's limits, plus a proof; the request itself is unproven and cannot change any ledger (Endpoint sync §3 and §4; Bundle §3). */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { endpointSync, bundle } from '../../../lib/sources';
 ---
 <Figure
   lead="Ask, then receive."
-  caption="Each endpoint tells its peer how far it has got and gets back the messages after that point, up to the bundle limits, with a proof. The request carries no proof and needs none, because it cannot change anything."
+  caption="Each endpoint tells its peer how far it has got and gets back the messages after that point, up to its own ledger's limits, with a proof. The request carries no proof and needs none, because it cannot change anything."
   source={[
-    { label: 'spec §1.5', href: spec('15-sync-protocol') },
-    { label: 'design §3.1.4', href: design('314-endpoint-communication-protocol') },
+    { label: 'Endpoint sync §3', href: endpointSync('3-exchange') },
+    { label: 'Endpoint sync §4', href: endpointSync('4-message-range') },
+    { label: 'Bundle §3', href: bundle('3-partial-bundles') },
   ]}
   kind="spec"
   minWidth={680}
 >
-  <svg viewBox="0 0 680 350" role="img" aria-label="Two endpoints as vertical lanes. The endpoint on B, on the right, tells the endpoint on A, on the left, that it has received up to message 41; the request is cheap, unproven and changes nothing. The endpoint on A answers with messages 42, 43 and 44 plus a proof sealed by Ledger A. The endpoint on B dry-runs the bundle and submits it to Ledger B, below it, which rejects a stale bundle (the specification) or skips leading duplicates (the EVM contracts). Too low a number sends stale messages; too high a number yields a bundle that skips ahead, which the ledger rejects.">
+  <svg viewBox="0 0 680 350" role="img" aria-label="Two endpoints as vertical lanes. The endpoint on B, on the right, tells the endpoint on A, on the left, that it has received up to message 41; the request is cheap, unproven and changes nothing. The endpoint on A answers with messages 42, 43 and 44 plus a proof sealed by Ledger A. The endpoint on B dry-runs the bundle and submits it to Ledger B, below it, which skips messages it has already received. Too low a number sends messages again, which are skipped, or, below what the sender holds as acknowledged, a bundle the receiver's verifier rejects; too high a number yields a bundle with a gap, which the ledger rejects.">
     <defs>
       <marker id="pnp-arrow-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)" /></marker>
       <marker id="pnp-arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)" /></marker>
@@ -43,7 +44,7 @@ import { design, spec } from '../../../lib/sources';
     <text x="280" y="172" class="t b">#42 #43 #44 + proof</text>
     <text x="340" y="193" class="t small center">sealed by Ledger A</text>
     <line x1="440" y1="175" x2="514" y2="175" class="line ok" marker-end="url(#pnp-arrow-ok)" />
-    <text x="340" y="140" class="t small center">what was missing, up to the bundle limits</text>
+    <text x="340" y="140" class="t small center">what was missing, up to B's limits</text>
 
     <!-- 3 submit -->
     <circle cx="500" cy="224" r="9" class="d-grey" /><text x="500" y="228" class="t small center b">3</text>
@@ -52,9 +53,9 @@ import { design, spec } from '../../../lib/sources';
 
     <rect x="395" y="270" width="250" height="52" rx="8" class="d-b" />
     <text x="520" y="291" class="t b center">Ledger B</text>
-    <text x="520" y="308" class="t small center">spec rejects stale; EVM skips</text>
-    <text x="380" y="289" class="t small muted end">too low: stale, rejected or skipped here;</text>
-    <text x="380" y="304" class="t small muted end">too high: the bundle is rejected</text>
+    <text x="520" y="308" class="t small center">skips what it already has</text>
+    <text x="380" y="289" class="t small muted end">too low: repeats skipped, or rejected;</text>
+    <text x="380" y="304" class="t small muted end">too high: rejected for a gap</text>
 
     <!-- takeaway -->
     <text x="340" y="342" class="t take center">Nothing is pushed. The request cannot change any ledger; a wrong number only wastes effort.</text>

@@ -6,8 +6,9 @@
  * anchor, delivered, and answered the same way back. Sits in the hero so the shape of CLPR is the
  * first thing a reader sees; the 28-step simulation further down is the real thing. Pure CSS
  * animation (no timers): it pauses on tap, on hover, when scrolled off screen, and shows its final
- * frame under prefers-reduced-motion. Backing: design §2.2 (message flow), §4.5 (every Hiero
- * consensus node is an endpoint), the organization profile (the EVM endpoint is a separate program).
+ * frame under prefers-reduced-motion. Backing: Overview §3 (message flow), CLPR Service §3.3 and the
+ * Hiero Ledger Specification §7 (the Hiero manifest is derived from the node roster: its consensus
+ * nodes are its endpoints), the organization profile (the EVM endpoint is a separate program).
  * Drawn in the website's vocabulary (ledger membranes, hexagon endpoints, diamond verifiers, a fibre
  * channel; .claude/skills/clpr-figure). The viewBox stays 560 wide: at a 400px screen the hero is 368px wide, so 16px text renders at
  * 10.5px, the floor check-sims.mjs enforces.
@@ -18,8 +19,8 @@ const L = mode === 'plain'
   ? { a: 'Ledger A', b: 'Ledger B', ep: 'endpoint', epA: 'in the node', epB: 'a program', app: 'application', ver: 'verifier', card: 'trust anchor',
       phases: ['Ledger A seals the message', 'its endpoint (in the node, on Hiero) hands it over', "Ledger B's endpoint program submits it", 'Ledger B checks the seal', 'delivered; the reply comes back the same way'],
       link: 'Watch all 28 steps' }
-  : { a: 'Ledger A', b: 'Ledger B', ep: 'endpoint', epA: 'in the node', epB: 'a relay', app: 'application', ver: 'verifier', card: 'trust anchor',
-      phases: ['queued, hashed, state-proven', "a Hiero node's endpoint serves the bundle", 'the relay dry-runs and submits it', 'verifyBundle against the trust anchor', 'dispatched; the response travels back'],
+  : { a: 'Ledger A', b: 'Ledger B', ep: 'endpoint', epA: 'in the node', epB: 'a program', app: 'application', ver: 'verifier', card: 'trust anchor',
+      phases: ['queued, hashed, state-proven', "a Hiero node's endpoint serves the bundle", 'the endpoint dry-runs and submits it', 'verifyBundle against the trust anchor', 'dispatched; the response travels back'],
       link: 'Step through all 28 steps' };
 ---
 <div class="trailer" data-paused="false">

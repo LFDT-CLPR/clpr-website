@@ -23,12 +23,14 @@ moves a pin; `clpr-sync` does both, and starts by running this.
    site holds: find the changed heading or file on its left side and take the locations on the
    right (`general §id`, `dev §id`, `file.json key[row]`, `journey step N`, component names). Then
    run `node checks/check-data.mjs` against the fetched tree: its inventory failures are new
-   upstream things with no row yet (a verifier directory, an ADR, a pattern, a role, a flagged
-   passage), which the map cannot know about.
+   upstream things with no row yet (a ledger directory, a verifier code directory, an open issue, a
+   role, a pattern, a part, a recovery row), which the map cannot know about.
 4. **Classify.** Content-affecting: text, tables, defaults, field names, step order, statuses,
-   ADRs, verifier documents, interface changes, the organization profile, `teams.yml`. Not
-   content-affecting: tests, CI, build files, formatting, dependency bumps. Watch for the quiet
-   ones: a renumbered heading changes anchors; a resolved `‼️` passage changes `open.json`.
+   Protocol modules, Ledger Specifications, Recommendations, open issues, CLIPs, interface changes,
+   the organization profile, `teams.yml`. Not content-affecting: tests, CI, build files, formatting,
+   dependency bumps, the specification's `archive/`. Watch for the quiet ones: a renumbered heading
+   changes anchors; a resolved or new `OI-n` open issue changes `open.json`; a new specification
+   file needs a `pack.json` `docs` key.
 5. **Write the report** to `.upstream/drift-<YYYY-MM-DD>.md`:
 
    ```markdown
@@ -54,8 +56,8 @@ moves a pin; `clpr-sync` does both, and starts by running this.
   recommend deleting that detail instead of updating it.
 
 - Never edit `src/`, `docs/` or `src/data/sources.json`; never run `pnpm run sync:pin`.
-- Describe the change, not the code: a maintainer wants "the default leaf validity dropped from a
-  day to twelve hours", not a diff hunk.
+- Describe the change, not the code: a maintainer wants "the recommended connector penalties now
+  escalate and end in a ban", not a diff hunk.
 - Say what you did not read. A patch restricted to the watch paths can miss a new folder; if
   `git -C .upstream/<id> log --stat <pinned>..origin/<branch>` shows files outside the watch list,
   say so and suggest widening `watch` in `sources.json` during the sync.

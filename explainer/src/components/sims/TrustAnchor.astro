@@ -1,62 +1,70 @@
 ---
 /**
- * Trust anchor rotation, per design §3.1.5 (Verifier Contracts / Trust Anchor), spec §3.1
- * (verifier interface), §3.2 (endpoint rotation obligations), §2.1.2 (Criterion 2) and §4.2
- * Step 1c, plus the reference QBFT verifiers' document, the Hiero anchor document and ADR 2026-07-02
- * (ChannelContext).
+ * Trust anchors, per Verifier interface §1 and §4 (stored with the channel, changed only by bundle
+ * processing; trust anchor change versus update; several changes in one bundle), Endpoint sync §5.1
+ * (transition bundles, catch-up) and the "Trust anchor changes" section of each proof scheme.
  *
- * The source chain's signing authority rotates V1 → V2 → …; the simulation calls the stretch one
- * authority seals blocks an epoch. The destination
- * Channel stores one opaque trust_anchor (+ trust_anchor_id) and accepts only proofs an authority
- * in that anchor can verify. Two encodings are simulated: single-authority (QBFT/IBFT-like) and
- * window {current, next} (Ethereum-sync-committee-like). Nothing here is cryptographic; the
- * outcomes follow the spec's rules for accepting, rejecting and rotating.
+ * Two modes. "Changing anchor" follows the qbft-epoch scheme: the source's validator set changes
+ * V1 → V2 → …, the simulation calls the stretch one set seals blocks an epoch, and the anchor holds
+ * one set with the epoch number as its id. "Fixed anchor" follows hints-wraps: the anchor is the
+ * source's ledger id and never changes, because each roster's key is linked to it. Nothing here is
+ * cryptographic; the outcomes follow the specification's rules for accepting, rejecting and changing.
  *
  * Every drawn state is a class (epoch boxes, arrows, verdict, Channel tint) so the shared SVG
  * transitions animate it; a small "bundle" chip rides along the top edge of the three boxes on
- * each submit: green to the Channel on accept, red and back on revert, grey and still on "not sent".
+ * each submit, Endpoint to CLPR Service to its verifier: green and back to rest at the Service on
+ * accept, red and back to the Endpoint on revert, grey and still on "not sent".
  */
-import { design, spec, pinned } from '../../lib/sources';
+import { verifierIface, transitions, endpointSync, channelSetup, service, openIssues, pinned } from '../../lib/sources';
 const { id = 'trust-anchor' } = Astro.props as { id?: string };
 const MAX = 7;
 const epochs = Array.from({ length: MAX }, (_, i) => i + 1);
+const scheme = (path: string, anchor = '7-trust-anchor-changes') => pinned('clpr-spec', path, anchor);
 const LINKS = {
-  design315: design('315-verifier-contracts'),
-  spec31: spec('31-verifier-contract-interface'),
-  spec32: spec('32-endpoint-trust-anchor-rotation-obligations'),
-  specTiming: spec('timing-depends-on-trust-anchor-encoding'),
-  specTransition: spec('transition-bundle'),
-  specCatchup: spec('catch-up-across-multiple-missed-rotations'),
-  spec212: spec('212-bundle-progress-criteria'),
-  spec42: spec('42-bundle-verification-algorithm'),
-  hiero: pinned('clpr-spec', 'verifiers/hiero/trust_anchor.md'),
-  adr: pinned('clpr-spec', 'ADR/2026-07-02-channel-context-verifier-interface.md'),
-  qbftSol: pinned('clpr-smart-contracts', 'src/verifiers/evm/qbft/qbft-verifier.md'),
+  viface1: verifierIface('1-verifier-contracts-and-trust-anchors'),
+  viface3: verifierIface('3-verifybundle'),
+  viface4: verifierIface('4-trust-anchor-changes'),
+  catchup: endpointSync('51-trust-anchor-catch-up'),
+  progress: transitions('3-progress'),
+  processing: transitions('2-bundle-processing'),
+  context: channelSetup('3-channel-context'),
+  submit: service('52-checks-before-submitting'),
+  verifierChoice: service('61-verifier-choice'),
+  ledgers: pinned('clpr-spec', 'ledgers/README.md', 'proof-schemes'),
+  hintsWraps: scheme('ledgers/hiero/proof-schemes/hints-wraps.md'),
+  hints: scheme('ledgers/hiero/proof-schemes/hints.md'),
+  qbftEpoch: scheme('ledgers/besu/proof-schemes/qbft-epoch.md'),
+  qbftEpochTrust: scheme('ledgers/besu/proof-schemes/qbft-epoch.md', '2-trust-model'),
+  qbftEpochLimit: scheme('ledgers/besu/proof-schemes/qbft-epoch.md', '5-encoding-algorithm'),
+  hintsWrapsTrust: scheme('ledgers/hiero/proof-schemes/hints-wraps.md', '2-trust-model'),
+  oi6: openIssues('oi-6-qbft-epoch-catch-up-across-a-validator-change'),
+  qbftHeader: scheme('ledgers/besu/proof-schemes/qbft-header.md'),
+  qbftContract: scheme('ledgers/besu/proof-schemes/qbft-contract.md'),
 };
 ---
 <div class="sim trustanchor" id={id} data-links={JSON.stringify(LINKS)}>
   <div class="sim__head">
-    <div><span class="kind">Simulation</span><h3>Trust anchors: keeping up with the source's validators</h3></div>
+    <div><span class="kind">Simulation</span><h3>Trust anchors: keeping up with the source's signers</h3></div>
     <span class="pill ok" data-role="state">anchor current</span>
   </div>
   <div class="sim__body">
-    <div class="choices" role="group" aria-label="Trust anchor encoding">
-      <span class="small" style="align-self:center">Encoding:</span>
+    <div class="choices" role="group" aria-label="Proof scheme">
+      <span class="small" style="align-self:center">Proof scheme:</span>
       <div class="seg">
-        <button class="btn" type="button" data-mode="single" aria-pressed="true">Single-authority encoding</button>
-        <button class="btn" type="button" data-mode="window" aria-pressed="false">Window encoding</button>
+        <button class="btn" type="button" data-mode="single" aria-pressed="true">A changing anchor (qbft-epoch)</button>
+        <button class="btn" type="button" data-mode="fixed" aria-pressed="false">A fixed anchor (hints-wraps)</button>
       </div>
-      <span class="small" style="align-self:center" data-role="mode-note">one authority at a time (a QBFT validator set)</span>
+      <span class="small" style="align-self:center" data-role="mode-note">one validator set at a time, with the epoch as its id</span>
     </div>
     <div class="sim__scroll">
       <svg viewBox="0 0 760 336" role="img" aria-labelledby={`${id}-title`}>
-      <title id={`${id}-title`}>Top: the source chain's validator sets by epoch. Bottom: the endpoint, the verifier call, and the destination Channel's stored trust anchor with the authorities it currently accepts.</title>
+      <title id={`${id}-title`}>Top: the source ledger's signers by epoch. Bottom: the endpoint submits each bundle to the destination's CLPR Service, which holds the channel's stored trust anchor and calls the destination's verifier.</title>
       <defs>
         <marker id={`${id}-arr`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)" /></marker>
       </defs>
 
       <!-- Source timeline -->
-      <text x="20" y="18" class="t b" style="fill:var(--b)">Source ledger: who seals its blocks</text>
+      <text x="20" y="18" class="t b" style="fill:var(--b)">Source ledger: who signs its blocks</text>
       <text x="740" y="18" class="t small" style="text-anchor:end" data-role="queue">outbound queue: 2 pending messages</text>
       {epochs.map((e) => {
         const x = 20 + (e - 1) * 104;
@@ -73,57 +81,56 @@ const LINKS = {
       <rect data-role="trusted" class="ta__trusted" x="20" y="96" width="96" height="4" rx="2" />
       <text x="92" y="114" class="t small center ta__ok" data-role="trusted-label">trusted by the destination</text>
       <rect x="20" y="126" width="8" height="8" rx="1" fill="var(--text-3)" />
-      <text x="34" y="134" class="t small muted">the block where the set changes: sealed by the previous validator set, names the next one</text>
+      <text x="34" y="134" class="t small muted" data-role="marker-note">the block where the set changes: sealed by the previous validator set, names the next one</text>
 
       <!-- Endpoint -->
       <g>
         <rect x="20" y="152" width="200" height="128" rx="10" class="d-c" />
         <text x="30" y="172" class="t b">Endpoint</text>
         <text x="30" y="190" class="t small" data-role="ep-status">online, sees epoch 1</text>
-        <text x="30" y="207" class="t small">local record of anchor ids:</text>
+        <text x="30" y="207" class="t small">source's anchor ids so far:</text>
         <text x="30" y="223" class="t mono" data-role="ep-record">1</text>
         <text x="30" y="244" class="t small" data-role="ep-remote">remote anchor id 1: current</text>
         <text x="30" y="261" class="t small" data-role="ep-todo"></text>
       </g>
       <line x1="220" y1="216" x2="248" y2="216" class="line" marker-end={`url(#${id}-arr)`} data-role="arr1" />
 
-      <!-- Verifier call -->
+      <!-- Destination ledger: the CLPR Service holds the channel, receives the bundle and calls its Verifier -->
       <g>
-        <rect x="250" y="152" width="240" height="128" rx="10" class="d-surface" />
-        <text x="260" y="172" class="t b">Verifier</text>
-        <text x="260" y="188" class="t mono">verifyBundle(payload, anchor, ctx)</text>
-        <text x="260" y="207" class="t small" data-role="v-bundle">bundle: none yet</text>
-        <text x="260" y="223" class="t small" data-role="v-proof"></text>
-        <text x="260" y="239" class="t small" data-role="v-returns"></text>
-        <text x="260" y="255" class="t small" data-role="v-store"></text>
-        <g data-role="verdict" class="ta__verdict empty">
-          <rect x="260" y="260" width="130" height="18" rx="9" data-role="verdict-box" />
-          <text x="325" y="273" class="t small center b" data-role="verdict-text">verdict</text>
-        </g>
-      </g>
-      <line x1="490" y1="216" x2="514" y2="216" class="line" marker-end={`url(#${id}-arr)`} data-role="arr2" />
-
-      <!-- Destination channel -->
-      <g>
-        <rect x="516" y="152" width="228" height="128" rx="10" class="d-a ta__ch ok" data-role="ch-box" />
-        <text x="530" y="172" class="t b">Destination ledger: Channel</text>
-        <text x="530" y="190" class="t mono" data-role="ch-anchor">trust_anchor: V1</text>
-        <text x="530" y="206" class="t mono" data-role="ch-id">trust_anchor_id: 1</text>
-        <text x="530" y="225" class="t small">accepts proofs sealed by</text>
+        <rect x="250" y="152" width="222" height="128" rx="10" class="d-a ta__ch ok" data-role="ch-box" />
+        <text x="262" y="172" class="t b">Destination CLPR Service</text>
+        <text x="262" y="190" class="t mono" data-role="ch-anchor">trust anchor: V1</text>
+        <text x="262" y="206" class="t mono" data-role="ch-id">trust anchor id: 1</text>
+        <text x="262" y="225" class="t small">its verifier accepts</text>
         <g data-role="ch-pills">
-          <g data-pill="0"><rect x="530" y="233" width="52" height="20" rx="10" class="d-ok" /><text x="556" y="247" class="t small center b ta__ok">V1</text></g>
-          <g data-pill="1" class="ta__pill off"><rect x="590" y="233" width="52" height="20" rx="10" class="d-ok" /><text x="616" y="247" class="t small center b ta__ok">V2</text></g>
+          <g data-pill="0"><rect x="262" y="233" width="52" height="20" rx="10" class="d-ok" /><text x="288" y="247" class="t small center b ta__ok">V1</text></g>
+          <g data-pill="1" class="ta__pill off"><rect x="322" y="233" width="52" height="20" rx="10" class="d-ok" /><text x="348" y="247" class="t small center b ta__ok">V2</text></g>
         </g>
-        <text x="530" y="271" class="t small muted">the Service never inspects the bytes</text>
+        <text x="262" y="271" class="t small muted">opaque bytes to the Service</text>
       </g>
-      <rect x="516" y="292" width="228" height="38" rx="8" class="d-grey" />
-      <text x="530" y="308" class="t small b">channel_context: immutable</text>
-      <text x="530" y="323" class="t mono">channel_id · service_address</text>
-      <line x1="510" y1="304" x2="224" y2="304" class="line dash" marker-end={`url(#${id}-arr)`} />
-      <text x="367" y="298" class="t small center muted" data-role="sync-label">every sync payload carries trust_anchor_id = 1</text>
-      <text x="367" y="320" class="t small center muted">(self-reported and unproven: a cue, not evidence)</text>
+      <line x1="472" y1="216" x2="490" y2="216" class="line" marker-end={`url(#${id}-arr)`} data-role="arr2" />
+      <rect x="250" y="292" width="222" height="38" rx="8" class="d-grey" />
+      <text x="262" y="308" class="t small b">channel context: never changes</text>
+      <text x="262" y="323" class="t mono">channel id · Service address</text>
 
-      <!-- The bundle chip rides along the top edge of the three boxes (Endpoint, Verifier, Channel);
+      <!-- Verifier call: the destination's verifier, called by the Service -->
+      <g>
+        <rect x="492" y="152" width="252" height="128" rx="10" class="d-surface" />
+        <text x="504" y="172" class="t b">Destination verifier</text>
+        <text x="504" y="188" class="t small">checks the bundle under the anchor</text>
+        <text x="504" y="207" class="t small" data-role="v-bundle">bundle: none yet</text>
+        <text x="504" y="223" class="t small" data-role="v-proof"></text>
+        <text x="504" y="239" class="t small" data-role="v-returns"></text>
+        <text x="504" y="255" class="t small" data-role="v-store"></text>
+        <g data-role="verdict" class="ta__verdict empty">
+          <rect x="504" y="260" width="130" height="18" rx="9" data-role="verdict-box" />
+          <text x="569" y="273" class="t small center b" data-role="verdict-text">verdict</text>
+        </g>
+      </g>
+      <text x="120" y="304" class="t small center muted" data-role="sync-label">requests report anchor id 1</text>
+      <text x="120" y="322" class="t small center muted">(unproven: a cue, not evidence)</text>
+
+      <!-- The bundle chip rides along the top edge of the three boxes (Endpoint, CLPR Service, verifier);
            it is drawn last so it paints above them. -->
       <g transform="translate(200,151)" aria-hidden="true">
         <g data-role="chip" class="ta__chip off">
@@ -145,7 +152,7 @@ const LINKS = {
   <div class="sim__controls">
     <div class="group">
       <span class="kicker">Source</span>
-      <button class="btn" type="button" data-ev="rotate">Source chain rotates (next epoch)</button>
+      <button class="btn" type="button" data-ev="rotate">Source changes its signers (next epoch)</button>
     </div>
     <div class="group">
       <span class="kicker">Endpoint</span>
@@ -168,23 +175,27 @@ const LINKS = {
   <div class="sim__body trustanchor__panels">
     <div class="steps two">
       <div class="result">
-        <h4>Concrete encodings</h4>
-        <p><strong>QBFT (EVM ledger) verifiers.</strong> The reference contracts carry two current ones: one reads the validator set from block headers, the other from a validator contract on the source ledger. A legacy single-validator verifier, marked for removal, still ships beside them. In both current verifiers, the anchor holds a commitment to the trusted validator set, the code hash of the peer CLPR Service and the block the set was read at, and the anchor id is that block number. A header is accepted when two thirds of the trusted set sealed it.</p>
-        <p class="small">Rotation evidence is one header for each block at which the validator set changed, oldest first: each is sealed by the set trusted before it, and the verifier walks them in order and returns only the final anchor. With validators named in block headers, one member may change per header; with a validator contract, each header comes with a proof of the contract's list. The simulation calls the stretch in which one validator set seals blocks an epoch, numbers the sets V1, V2 and so on, and uses that number as the anchor id.</p>
-        <p><strong>Hiero (TSS) verifier.</strong> The anchor is the raw <code>ledger_id</code> bytes, the genesis-rooted identity of the network's threshold signing key, with no framing and no separate id (<code>verifyConfig</code> returns an empty <code>initialTrustAnchorId</code>). Rotation is not implemented yet: the native verification path returns an empty <code>newTrustAnchor</code>, so there the anchor is immutable for the Channel's lifetime. The Solidity <code>HieroVerifier</code> checks signatures against the ledger_id fixed at its deployment and returns a cache hint as <code>newTrustAnchor</code>. In the specification one generic Hiero verifier can serve Channels to many Hiero networks, the anchor saying which network is verified; the pinned Solidity verifier is fixed to one ledger_id at deployment.</p>
+        <h4>What the trust anchor is, per proof scheme</h4>
+        <p><strong>hints-wraps</strong> (Hiero, checked by Hiero's built-in verifier). The anchor is the source's ledger id, and its id, the ledger id, never changes: the WRAPS proof in each signature covers roster changes. A verifier may keep a cache hint and return it as a trust anchor update, with the same id; a hint never changes whether a bundle is accepted.</p>
+        <p><strong>hints</strong> (Hiero, checked by EVM verifier contracts). The anchor is the hash of the current hinTS verification key, which changes with the roster; every change of key is a trust anchor change. Some of its transition bundles carry no messages, no queue metadata and no manifest.</p>
+        <p><strong>qbft-epoch</strong> (an EVM ledger running QBFT, checked by EVM verifier contracts). The anchor is the validator set of an anchored epoch, and its id is the epoch number. A bundle carrying several epoch boundary headers advances the anchor by that many epochs; a bundle carries a limited number of them, and catching up across a large validator change is an open issue (OI-6).</p>
+        <p><strong>qbft-header</strong> and <strong>qbft-contract</strong> (an EVM ledger running QBFT, checked by EVM verifier contracts and by Hiero's built-in verifier). The anchor is a trusted validator set, read from block headers or from a validator contract, and the block at which it was last confirmed; its id is that block number. It moves forward when a bundle proves a different set.</p>
+        <p class="small">A verifier contract combines one proof scheme of the source ledger with the verifier API of the destination ledger. The first mode of the simulation follows qbft-epoch and numbers the validator sets V1, V2 and so on; the second follows hints-wraps, with V1, V2 as successive rosters.</p>
       </div>
       <div class="result">
         <h4>What can and cannot change the anchor</h4>
         <ul class="small" style="margin:0;padding-left:1.1rem">
-          <li>The anchor is written by <code>verifyConfig</code> at <code>completeChannel</code> and afterwards changes only when <code>verifyBundle</code> returns a non-empty <code>new_trust_anchor</code>. There is no admin key, governance call or <code>ConfigUpdate</code> path; a verifier behind an upgradeable proxy can still change what it accepts.</li>
-          <li>Succession requirement: the successor must be committed to inside the same proof that was verified against the current anchor; a verifier that returns a new anchor without that proven commitment must revert. This is what stops a compromised endpoint from injecting an authority.</li>
-          <li>The Service stores <code>new_trust_anchor</code> and <code>new_trust_anchor_id</code> atomically before processing any message in the bundle (spec §4.2 Step 1c); the id must be non-empty exactly when the anchor is. Implementation note: the reference contracts store both when the returned anchor is non-empty and differs from the stored one, comparing the anchor and not its id; the Solidity Hiero verifier returns no id.</li>
-          <li>A bundle with zero application messages that advances the anchor is valid: Bundle Progress Criterion 2.</li>
-          <li><code>ChannelContext</code> (<code>channel_id</code>, <code>service_address</code>) is stored separately and never changes. The ADR rejected putting identity inside the anchor because a field designed to rotate cannot also carry something that must not: it would make a legitimate rotation indistinguishable from an identity substitution.</li>
+          <li>The trust anchor and its id are stored with the channel, set at channel setup from the verifier's configuration check, and afterwards changed only by bundle processing, from what the verifier returns. No administrative operation changes them. A verifier behind an upgradeable contract can still change what it accepts, so applications evaluate who controls its upgrades.</li>
+          <li>A trust anchor change has a new id. The bundle must verify under the current anchor and contain a proven commitment to the new one; a returned anchor that is not a proven successor must not change which proofs the verifier accepts. This is what stops a compromised endpoint from injecting a signer.</li>
+          <li>A trust anchor update keeps the id and changes nothing the verifier accepts, for example a cache. An update alone does not make progress.</li>
+          <li>The CLPR Service replaces the anchor and its id before it processes any message of the bundle, and verifies every later bundle under the new value. The id is empty exactly when the anchor is.</li>
+          <li>A bundle with no messages that changes the anchor is valid: the change is progress on its own.</li>
+          <li>The channel context (the channel id and the peer CLPR Service's address) is stored separately and never changes.</li>
+          <li>The drawing merges two endpoints: the source ledger's endpoint builds the bundle for the peer's request, and the destination's endpoint submits it.</li>
         </ul>
       </div>
     </div>
-    <p class="small" style="margin:10px 0 0">Source: <a href={LINKS.design315} rel="noopener">design §3.1.5</a> · <a href={LINKS.spec31} rel="noopener">spec §3.1</a> · <a href={LINKS.spec32} rel="noopener">spec §3.2</a> · <a href={LINKS.spec42} rel="noopener">spec §4.2</a> · <a href={LINKS.qbftSol} rel="noopener">QBFT verifiers (EVM)</a> · <a href={LINKS.hiero} rel="noopener">Hiero trust anchor</a> · <a href={LINKS.adr} rel="noopener">ADR 2026-07-02</a>.</p>
+    <p class="small" style="margin:10px 0 0">Source: <a href={LINKS.viface1} rel="noopener">Verifier interface §1</a> · <a href={LINKS.viface4} rel="noopener">§4</a> · <a href={LINKS.catchup} rel="noopener">Endpoint sync §5.1</a> · <a href={LINKS.processing} rel="noopener">Channel state transitions §2</a> · <a href={LINKS.progress} rel="noopener">§3</a> · <a href={LINKS.context} rel="noopener">Channel setup §3</a> · <a href={LINKS.verifierChoice} rel="noopener">CLPR Service §6.1</a> · <a href={LINKS.ledgers} rel="noopener">proof schemes</a>: <a href={LINKS.hintsWraps} rel="noopener">hints-wraps</a>, <a href={LINKS.hints} rel="noopener">hints</a>, <a href={LINKS.qbftEpoch} rel="noopener">qbft-epoch</a> (<a href={LINKS.oi6} rel="noopener">OI-6</a>), <a href={LINKS.qbftHeader} rel="noopener">qbft-header</a>, <a href={LINKS.qbftContract} rel="noopener">qbft-contract</a>.</p>
   </div>
 </div>
 
@@ -235,20 +246,24 @@ const LINKS = {
 </style>
 
 <script>
-  type Mode = 'single' | 'window';
+  type Mode = 'single' | 'fixed';
   type Verdict = 'accepted' | 'reverted' | 'suppressed';
   interface Last { bundle: string; proof: string; returns: string; store: string; verdict: Verdict }
   interface Msg { plain: string; proto: string; refs: [string, string][] }
   const MAX = 7;
-  const CAP = 5; // rotation proofs per batched bundle in this simulation
+  const CAP = 5; // trust anchor changes per catch-up bundle in this simulation
+  const MARKER: Record<Mode, string> = {
+    single: 'the block where the set changes: sealed by the previous validator set, names the next one',
+    fixed: 'where the roster changes: its new key is linked to the ledger id by the WRAPS proof',
+  };
   const NOTE: Record<Mode, string> = {
-    single: 'one authority at a time (a QBFT validator set)',
-    window: '{current, next} (Ethereum sync committees)',
+    single: 'one validator set at a time, with the epoch as its id',
+    fixed: 'the ledger id, which every roster\'s key is linked to',
   };
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const VERIFIER_X = 170; // chip travel, in viewBox units from its start over the Endpoint
-  const CHANNEL_X = 360;
-  const VERDICT_MS = REDUCED ? 0 : 420; // when the chip reaches the Verifier
+  const SERVICE_X = 160; // chip travel, in viewBox units from its start over the Endpoint
+  const VERIFIER_X = 400;
+  const VERDICT_MS = REDUCED ? 0 : 480; // when the chip reaches the Verifier
   const replay = (el: Element, cls: string) => { el.classList.remove(cls); void (el as HTMLElement).offsetWidth; el.classList.add(cls); };
 
   for (const root of Array.from(document.querySelectorAll<HTMLElement>('.sim.trustanchor'))) {
@@ -267,7 +282,7 @@ const LINKS = {
 
     let mode: Mode = 'single';
     let s = 1;            // source epoch: blocks are sealed by V<s>
-    let cur = 1;          // anchor: V<cur> (single) or {V<cur>, V<cur+1>} (window)
+    let cur = 1;          // anchor: V<cur> (single); the ledger id, accepting every roster so far (fixed)
     let seen = 1;         // last source epoch the endpoint observed
     let offline = false;
     let pending: number[] = [1, 1]; // epoch in which each pending message was sent
@@ -277,12 +292,14 @@ const LINKS = {
     let shownS = 1;                // the epoch box last shown as "signing now"
     let before = 'V1';             // the anchor as it read when the current action started
 
-    const set = () => (mode === 'single' ? [cur] : [cur, cur + 1]);
-    const words = () => (mode === 'single' ? `V${cur}` : `{V${cur}, V${cur + 1}}`);
+    // In the fixed mode every roster so far is accepted, because each roster's key is linked to the ledger id.
+    const set = () => (mode === 'single' ? [cur] : Array.from({ length: s }, (_, i) => i + 1));
+    const words = () => (mode === 'single' ? `V${cur}` : 'ledger id');
+    const idWords = () => (mode === 'single' ? String(cur) : 'ledger id');
     const accepts = (v: number) => set().includes(v);
-    const gapAt = (epoch: number) => (mode === 'single' ? epoch - cur : Math.max(0, epoch - cur - 1));
+    const gapAt = (epoch: number) => (mode === 'single' ? epoch - cur : 0);
     const gap = () => gapAt(s);
-    const steps = () => s - cur; // rotation proofs the source can currently supply
+    const steps = () => (mode === 'single' ? s - cur : 0); // trust anchor changes the source can currently prove
     const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
     const later = (fn: () => void, ms: number) => { const t = window.setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); };
     const clearMotion = () => { for (const t of timers) clearTimeout(t); timers.clear(); if (chipAnim) { chipAnim.cancel(); chipAnim = null; } };
@@ -298,7 +315,7 @@ const LINKS = {
     function line(): string {
       const anchor = before === words() ? words() : `${before} -> ${words()}`;
       const tail = last ? (last.verdict === 'accepted' ? 'accepted' : last.verdict === 'reverted' ? 'reverted' : 'not sent') : offline ? 'endpoint offline' : 'no bundle';
-      return `epoch ${s} · anchor ${anchor} · id ${cur} · tx ${tx} · ${tail}`;
+      return `epoch ${s} · anchor ${anchor} · id ${idWords()} · tx ${tx} · ${tail}`;
     }
     function say(m: Msg) {
       const refs = m.refs.map(([k, l]) => `<a href="${links[k]}" rel="noopener">${l}</a>`).join(' · ');
@@ -315,13 +332,13 @@ const LINKS = {
         arr2.setAttribute('class', v === 'accepted' ? 'line ok' : v === 'reverted' ? 'line bad' : 'line');
         setVerdict(v === 'accepted' ? 'ok' : v === 'reverted' ? 'bad' : 'grey', v === 'accepted' ? 'accepted' : v === 'reverted' ? 'reverted, fee lost' : 'not sent');
       };
-      const end = v === 'accepted' ? CHANNEL_X : 0;
+      // Endpoint → CLPR Service → its verifier; accepted, it comes back to rest at the Service.
+      const end = v === 'accepted' ? SERVICE_X : 0;
       if (REDUCED) { chip.style.transform = `translateX(${end}px)`; atVerifier(); return; }
+      const out = [{ transform: 'translateX(0)' }, { transform: `translateX(${SERVICE_X}px)`, offset: 0.25 }, { transform: `translateX(${VERIFIER_X}px)`, offset: 0.5 }, { transform: `translateX(${VERIFIER_X}px)`, offset: 0.62 }];
       const frames = v === 'suppressed'
         ? [{ transform: 'translateX(0)' }, { transform: 'translateX(22px)' }, { transform: 'translateX(0)' }]
-        : v === 'accepted'
-          ? [{ transform: 'translateX(0)' }, { transform: `translateX(${VERIFIER_X}px)`, offset: 0.45 }, { transform: `translateX(${VERIFIER_X}px)`, offset: 0.6 }, { transform: `translateX(${CHANNEL_X}px)` }]
-          : [{ transform: 'translateX(0)' }, { transform: `translateX(${VERIFIER_X}px)`, offset: 0.45 }, { transform: `translateX(${VERIFIER_X}px)`, offset: 0.6 }, { transform: 'translateX(0)' }];
+        : [...out, { transform: `translateX(${end}px)` }];
       chip.style.transform = 'translateX(0)';
       chipAnim = chip.animate(frames, { duration: v === 'suppressed' ? 420 : 950, easing: 'ease-in-out', fill: 'forwards' });
       later(atVerifier, v === 'suppressed' ? 200 : VERDICT_MS);
@@ -355,20 +372,25 @@ const LINKS = {
       $('[data-role="queue"]').textContent = `outbound queue: ${plural(pending.length, 'pending message')}`;
 
       $('[data-role="ep-status"]').textContent = offline ? `OFFLINE since epoch ${seen}` : `online, sees epoch ${s}`;
-      $('[data-role="ep-record"]').textContent = Array.from({ length: seen }, (_, i) => i + 1).join(' → ');
+      $('[data-role="ep-record"]').textContent = mode === 'single' ? Array.from({ length: seen }, (_, i) => i + 1).join(' → ') : 'ledger id, fixed';
       const g = gapAt(seen);
-      $('[data-role="ep-remote"]').textContent = `remote anchor id ${cur}: ${g === 0 ? 'current' : `behind by ${g}`}`;
+      $('[data-role="ep-remote"]').textContent = mode === 'single' ? `remote anchor id ${cur}: ${g === 0 ? 'current' : `behind by ${g}`}` : 'remote anchor: the ledger id';
       $('[data-role="ep-todo"]').textContent = offline ? 'not syncing' : g === 0 ? 'normal bundles will verify' : `needs ${plural(g, 'transition')} first`;
 
-      $('[data-role="ch-anchor"]').textContent = `trust_anchor: ${words()}`;
-      $('[data-role="ch-id"]').textContent = `trust_anchor_id: ${cur}`;
+      $('[data-role="ch-anchor"]').textContent = `trust anchor: ${words()}`;
+      $('[data-role="ch-id"]').textContent = `trust anchor id: ${idWords()}`;
       for (const p of Array.from(root.querySelectorAll<SVGGElement>('[data-pill]'))) {
         const i = Number(p.dataset.pill);
+        if (mode === 'fixed') {
+          p.setAttribute('class', `ta__pill${i === 0 ? '' : ' off'}`);
+          if (i === 0) p.querySelector('text')!.textContent = s === 1 ? 'V1' : `V1–V${s}`;
+          continue;
+        }
         p.setAttribute('class', `ta__pill${i < trusted.length ? '' : ' off'}`);
         if (i < trusted.length) p.querySelector('text')!.textContent = `V${trusted[i]}`;
       }
       $('[data-role="ch-box"]').setAttribute('class', `d-a ta__ch ${gap() > 0 ? 'bad' : 'ok'}`);
-      $('[data-role="sync-label"]').textContent = `every sync payload carries trust_anchor_id = ${cur}`;
+      $('[data-role="sync-label"]').textContent = mode === 'single' ? `requests report anchor id ${cur}` : 'requests report the ledger id';
 
       $('[data-role="v-bundle"]').textContent = last ? `bundle: ${last.bundle}` : 'bundle: none yet';
       $('[data-role="v-proof"]').textContent = last ? last.proof : '';
@@ -399,24 +421,25 @@ const LINKS = {
       gate('normal', offline, off);
       gate('late', offline || s < 2 || !stale, offline ? off : s < 2 ? 'the source has not rotated yet' : 'nothing sealed by the previous authority is left to prove');
       gate('transition', offline, off);
-      gate('batch', offline || steps() < 2, offline ? off : 'fewer than two rotations to catch up on');
+      gate('batch', offline || steps() < 2, offline ? off : mode === 'fixed' ? 'this proof scheme has no trust anchor changes' : 'fewer than two changes to catch up on');
       gate('offline', offline || room < 1, offline ? 'the endpoint is already offline' : `the timeline ends at epoch ${MAX}`);
       gate('back', !offline, 'the endpoint is online');
       for (const b of Array.from(root.querySelectorAll<HTMLButtonElement>('button[data-mode]'))) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
       $('[data-role="mode-note"]').textContent = NOTE[mode];
+      $('[data-role="marker-note"]').textContent = MARKER[mode];
     }
 
     function intro(): Msg {
       return mode === 'single'
         ? {
-            plain: `The Channel was created with V1 as its trust anchor (returned by verifyConfig at completeChannel). The source is in epoch 1 and seals its blocks with V1. In a single-authority encoding the anchor holds exactly one authority, so rotation is strict. Try: rotate the source, then submit a normal bundle.`,
-            proto: `Channel.trust_anchor = anchor(V1), Channel.trust_anchor_id = 1. verifyBundle accepts a proof only if the authority in the stored anchor can verify it; the Service never inspects the bytes.`,
-            refs: [['design315', 'design §3.1.5'], ['specTiming', 'spec §3.2, timing']],
+            plain: `The channel was set up with V1 as its trust anchor, taken from the verifier's check of the configuration proof. The source is in epoch 1 and seals its blocks with V1. This mode follows the qbft-epoch scheme: the anchor holds one validator set, and its id is the epoch number. Try: change the source's signers, then submit a normal bundle.`,
+            proto: `The CLPR Service stores the trust anchor and its id with the channel and passes the anchor to the verifier with every bundle. To the Service the anchor is opaque bytes, and the verifier keeps no per-channel state. The verifier accepts a proof only from an authority included in the anchor it is given, or from one proven within the same bundle to succeed it.`,
+            refs: [['viface1', 'Verifier interface §1'], ['viface4', 'Verifier interface §4'], ['qbftEpoch', 'qbft-epoch §7']],
           }
         : {
-            plain: `The Channel's anchor is a window {V1, V2}: the authority signing now and the successor the source has already committed to. Proofs sealed by either are accepted, which frees the endpoint from hitting the exact boundary. Try: rotate the source (bundles keep flowing), then advance the window when convenient.`,
-            proto: `Channel.trust_anchor = window(V1, V2), Channel.trust_anchor_id = 1. "The verifier accepts proofs signed by any authority in the set. A transition bundle advances the window when a proof includes a state-proven commitment to an additional authority." Verifier implementers SHOULD use this for frequent, predictable rotations.`,
-            refs: [['specTiming', 'spec §3.2, timing'], ['design315', 'design §3.1.5']],
+            plain: `The channel's trust anchor is the source's ledger id. This mode follows the hints-wraps scheme, which Hiero's built-in verifier uses to check another Hiero ledger: each roster signs with its own key, and the WRAPS proof in every signature links that key to the ledger id. Try: change the source's roster a few times, then submit bundles.`,
+            proto: `The anchor is set at channel setup, from the ledger id against which the configuration proof was verified, and its id, the ledger id, never changes. A verifier of this scheme reports no trust anchor change; one bound to a single ledger id may store a cache hint with the channel as a trust anchor update, which keeps the same id.`,
+            refs: [['hintsWraps', 'hints-wraps §7'], ['hintsWrapsTrust', 'hints-wraps §2'], ['ledgers', 'proof schemes'], ['viface1', 'Verifier interface §1']],
           };
     }
 
@@ -437,74 +460,77 @@ const LINKS = {
       last = null;
       render();
       const stuck = !accepts(s);
-      say({
-        plain: `The source chain's validators changed from V${old} to V${s}: epoch ${s} has begun, and every block from now on is sealed by V${s}. Applications queued 2 more messages during the new epoch. Nothing changed on the destination, whose Channel still trusts ${words()}.${offline ? ' The endpoint is offline and has not noticed.' : stuck ? ` A normal bundle sealed by V${s} would now be rejected: the endpoint has to get a transition bundle in first.` : ` V${s} is already inside the window, so bundles keep flowing; the endpoint can advance the window whenever it suits.`}`,
-        proto: mode === 'single'
-          ? `The block at which the validators changed is sealed by V${old} and names V${s}. That block is the rotation evidence a transition bundle carries: verifiable by the old authority, committing to the new one. With a single-authority anchor the old authority stops being accepted the moment the transition lands, so the endpoint must submit it "at the exact source chain authority boundary, with no prior-authority proofs in-flight".`
-          : `The source state now has V${s} as current and commits to V${s + 1} as next. A proof sealed by V${s} that includes that commitment is what advances the window: "the endpoint can submit the window-advance bundle at any point while the current window covers all in-flight proofs."`,
-        refs: mode === 'single' ? [['qbftSol', 'QBFT verifiers (EVM)'], ['specTiming', 'spec §3.2, timing']] : [['specTiming', 'spec §3.2, timing'], ['design315', 'design §3.1.5']],
-      });
+      say(mode === 'single'
+        ? {
+            plain: `The source's validator set changed from V${old} to V${s}: epoch ${s} has begun, and every block from now on is sealed by V${s}. Applications queued 2 more messages. Nothing changed on the destination, whose channel still trusts ${words()}.${offline ? ' The endpoint is offline and has not noticed.' : stuck ? ` A normal bundle sealed by V${s} would now fail to verify: a transition bundle has to go first.` : ''}`,
+            proto: `In the qbft-epoch scheme the anchored set changes only at epoch boundaries. Each boundary header lists the validator set, and its seals link it to the set before it. That header is the evidence a transition bundle carries: verifiable under the current anchor, with a proven commitment to the next set. When a trust anchor holds a single authority, proofs from the previous one stop verifying as soon as the change is accepted.`,
+            refs: [['qbftEpochTrust', 'qbft-epoch §2'], ['qbftEpoch', 'qbft-epoch §7'], ['viface4', 'Verifier interface §4']],
+          }
+        : {
+            plain: `The source's roster changed from V${old} to V${s}, and its blocks are now signed with V${s}'s key. Applications queued 2 more messages. Nothing changes on the destination: the channel's trust anchor is the source's ledger id, and V${s}'s signatures verify against it.${offline ? ' The endpoint is offline and has not noticed.' : ''}`,
+            proto: `In the hints-wraps scheme the WRAPS proof in each signature covers roster changes, so the trust anchor id stays the ledger id for the life of the channel. No transition bundle is needed.`,
+            refs: [['hintsWraps', 'hints-wraps §7'], ['hintsWrapsTrust', 'hints-wraps §2']],
+          });
     }
 
     function submitNormal(late: boolean) {
       start();
       const v = late ? s - 1 : s;
-      const kind = late ? `late, sealed by V${v}` : `normal, sealed by V${v}`;
+      const verb = mode === 'single' ? 'sealed' : 'signed';
+      const kind = late ? `late, ${verb} by V${v}` : `normal, ${verb} by V${v}`;
       const k = pending.filter((e) => e <= v).length;
       if (k === 0) {
-        last = { bundle: kind, proof: 'nothing new to prove', returns: 'pre-check: no progress criterion holds', store: '', verdict: 'suppressed' };
+        last = { bundle: kind, proof: 'nothing new to prove', returns: 'pre-check: no progress', store: '', verdict: 'suppressed' };
         render();
         say({
           plain: late
-            ? `A proof sealed by V${v} could only prove messages that existed before the rotation, and those were all delivered already. The endpoint's pre-check finds no Bundle Progress Criterion satisfied and does not send the bundle.`
-            : `There is nothing new to deliver, so the endpoint's pre-check finds no Bundle Progress Criterion satisfied and does not send the bundle at all. Had it sent one, the Service would reject it as NoProgress and the fee would be lost.`,
-          proto: `"CLPR Endpoints MUST NOT submit bundles that make no progress" (spec §2.1.2); the Service applies the same five criteria after the verifier call (spec §4.2 step 1a) and rejects with NoProgress.`,
-          refs: [['spec212', 'spec §2.1.2'], ['spec42', 'spec §4.2']],
+            ? `A proof ${verb} by V${v} could only prove messages that existed before the change, and those were all delivered already. No progress criterion holds, so the endpoint does not send the bundle.`
+            : `There is nothing new to deliver, so no progress criterion holds and the endpoint does not send the bundle. Had it sent one, the CLPR Service would have rejected it for lack of progress, and the fee would be lost.`,
+          proto: `An endpoint SHOULD NOT submit a bundle that makes no progress. The CLPR Service checks the progress criteria after the verifier call and rejects a bundle that meets none; a rejected bundle still costs its submitter the transaction fee.`,
+          refs: [['progress', 'Channel state transitions §3'], ['submit', 'CLPR Service §5.2']],
         });
         return;
       }
       tx += 1;
       if (accepts(v)) {
         deliverUpTo(v);
-        last = { bundle: kind, proof: `state proof at epoch ${v}, ${plural(k, 'message')}`, returns: 'returns new_trust_anchor = empty', store: 'anchor unchanged', verdict: 'accepted' };
+        last = { bundle: kind, proof: `state proof at epoch ${v}, ${plural(k, 'message')}`, returns: 'no new trust anchor', store: 'anchor unchanged', verdict: 'accepted' };
         render();
         if (!late) {
           say({
-            plain: `The endpoint proves the source's current state with a proof sealed by V${v}. The Channel trusts V${v}, so verifyBundle succeeds and ${plural(k, 'message')} ${k === 1 ? 'is' : 'are'} delivered. new_trust_anchor came back empty: nothing rotates.`,
-            proto: `Step 1 (spec §4.2): verifyBundle(bundle_payload, trust_anchor, ctx) returned sync data, ${k} message payloads, the anchor message id and running hash, new_trust_anchor = empty, new_trust_anchor_id = empty. Step 1c is skipped because the anchor is empty; steps 2 to 6 (size, replay defence, running hash, acknowledgement, dispatch) run as usual.`,
-            refs: [['spec42', 'spec §4.2'], ['spec31', 'spec §3.1']],
+            plain: `The endpoint proves the source's current state with a proof ${verb} by V${v}. The verifier checks it under the stored trust anchor (${words()}), so ${plural(k, 'message')} ${k === 1 ? 'is' : 'are'} delivered. No new trust anchor came back: nothing changes.`,
+            proto: `The verifier returns the bundle's messages and the source's queue metadata, with an empty new trust anchor, so the stored anchor stays as it is. The CLPR Service then runs the rest of bundle processing: the limits, progress, the replay defence, the running hash, the acknowledgement and dispatch.`,
+            refs: [['processing', 'Channel state transitions §2'], ['viface3', 'Verifier interface §3']],
           });
         } else if (mode === 'single') {
           say({
-            plain: `This bundle was built before the rotation: its proof is sealed by V${v}. The Channel still trusts V${v}, so it is accepted and ${plural(k, 'older message')} ${k === 1 ? 'is' : 'are'} delivered. It worked only because the transition has not landed yet.`,
-            proto: `Historical blocks stay verifiable under the authority that sealed them. In a single-authority encoding the transition must be submitted "at the exact source chain authority boundary, with no prior-authority proofs in-flight": once it lands, this bundle would revert and its fee would be lost.`,
-            refs: [['specTiming', 'spec §3.2, timing'], ['spec42', 'spec §4.2']],
+            plain: `This bundle was built before the change: its proof is sealed by V${v}. The channel still trusts V${v}, so it is accepted and ${plural(k, 'older message')} ${k === 1 ? 'is' : 'are'} delivered. It worked only because the transition bundle has not landed yet.`,
+            proto: `With a single authority in the trust anchor, proofs from the previous authority stop verifying as soon as the change is accepted. The Protocol sets no deadline for submitting a trust anchor change.`,
+            refs: [['viface4', 'Verifier interface §4']],
           });
         } else {
           say({
-            plain: `This bundle was built before the rotation and is sealed by V${v}, which is still inside the window ${words()}. It is accepted and ${plural(k, 'older message')} ${k === 1 ? 'is' : 'are'} delivered. This is the point of the window: the endpoint can drain in-flight proofs before it advances the window.`,
-            proto: `Window encoding: "the endpoint can submit the window-advance bundle at any point while the current window covers all in-flight proofs." No boundary timing to hit.`,
-            refs: [['specTiming', 'spec §3.2, timing'], ['design315', 'design §3.1.5']],
+            plain: `This bundle was built before the roster change and is signed with V${v}'s key. Its signature still verifies against the ledger id, so it is accepted and ${plural(k, 'older message')} ${k === 1 ? 'is' : 'are'} delivered. With a fixed anchor nothing goes stale.`,
+            proto: `A hints-wraps verifier checks every signature against the ledger id; the WRAPS proof links each roster's key to it.`,
+            refs: [['hintsWraps', 'hints-wraps §7']],
           });
         }
       } else {
         wasted += 1;
-        last = { bundle: kind, proof: `state proof at epoch ${v}, ${plural(k, 'message')}`, returns: `revert: V${v} is not in ${words()}`, store: 'anchor unchanged', verdict: 'reverted' };
+        last = { bundle: kind, proof: `state proof at epoch ${v}, ${plural(k, 'message')}`, returns: `fails: V${v} is not in the anchor`, store: 'anchor unchanged', verdict: 'reverted' };
         render();
         const movedOn = v < Math.min(...set());
         if (late && movedOn) {
           say({
-            plain: `<span class="bad">Rejected.</span> An in-flight bundle sealed by V${v} arrived after the anchor moved on. V${v} is no longer trusted, so verifyBundle reverts and the fee is wasted. Nothing else is harmed: the messages are still on the source and a fresh proof can deliver them.`,
-            proto: mode === 'single'
-              ? `"After the transition bundle updates it, proofs from the prior authority are immediately rejected." This is the cost of a single-authority encoding: it "maximally constrains endpoint implementation".`
-              : `A window drops its oldest authority when it advances; anything still sealed by V${v} is now stale. The endpoint chose when to advance, so it could have waited for this proof to land first.`,
-            refs: [['specTiming', 'spec §3.2, timing'], ['spec42', 'spec §4.2'], ['design315', 'design §3.1.5']],
+            plain: `<span class="bad">Rejected.</span> A bundle sealed by V${v} arrived after the anchor moved on. V${v} is no longer trusted, so the verifier fails, the bundle is rejected and the fee is lost. Nothing else is harmed: the messages are still on the source, and a fresh proof can deliver them.`,
+            proto: `When a trust anchor holds a single authority, proofs from the previous authority stop verifying as soon as the change is accepted. A rejected bundle changes nothing on the channel and costs the submitter its fee.`,
+            refs: [['viface4', 'Verifier interface §4'], ['processing', 'Channel state transitions §2']],
           });
         } else {
           say({
-            plain: `<span class="bad">Stuck.</span> The proof is sealed by V${v}, but the Channel only trusts ${words()}. verifyBundle reverts, the whole bundle is rejected, and the endpoint paid the transaction fee for nothing. ${plural(pending.length, 'message')} wait on the source until a transition bundle brings the anchor forward.`,
-            proto: `§4.2 Step 1: "If the verifier reverts or returns an error, reject the entire bundle. The submitting account pays the transaction cost." The endpoint's obligation (§3.2, steps 1 to 5) was to read trust_anchor_id from the last sync payload, notice it cannot produce proofs verifiable under ${words()}, and submit transition bundles before any application bundle.`,
-            refs: [['spec42', 'spec §4.2'], ['spec32', 'spec §3.2']],
+            plain: `<span class="bad">Stuck.</span> The proof is sealed by V${v}, but the channel trusts only ${words()}. The verifier fails, the whole bundle is rejected, and the submitter paid the fee for nothing. ${plural(pending.length, 'message')} wait on the source until a transition bundle brings the anchor forward.`,
+            proto: `A sender MUST NOT send a bundle that does not verify under the trust anchor the request identifies. When no normal bundle verifies because that anchor is behind the sender's ledger, the sender MUST send a transition bundle instead. This button shows what happens when an endpoint ignores that.`,
+            refs: [['catchup', 'Endpoint sync §5.1'], ['processing', 'Channel state transitions §2']],
           });
         }
       }
@@ -513,44 +539,38 @@ const LINKS = {
     function transition() {
       start();
       if (steps() < 1) {
-        last = { bundle: 'transition', proof: 'no rotation evidence exists yet', returns: 'pre-check: Criterion 2 would not hold', store: '', verdict: 'suppressed' };
+        last = { bundle: 'transition', proof: mode === 'single' ? 'no change to prove yet' : 'this scheme has no changes', returns: 'pre-check: no progress', store: '', verdict: 'suppressed' };
         render();
-        say({
-          plain: mode === 'single'
-            ? `Nothing to transition: the source is still in epoch ${s}, so no block that changes the validator set and is sealed by V${s} exists yet. The endpoint's pre-check suppresses the bundle.`
-            : `Nothing to advance: the window already holds V${cur} and the committed successor V${cur + 1}, and the source has not committed anything further. The endpoint's pre-check suppresses the bundle.`,
-          proto: `A transition bundle must embed "a state-proven commitment to a new or additional authority. The verifier validates this commitment and returns new_trust_anchor and new_trust_anchor_id. If no valid commitment is present the verifier MUST revert." Without evidence there is nothing to build, and Criterion 2 (new_trust_anchor_id ≠ Channel.trust_anchor_id) could not hold.`,
-          refs: [['specTransition', 'spec §3.2, transition bundle'], ['spec212', 'spec §2.1.2']],
-        });
+        say(mode === 'single'
+          ? {
+              plain: `Nothing to change: the source is still in epoch ${s}, so no boundary header naming a new set exists yet. The endpoint does not send the bundle.`,
+              proto: `A trust anchor change needs a bundle that verifies under the current anchor and contains a proven commitment to the new one. Without that evidence there is nothing to build, and the trust anchor change criterion of progress could not hold.`,
+              refs: [['viface4', 'Verifier interface §4'], ['progress', 'Channel state transitions §3']],
+            }
+          : {
+              plain: `There is nothing to change: the anchor is the ledger id, and a verifier of this scheme reports no trust anchor change. A verifier may return a cache hint as a trust anchor update, which keeps the same id; an update alone makes no progress, so a bundle carrying only that would be rejected.`,
+              proto: `A trust anchor update keeps the stored id and MUST NOT change which proofs the verifier accepts. A hints-wraps hint never changes whether a bundle is accepted.`,
+              refs: [['hintsWraps', 'hints-wraps §7'], ['viface4', 'Verifier interface §4']],
+            });
         return;
       }
       tx += 1;
       const old = cur;
       cur += 1;
-      const sealer = mode === 'single' ? old : old + 1;
-      const successor = mode === 'single' ? cur : cur + 1;
       last = {
         bundle: 'transition, 0 messages',
-        proof: `sealed by V${sealer}, commits to V${successor}`,
-        returns: `returns new anchor ${words()}, id ${cur}`,
-        store: 'stored before any message (Step 1c)',
+        proof: `sealed by V${old}, commits to V${cur}`,
+        returns: `new anchor ${words()}, id ${cur}`,
+        store: 'stored before any message',
         verdict: 'accepted',
       };
       render();
-      const more = gap() > 0 ? ` The source is already at epoch ${s}, so ${plural(gap(), 'more transition')} ${gap() === 1 ? 'is' : 'are'} needed, each verified against the anchor the previous one installed.` : ' The anchor is current again: normal bundles will verify.';
-      if (mode === 'single') {
-        say({
-          plain: `The endpoint submits the block at which the validators changed to V${cur}: it is sealed by V${old}, which the Channel trusts, and names V${cur} as the set from then on. The verifier checks the seals against V${old}, reads the successor, and hands it back as new_trust_anchor. The Service stores the new anchor and its id ${cur} before it looks at any message. From this moment only V${cur} is accepted and V${old} is rejected. The bundle carried zero application messages and is still valid.${more}`,
-          proto: `verifyBundle(bundle_payload, anchor(V${old}), ctx) returned new_trust_anchor = anchor(V${cur}), new_trust_anchor_id = ${cur}. §4.2 Step 1a: Criterion 2 holds (new_trust_anchor_id ≠ Channel.trust_anchor_id), so a bundle with no messages makes progress. Step 1c: Channel.trust_anchor and Channel.trust_anchor_id are set atomically "before processing any message in this bundle".`,
-          refs: [['specTransition', 'spec §3.2, transition bundle'], ['spec42', 'spec §4.2 Step 1c'], ['spec212', 'spec §2.1.2'], ['qbftSol', 'QBFT verifiers (EVM)']],
-        });
-      } else {
-        say({
-          plain: `The endpoint submits a proof sealed by V${sealer}, which is inside the window, carrying the source's commitment to V${successor}. The verifier returns the new window ${words()}; the Service stores it and its id ${cur} before any message is processed. In this model V${old} then drops out of the window. The timing was the endpoint's choice: it could have done this at any moment while nothing sealed by V${old} was still in flight.${more}`,
-          proto: `verifyBundle returned new_trust_anchor = window(V${cur}, V${successor}), new_trust_anchor_id = ${cur}. Criterion 2 holds; step 1c (spec §4.2) stores both atomically before any message. "With a window encoding, the endpoint can additionally batch window-advances into regular application bundles rather than requiring separate trust-only bundles."`,
-          refs: [['specTransition', 'spec §3.2, transition bundle'], ['specCatchup', 'spec §3.2, catch-up'], ['spec42', 'spec §4.2 Step 1c']],
-        });
-      }
+      const more = gap() > 0 ? ` The source is already at epoch ${s}, so ${plural(gap(), 'more transition bundle')} ${gap() === 1 ? 'is' : 'are'} needed, each verified under the anchor the previous one installed, one sync cycle each.` : ' The anchor is current again: normal bundles will verify.';
+      say({
+        plain: `The endpoint sends the boundary header at which the set changed to V${cur}: sealed by V${old}, which the channel trusts, and naming V${cur}. The verifier checks the seals against V${old} and returns V${cur} as the new trust anchor, with a new id. The CLPR Service stores both before it processes any message of the bundle. From now on only V${cur} is accepted. The bundle carried no messages and still makes progress, by the change itself.${more}`,
+        proto: `A trust anchor change returns an id that differs from the stored one, and it makes progress on its own. The CLPR Service replaces the anchor and its id before processing any message of the bundle, and verifies every later bundle under the new value. Catch-up takes one cycle per transition bundle.`,
+        refs: [['viface4', 'Verifier interface §4'], ['catchup', 'Endpoint sync §5.1'], ['progress', 'Channel state transitions §3'], ['qbftEpoch', 'qbft-epoch §7']],
+      });
     }
 
     function batch() {
@@ -563,31 +583,30 @@ const LINKS = {
       const old = cur;
       cur += n;
       const k = deliverUpTo(cur);
-      const final = mode === 'single' ? cur : cur + 1;
       last = {
-        bundle: `batched catch-up, ${plural(k, 'message')}`,
-        proof: `walks ${n} rotation proofs: V${old} → V${final}`,
-        returns: `returns only the final anchor ${words()}, id ${cur}`,
-        store: 'stored before any message (Step 1c)',
+        bundle: `catch-up, ${plural(k, 'message')}`,
+        proof: `${n} boundary headers: V${old} → V${cur}`,
+        returns: `only the last anchor ${words()}, id ${cur}`,
+        store: 'stored before any message',
         verdict: 'accepted',
       };
       render();
       say({
-        plain: `One transaction instead of ${n + 1}. The payload carries ${n} rotation proofs in order; the verifier walks them internally, checking each against the authority the previous one installed, and returns only the final anchor ${words()}. The intermediate authorities never touch the chain. ${plural(k, 'message')} proven under V${cur} ${k === 1 ? 'rides' : 'ride'} along in the same bundle.${left > 0 ? ` The endpoint missed ${missed} rotations and this simulation caps a bundle at ${CAP} rotation proofs, so ${plural(left, 'more')} ${left === 1 ? 'follows' : 'follow'} in the next one.` : ''}`,
-        proto: `"A verifier MAY support batching multiple rotations into a single bundle_payload by walking the chain of rotation proofs internally; only the final new_trust_anchor and new_trust_anchor_id are returned and stored on-chain, and application messages proven under that final authority MAY be included in the same bundle." The reference QBFT verifiers do this by walking the headers at which the validator set changed, each sealed by the set that was trusted before it.`,
-        refs: [['specCatchup', 'spec §3.2, catch-up'], ['qbftSol', 'QBFT verifiers (EVM)']],
+        plain: `One bundle instead of ${n + 1}. It carries ${n} boundary headers in order; the verifier checks each against the set the previous one established and returns only the last, ${words()}, as the new anchor. The intermediate sets are never stored. ${plural(k, 'message')} proven under V${cur} ${k === 1 ? 'rides' : 'ride'} along in the same bundle.${left > 0 ? ` The endpoint missed ${missed} changes and this simulation caps a bundle at ${CAP} of them, so ${plural(left, 'more')} ${left === 1 ? 'follows' : 'follow'} in the next one.` : ''}`,
+        proto: `A verifier MAY accept several consecutive changes in one bundle, verifying each against the authority the previous one established, and return only the last; the bundle MAY also carry messages proven under that last authority. In the qbft-epoch scheme a bundle with several boundary headers advances the anchor by that many epochs. The producer caps how many it carries, and catching up over several bundles across a large validator change can fail; that limit is open issue OI-6.`,
+        refs: [['viface4', 'Verifier interface §4'], ['qbftEpoch', 'qbft-epoch §7'], ['qbftEpochLimit', 'qbft-epoch §5'], ['oi6', 'Open issues OI-6'], ['catchup', 'Endpoint sync §5.1']],
       });
     }
 
     function inject() {
       start();
       tx += 1; wasted += 1;
-      last = { bundle: 'forged: names its own successor', proof: `no commitment proven under ${words()}`, returns: 'revert: succession not proven', store: 'anchor unchanged', verdict: 'reverted' };
+      last = { bundle: 'forged: names its own successor', proof: `no commitment proven under ${words()}`, returns: 'fails: successor not proven', store: 'anchor unchanged', verdict: 'reverted' };
       render();
       say({
-        plain: `<span class="ok">Blocked.</span> A compromised endpoint submits a bundle that names an authority of its own choosing as the successor, with no state-proven commitment from ${words()}. The verifier finds no succession evidence and reverts; the anchor is untouched and the attacker paid the fee. Only a proof the channel's verifier accepts against the current authority can move the anchor; no admin key, governance vote or ConfigUpdate can set it.`,
-        proto: `Succession requirement: "A new trust anchor MUST be committed to within the same proof that was verified against the current trust anchor. A verifier that returns a new_trust_anchor without state-proving the commitment in the supplied proof MUST revert. This requirement prevents trust anchor injection by a compromised endpoint." "No other path (admin key, governance call, or ConfigUpdate) may modify the trust anchor; its only update channel is a verified proof returned by verifyBundle" (design §3.1.5).`,
-        refs: [['design315', 'design §3.1.5'], ['spec31', 'spec §3.1'], ['specTransition', 'spec §3.2, transition bundle']],
+        plain: `<span class="ok">Blocked.</span> A compromised endpoint submits a bundle that names a signer of its own choosing as the successor, with no commitment proven under ${words()}. The verifier finds no proven successor and fails; the anchor is untouched and the submitter paid the fee. Only bundle processing, from what the verifier returns, changes a trust anchor; no administrative operation can set it.`,
+        proto: `A trust anchor change contains a proven commitment to the new trust anchor, made under the current one. A returned trust anchor that is not a proven successor MUST NOT change which proofs the verifier accepts. The anchor is set at channel setup and changed only by bundle processing.`,
+        refs: [['viface4', 'Verifier interface §4'], ['viface1', 'Verifier interface §1']],
       });
     }
 
@@ -601,9 +620,9 @@ const LINKS = {
       last = null;
       render();
       say({
-        plain: `The endpoint stops. While it is away the source chain goes through ${plural(n, 'rotation')} (V${from} → V${s}) and applications keep sending: ${2 * n} more messages queue up. The destination's anchor cannot move on its own; it still trusts ${words()}. Bring the endpoint back to see what it has to do.`,
-        proto: `"No other path (admin key, governance call, or ConfigUpdate) may modify the trust anchor; its only update channel is a verified proof returned by verifyBundle." For the catch-up, "historical boundary blocks remain available in the source chain's immutable record".`,
-        refs: [['design315', 'design §3.1.5'], ['specCatchup', 'spec §3.2, catch-up']],
+        plain: `The endpoint stops. While it is away the source changes its signers ${n === 1 ? 'once' : `${n} times`} (V${from} → V${s}) and applications keep sending: ${2 * n} more messages queue up. The destination's anchor cannot move on its own; it is still ${words()}.${mode === 'fixed' ? ' Here that is enough: every roster is linked to the ledger id.' : ' Bring the endpoint back to see what it has to do.'}`,
+        proto: `The trust anchor changes only through bundle processing, and the Protocol sets no deadline for submitting a trust anchor change.`,
+        refs: [['viface1', 'Verifier interface §1'], ['viface4', 'Verifier interface §4']],
       });
     }
 
@@ -617,16 +636,18 @@ const LINKS = {
       const g = gap();
       if (g === 0) {
         say({
-          plain: `The endpoint is back. It reads trust_anchor_id = ${cur} from the last sync payload, checks its local record, and finds the remote window ${words()} still covers V${s}: normal bundles will verify straight away. It can advance the window at a convenient moment.`,
-          proto: `Endpoint obligation, steps 1 to 4: read trust_anchor_id, look it up locally, determine whether it can produce proofs verifiable under that authority; if yes, submit a normal bundle.`,
-          refs: [['spec32', 'spec §3.2'], ['specTiming', 'spec §3.2, timing']],
+          plain: mode === 'fixed'
+            ? `The endpoint is back. The peer's request reports the ledger id as its trust anchor id, and every bundle the endpoint can build verifies under it: normal bundles flow at once and carry the messages queued while it was away.`
+            : `The endpoint is back. The peer's request reports trust anchor id ${cur}, which is current: normal bundles will verify straight away.`,
+          proto: `A sender MUST NOT send a bundle that does not verify under the trust anchor identified in the request; here a normal bundle does.`,
+          refs: [['catchup', 'Endpoint sync §5.1']],
         });
         return;
       }
       say({
-        plain: `The endpoint is back. It reads trust_anchor_id = ${cur} from the last sync payload (self-reported and unproven), looks it up in its local ordered record 1 → … → ${s}, and finds the remote anchor ${g === 1 ? 'one step' : `${g} steps`} behind: it cannot produce proofs of the current state that ${words()} would verify. Before any application bundle it must submit ${g === 1 ? 'one transition bundle' : `${g} consecutive transition bundles, each verified against the anchor the previous one installed`}${steps() >= 2 ? ', or one batched bundle if the verifier supports that' : ''}.`,
-        proto: `Reactive trigger: the endpoint "reads trust_anchor_id from a received sync payload and, after consulting its local record, determines it cannot produce state proofs verifiable under the identified authority (e.g., after a restart or monitoring gap). It must advance the remote anchor before submitting application bundles." "Each CLPR endpoint MUST maintain, per Channel, a local ordered sequence of trust_anchor_id values it has encountered … history and ordering are exclusively the endpoint's responsibility."`,
-        refs: [['spec32', 'spec §3.2'], ['specCatchup', 'spec §3.2, catch-up']],
+        plain: `The endpoint is back. The peer's request reports trust anchor id ${cur} (unproven, a hint), and the source is at epoch ${s}: the anchor is ${g === 1 ? 'one change' : `${g} changes`} behind, so no normal bundle of the current state verifies under ${words()}. The endpoint must first send ${g === 1 ? 'a transition bundle' : `transition bundles in order, each verifying under the anchor the previous one installed`}${steps() >= 2 ? ', or one bundle that carries several changes, which this proof scheme allows' : ''}.`,
+        proto: `When no normal bundle verifies under the requested anchor because it is behind the sender's ledger, the sender MUST send a transition bundle instead; several changes behind, it sends them in order. Catch-up takes one cycle per transition bundle, and normal bundles resume once the requestor's anchor is current enough. When an anchor changes, and how its id is formed, is defined by each proof scheme.`,
+        refs: [['catchup', 'Endpoint sync §5.1'], ['viface4', 'Verifier interface §4']],
       });
     }
 

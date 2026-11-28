@@ -1,96 +1,103 @@
 {
-  "$comment": "The roles of design §4.1 to §4.6 and the cross-role scenarios of §4.7, one row per heading; check-data.mjs fails when the counts differ. does and risks are the site's short reading of each section; scenario steps follow the document's numbered lists.",
+  "$comment": "The six roles of the table in Overview §5, one row each (does, duty = trust duty, economics = economic participation); check-data.mjs fails when the count differs. scenarios are four stories in which the roles work together, each step resting on Overview §5, Connector setup §5 or the recovery table of CLPR Service §7 (rows R2 and R4, named in recovery). The Stories simulation lights a role when a step names it, so steps name roles as the table does.",
   "roles": [
     {
       "id": "end-user",
       "name": "End user",
-      "does": "Uses applications. Evaluates an application before using it and watches for degraded service; never touches the protocol directly.",
-      "risks": "Application bugs, poor channel or connector choices, a channel closed while messages are in flight, and finality risk if a verifier accepts proofs below finality. Escrowed assets should be settled before stopping.",
-      "refs": [{ "doc": "design", "anchor": "41-end-user", "label": "design §4.1" }]
+      "does": "Uses applications built on CLPR.",
+      "duty": "Vets the application.",
+      "economics": "Bears the application's risk.",
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }]
     },
     {
       "id": "application-developer",
       "name": "Application developer",
-      "does": "Sends messages and handles the responses in callbacks, naming a channel and a connector on every send. Keeps both configurable, watches connector health and channel status, and migrates when a proof format changes.",
-      "risks": "Every cross-ledger payload is untrusted input; payloads sit on chain in plaintext unless the application encrypts them; a compromised verifier can mean direct loss of assets.",
-      "refs": [{ "doc": "design", "anchor": "42-application-developer", "label": "design §4.2" }]
+      "does": "Deploys the application on both ledgers, chooses the channels and connectors it uses, and handles replies.",
+      "duty": "Vets channels and connectors.",
+      "economics": "Pays connectors, on each connector's own terms.",
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }]
     },
     {
       "id": "connector-operator",
       "name": "Connector operator",
-      "does": "Often also creates the channel: deploys a verifier, registers the channel, then registers as a connector on both ledgers. Keeps a balance to pay for execution and a locked stake that covers fines; may run allow-lists and rate limits.",
-      "risks": "An empty balance fails messages and slashes the stake with escalating penalties; a lapsed registration fails them too; removal is blocked while messages are in flight.",
-      "refs": [{ "doc": "design", "anchor": "43-connector-operator", "label": "design §4.3" }]
+      "does": "Registers and funds a connector on both ledgers of a channel, and often opens the channel.",
+      "duty": "Vets the verifier contract before staking on the channel.",
+      "economics": "Funds execution and posts a stake that can be slashed.",
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }]
     },
     {
       "id": "verifier-developer",
       "name": "Verifier developer",
-      "does": "An off-chain role with no protocol identity: writes the contract that checks one ledger's proofs. Ledger implementers, connector operators, application developers with high-value flows and auditors all have reasons to.",
-      "risks": "Proof format changes need new implementations; an upgrade key on a verifier is a single point of compromise; the protocol pays nothing for maintenance.",
-      "refs": [{ "doc": "design", "anchor": "44-verifier-developer", "label": "design §4.4" }]
+      "does": "Publishes verifier contracts for a proof scheme. Has no identity on any ledger.",
+      "duty": "The correctness of the verification.",
+      "economics": "None in the protocol.",
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }]
     },
     {
       "id": "endpoint-operator",
       "name": "Endpoint operator",
-      "does": "On Hiero, nothing: every consensus node is an endpoint automatically. Elsewhere, registers with a bond, is admitted by the service admin, serves every channel on the service, and pre-funds the account that submits bundles.",
-      "risks": "Invalid, failed or duplicate submissions cost unreimbursed fees; misbehaviour means eviction, with the bond returned in full.",
-      "refs": [{ "doc": "design", "anchor": "45-endpoint-operator", "label": "design §4.5" }]
+      "does": "Runs CLPR Endpoints, which sync with peers and submit bundles. On Hiero every consensus node is an endpoint; on EVM ledgers endpoints register and are admitted by the administrator.",
+      "duty": "Serves every channel of its ledger.",
+      "economics": "Pays transaction fees and earns the margin on executed messages. Endpoints are not slashed.",
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }, { "doc": "stakes", "anchor": "3-endpoints", "label": "Stakes and bonds §3" }]
     },
     {
       "id": "service-admin",
-      "name": "CLPR Service admin",
-      "does": "Broad but only protective powers: adjusts the ledger's published limits, admits or evicts endpoints, closes channels and, where the service has a kill switch (the EVM contracts do), turns it on or off. Cannot create channels, register connectors or take part in the economics.",
-      "risks": "Abuse of power, mitigated by governance; inaction, since a compromised channel left open keeps being exploited; and no in-protocol incentive, a known gap between responsibility and motivation.",
-      "refs": [{ "doc": "design", "anchor": "46-clpr-service-admin", "label": "design §4.6" }]
+      "name": "CLPR Service administrator",
+      "does": "Configures the CLPR Service, admits endpoints where admission is curated, and closes channels. Cannot open channels or register connectors.",
+      "duty": "Acts when a channel is compromised.",
+      "economics": "None.",
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }]
     }
   ],
   "scenarios": [
     {
       "id": "new-route",
-      "name": "Setting up a new cross-ledger route",
+      "name": "Opening a new route",
       "steps": [
-        "A verifier developer publishes and audits a verifier for the target proof system.",
-        "A connector operator evaluates it, deploys it, registers the channel on both ledgers, and registers as a connector on both sides.",
-        "An application developer evaluates the channel and the connector and integrates them.",
-        "End users use the application; the trust chain is active from top to bottom."
+        "A verifier developer publishes a verifier contract.",
+        "A connector operator vets it, opens the channel, and registers a connector on both ledgers.",
+        "An application developer vets the channel and the connector, and uses them.",
+        "End users vet the application and use it."
       ],
-      "refs": [{ "doc": "design", "anchor": "setting-up-a-new-cross-ledger-route", "label": "design §4.7" }]
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }]
     },
     {
       "id": "proof-format-upgrade",
-      "name": "Proof format upgrade",
+      "recovery": "R2",
+      "name": "Proof format change",
       "steps": [
-        "The source ledger announces a proof format upgrade.",
-        "A verifier developer publishes a verifier for the new format.",
-        "A connector operator creates a new channel with it and registers as a connector.",
+        "The peer ledger changes its proof format, and the channel's verifier can no longer check its bundles.",
+        "A verifier developer publishes a verifier contract for the new format.",
+        "A connector operator registers a new channel with it and registers a connector on both ledgers.",
         "Application developers migrate to the new channel.",
-        "The source ledger switches formats; the old channel's verifier stops working.",
-        "The service admin closes the old channel. The source ledger keeps the old format alive long enough for the migration."
+        "The CLPR Service administrator closes the old channel."
       ],
-      "refs": [{ "doc": "design", "anchor": "proof-format-upgrade", "label": "design §4.7" }]
+      "refs": [{ "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" }, { "doc": "channelSetup", "anchor": "4-verifier-binding", "label": "Channel setup §4" }]
     },
     {
       "id": "compromised-verifier",
+      "recovery": "R4",
       "name": "Responding to a compromised verifier",
       "steps": [
-        "A vulnerability is discovered and a security advisory issued.",
-        "The service admin closes the affected channels; their queues drain.",
-        "The verifier developer publishes a patched implementation.",
-        "Connector operators create new channels with the patched verifier.",
-        "Application developers migrate. A closing channel still accepts incoming bundles until it reaches CLOSED, so closing alone does not stop the verifier."
+        "A channel's verifier is found to be compromised or broken.",
+        "The CLPR Service administrator closes the channel. While it closes, it still processes incoming bundles, so closing alone does not stop the verifier from being used.",
+        "A verifier developer publishes a correct verifier contract, and a connector operator registers a new channel with it.",
+        "Application developers vet the new channel and move to it.",
+        "Messages in flight on the old channel can be left without a reply; applications reconcile them outside the protocol."
       ],
-      "refs": [{ "doc": "design", "anchor": "responding-to-a-compromised-verifier", "label": "design §4.7" }, { "doc": "spec", "anchor": "211-channel-status-transitions", "label": "spec §2.1.1" }]
+      "refs": [{ "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" }, { "doc": "transitions", "anchor": "1-channel-status", "label": "Channel state transitions §1" }, { "doc": "openIssues", "anchor": "oi-3-messages-left-without-replies-when-a-channel-cannot-drain", "label": "Open issues OI-3" }]
     },
     {
       "id": "connector-withdrawal",
-      "name": "Connector withdrawal under load",
+      "name": "Withdrawing a connector",
       "steps": [
-        "The connector operator updates its authorization contract to reject all new messages.",
-        "Application developers switch to another connector or notify their users.",
-        "Messages already queued complete normally.",
-        "Once every in-flight message has settled, the operator removes the connector and recovers its funds."
+        "The connector operator stops authorizing new messages, so new sends through the connector are rejected.",
+        "Messages already in flight are delivered and answered as usual.",
+        "Once every message in flight has its reply, the operator removes the connector on both ledgers; removal is refused while any message is in flight.",
+        "In the recommended design, the CLPR Service returns the remaining stake to a recipient the connector's admin names."
       ],
-      "refs": [{ "doc": "design", "anchor": "connector-withdrawal-under-load", "label": "design §4.7" }]
+      "refs": [{ "doc": "overview", "anchor": "5-roles", "label": "Overview §5" }, { "doc": "connectorSetup", "anchor": "4-authorization-of-outbound-messages", "label": "Connector setup §4" }, { "doc": "connectorSetup", "anchor": "5-removal", "label": "Connector setup §5" }, { "doc": "stakes", "anchor": "1-connector-stake", "label": "Stakes and bonds §1" }]
     }
   ]
 }

@@ -57,22 +57,28 @@
       "phase": "queue",
       "label": "sendMessage()",
       "title": "The application calls sendMessage on the CLPR Service",
-      "plain": "One function call from the application to its CLPR Service. It hands over four things: which channel to use, which connector is paying, who the message is for, and the message itself. The application does no cross-chain work of its own; it passes all of that to the CLPR Service and gets back a message id.",
-      "protocol": "The application calls IClprService.sendMessage(channelId, connectorId, targetApplication, messageData). The service stamps msg.sender as the message's sender and, on success, returns the new message id.",
+      "plain": "One function call from the application to its CLPR Service. It hands over four things: which channel to use, which connector is paying, who the message is for, and the message itself. The application does no cross-ledger work of its own; it passes all of that to the CLPR Service and gets back a message id.",
+      "protocol": "The application calls sendMessage on the Hiero CLPR Service with the channel id, the connector id, the target application and the message data. Any caller can send. The CLPR Service sets the message's sender to the caller's address, never to a value the caller supplies, and on success returns the new message id, which the application uses to match the eventual reply.",
       "lit": [
         "appA",
         "svcA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "332-sending-a-message",
-          "label": "design §3.3.2"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         },
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "messaging",
+          "anchor": "1-message-types",
+          "label": "Messaging §1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         }
       ]
     },
@@ -81,21 +87,21 @@
       "phase": "queue",
       "label": "channel checks",
       "title": "Channel ACTIVE; payload and queue-depth checks",
-      "plain": "Before accepting anything, the service checks the obvious. Does this channel exist and is it switched on? Is the message small enough for the other side to accept? Is the outbound queue already full? Any \"no\" and the whole transaction is rejected.",
-      "protocol": "Enqueue algorithm steps 1, 4 and 5: the Channel must be ACTIVE; len(message_data) must not exceed the peer's advertised max_message_payload_bytes; next_message_id − acked_message_id must be below max_queue_depth. Any failure rejects the send.",
+      "plain": "Before accepting anything, the CLPR Service checks the obvious. Does this channel exist and is it active? Is the message small enough for the other ledger to accept? Is the outbound queue already full? Any \"no\" and the call is rejected with nothing changed.",
+      "protocol": "Enqueue rejects the send, with no change to state, if the channel does not exist or is not ACTIVE, if the message's payload bytes exceed the peer's published payload limit, or if the outbound queue would then hold more messages the peer has not acknowledged than the local queue depth allows, counting any ConfigUpdate enqueued with it.",
       "lit": [
         "svcA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         },
         {
-          "doc": "design",
-          "anchor": "311-ledger-identity-and-configuration",
-          "label": "design §3.1.1"
+          "doc": "ledgerConfig",
+          "anchor": "3-throttles",
+          "label": "Ledger configuration §3"
         }
       ]
     },
@@ -104,52 +110,57 @@
       "phase": "queue",
       "label": "quota",
       "title": "Per-connector queue quota",
-      "plain": "One busy payer could fill a shared outbound queue and starve everyone else on the channel. Giving each payer its own slice of the queue is one candidate fix; the EVM contracts already enforce one.",
-      "protocol": "Queue monopolization is an open issue, and per-Connector quotas are one candidate mitigation rather than a protocol requirement. The EVM contracts enforce a quota of connectorQueueQuotaPct percent of maxQueueDepth per connector, checked before the connector is asked to authorize.",
+      "plain": "One busy connector could fill a shared outbound queue and block every other connector on the channel. The recommended defence is to give each connector its own share of the queue and to reject a send once that share is used up.",
+      "protocol": "A recommendation, not a protocol rule: the CLPR Service limits each connector to a fixed share of the local queue depth, in addition to the channel-wide depth check of enqueue. On Hiero the count is the connector's DATA messages above the stored acknowledgement, and a quota of zero disables the check.",
       "lit": [
         "svcA",
         "conA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "335-open-economic-design-issues",
-          "label": "design §3.3.5"
+          "doc": "economics",
+          "anchor": "3-queue-quotas",
+          "label": "Channel economics §3"
         },
         {
-          "doc": "spec",
-          "anchor": "811-queue-monopolization",
-          "label": "spec §8.11"
+          "doc": "service",
+          "anchor": "67-queue-monopolization",
+          "label": "CLPR Service §6.7"
         },
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/logic/MessagingLogic.sol",
-          "label": "MessagingLogic.sol"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         }
       ]
     },
     {
       "n": 4,
       "phase": "queue",
-      "label": "authorize()",
+      "label": "authorization",
       "title": "The connector authorizes the message",
-      "plain": "The connector is the account that pays. The service asks it, in effect: are you willing to cover this one? If it says no, nothing is sent.",
-      "protocol": "Enqueue step 3: the service calls the Connector's authorization contract. By returning true the source Connector commits that its counterpart on the destination has funds to pay for execution, and that it can pay for the response. That commitment is what slashing later enforces.",
+      "plain": "The connector is the account that pays. The CLPR Service asks it, in effect: are you willing to cover this one? If it says no, nothing is sent.",
+      "protocol": "The connector named in the send must be registered on the channel, and the CLPR Service calls its contract's authorization function with the channel, the target application, the sender and the message data. Anything but true rejects the send. By returning true the source connector commits that its counterpart on the destination can pay for executing the message, and that it can cover the cost of handling the reply. That commitment is the basis of the recommended slashing.",
       "lit": [
         "svcA",
         "conA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "33-connector-authorization-interface",
-          "label": "spec §3.3"
+          "doc": "connectorSetup",
+          "anchor": "4-authorization-of-outbound-messages",
+          "label": "Connector setup §4"
         },
         {
-          "doc": "design",
-          "anchor": "331-connectors",
-          "label": "design §3.3.1"
+          "doc": "stakes",
+          "anchor": "21-when-a-connector-is-slashed",
+          "label": "Stakes and bonds §2.1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         }
       ]
     },
@@ -158,21 +169,21 @@
       "phase": "queue",
       "label": "config sync",
       "title": "A ConfigUpdate is queued first if this ledger's settings changed",
-      "plain": "If anything about this ledger's published limits changed since the last time this channel told the other side, a small housekeeping message is slipped into the queue ahead of yours. On a normal day nothing has changed and this step does nothing.",
-      "protocol": "Enqueue step 1a, lazy config propagation: if Channel.last_config_timestamp is behind the current configuration's consensus timestamp, a CONTROL ConfigUpdate message is enqueued before the Data Message. Total ordering means the peer applies the new limits at a consensus-determined point in the stream.",
+      "plain": "If this ledger's configuration changed since it was last sent on this channel, a ConfigUpdate is put in the queue ahead of the message. On a normal day nothing has changed and this step does nothing.",
+      "protocol": "Enqueue step 1: when a ConfigUpdate is due on the channel, because the configuration changed after the last one propagated on it, the CLPR Service enqueues a CONTROL ConfigUpdate carrying its full configuration before the DATA message. Its place in the queue is fixed by consensus, so both ledgers agree on the point in the stream where the new limits apply.",
       "lit": [
         "svcA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "13-control-messages",
-          "label": "spec §1.3"
+          "doc": "ledgerConfig",
+          "anchor": "52-sending",
+          "label": "Ledger configuration §5.2"
         },
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         }
       ]
     },
@@ -181,32 +192,37 @@
       "phase": "queue",
       "label": "enqueue",
       "title": "Message stored, running hash chained, next id advanced",
-      "plain": "The message is written into the outbound queue and given the next number in line. It is also folded into a running hash of everything ever sent on this channel, so the other side can later prove that nothing was inserted, removed or reordered.",
-      "protocol": "Enqueue steps 6–9: build the ClprMessage (connector_id, target_application, stamped sender, message_data); compute running_hash = SHA-256(sent_running_hash ‖ serialized_payload); store it under (channel_id, next_message_id); set sent_running_hash and increment next_message_id.",
+      "plain": "The message is written into the outbound queue and given the next number in line. It is also folded into a running hash of everything sent on this channel, so the other ledger can later check that nothing was inserted, removed or reordered.",
+      "protocol": "The DATA message is built with the connector id, the target application, the message data and the caller as sender, and appended to the outbound queue under the next message id. Its running hash is computed over its canonical protobuf payload bytes, chained onto the previous running hash; the sent running hash is set to it and the next message id advances. Both ledgers hash the same bytes, so the receiver can recompute the chain.",
       "lit": [
         "svcA",
         "qA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "41-running-hash-computation",
-          "label": "spec §4.1"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         },
         {
-          "doc": "design",
-          "anchor": "322-message-storage",
-          "label": "design §3.2.2"
+          "doc": "messaging",
+          "anchor": "3-payload-encoding",
+          "label": "Messaging §3"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "4-running-hash",
+          "label": "Messaging §4"
         }
       ]
     },
     {
       "n": 7,
       "phase": "prove",
-      "label": "TSS signature",
+      "label": "threshold signature",
       "title": "The Hiero network signs the block root",
-      "plain": "The sending ledger's validators jointly sign the block the message landed in. It is a single aggregate signature produced by many nodes together.",
-      "protocol": "Consensus signs the block root with an aggregate BLS12-381 threshold signature (hinTS). The endpoint does not construct this: it fetches the finished StateProof, which carries that signature over the SHA-384 block root together with a Merkle path for each proven leaf.",
+      "plain": "The sending ledger's consensus nodes jointly sign block roots with a single threshold signature, which counts only if nodes holding more than half of the consensus weight took part. The endpoint proves the message from the state at the start of a later directly signed block, and a signed block is final.",
+      "protocol": "Hiero nodes sign block roots with a hinTS threshold signature, valid only from nodes holding more than half of the consensus weight of the roster its verification key commits to. The endpoint proves from the starting state of a block whose root is signed directly; a block that is final only because a later block was signed gives no snapshot, and the proven state cannot be reverted. For a channel to an EVM ledger the Hiero endpoint uses the hinTS proof scheme, whose trust anchor is the current hinTS verification key.",
       "lit": [
         "chainA"
       ],
@@ -214,8 +230,20 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/state_proof.md",
-          "label": "verifiers/hiero/state_proof.md"
+          "path": "ledgers/hiero/proof-schemes/hints.md",
+          "label": "Hiero proof scheme: hinTS"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/bundle-aggregation.md",
+          "label": "Hiero bundle aggregation"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         }
       ]
     },
@@ -224,32 +252,38 @@
       "phase": "prove",
       "label": "gRPC open",
       "title": "A sync stream opens and BundleRequests are exchanged",
-      "plain": "The two endpoints keep a connection open between them. The receiving side says which message number it has reached, so the sending side knows exactly what to send.",
-      "protocol": "A sync cycle is one bidirectional gRPC stream of ClprSyncPayload messages, specified to run under mutual TLS (the reference EVM endpoint runs it without TLS). Each side's BundleRequest carries its own received_message_id, status, trust_anchor_id and endpoint manifest version. The request is unproven and never changes state; it only shapes a minimal bundle. Delivery is pulled, not pushed.",
+      "plain": "An endpoint of one ledger opens a sync session with an endpoint of the other. Each side says which message it has reached, so the other knows exactly what to send.",
+      "protocol": "A sync cycle is one new bidirectional gRPC stream for one channel, opened by an initiator to an endpoint chosen from the peer manifest. Each side first sends a BundleRequest with its received message id, its channel status, the id of the trust anchor it holds and the manifest version it holds; each then answers the other with at most one bundle. Under the specification the stream runs over TLS when the responder's manifest entry carries a certificate, in plaintext otherwise, with no fallback and no client certificate; the reference endpoint serves it in plaintext. The request is unproven: it only shapes the bundle and never changes state. Delivery is pulled, not pushed.",
       "lit": [
         "epA",
         "epB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "15-sync-protocol",
-          "label": "spec §1.5"
+          "doc": "endpointSync",
+          "anchor": "3-exchange",
+          "label": "Endpoint sync §3"
         },
         {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
+          "doc": "endpointSync",
+          "anchor": "2-transport",
+          "label": "Endpoint sync §2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "docs/sync-protocol.md",
+          "label": "Reference endpoint: sync protocol"
         }
       ]
     },
     {
       "n": 9,
       "phase": "prove",
-      "label": "fetch proof",
-      "title": "The Hiero endpoint fetches the StateProof",
-      "plain": "The endpoint collects the receipt proving the message really is in the ledger's signed state. It only fetches this proof. It does not create it, and it could not forge it if it wanted to.",
-      "protocol": "The endpoint retrieves a StateProof covering the Channel leaf and one ClprMessageValue leaf per message, each with a SHA-384 Merkle path to the signed block root. It parses and validates the structure but does not reassemble it.",
+      "label": "gather proof",
+      "title": "The Hiero endpoint gathers the bundle and its proof",
+      "plain": "The endpoint reads the messages and the proof that they really are in the ledger's signed state. It only collects this proof; the signature in it is the ledger's, and the endpoint could not forge it.",
+      "protocol": "The endpoint reads all bundle content from one signed snapshot, the starting state of a directly signed block. The run starts after the requestor's received message id and stays within the peer's message count and size limits and the scheme's path limits. The proof is a Merkle path to the block root for the channel record and for each message, under the block's compact hinTS signature.",
       "lit": [
         "epA",
         "chainA"
@@ -258,8 +292,19 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/state_proof.md",
-          "label": "verifiers/hiero/state_proof.md"
+          "path": "ledgers/hiero/bundle-aggregation.md",
+          "label": "Hiero bundle aggregation"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/proof-schemes/hints.md",
+          "label": "Hiero proof scheme: hinTS"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "4-message-range",
+          "label": "Endpoint sync §4"
         }
       ]
     },
@@ -268,8 +313,8 @@
       "phase": "prove",
       "label": "gRPC send",
       "title": "The BundleResponse travels down the stream",
-      "plain": "The message, together with its proof, travels down the open line to the other ledger's endpoint.",
-      "protocol": "A BundleResponse carries one opaque bundle_payload: the ordered batch of messages plus the state proof over the last of them, the anchor (a Hiero StateProof also carries a leaf for each message). Proving the anchor plus recomputing the running hash chain proves every message in the batch.",
+      "plain": "The messages, together with their proof, travel down the open stream to the other ledger's endpoint.",
+      "protocol": "A BundleResponse carries one opaque bundle in the wire layout of the source's proof scheme: the proven queue metadata, a contiguous run of messages, and the proven id and running hash of the last one. Proving the last running hash and recomputing the chain binds every message in the run. A bundle may end before the sender's latest message, and may carry no messages at all.",
       "lit": [
         "epA",
         "epB",
@@ -277,14 +322,19 @@
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "15-sync-protocol",
-          "label": "spec §1.5"
+          "doc": "endpointSync",
+          "anchor": "33-sequence",
+          "label": "Endpoint sync §3.3"
         },
         {
-          "doc": "design",
-          "anchor": "323-bundle-transport",
-          "label": "design §3.2.3"
+          "doc": "bundle",
+          "anchor": "1-bundle-content",
+          "label": "Bundle §1"
+        },
+        {
+          "doc": "bundle",
+          "anchor": "3-partial-bundles",
+          "label": "Bundle §3"
         }
       ]
     },
@@ -293,22 +343,21 @@
       "phase": "prove",
       "label": "pre-verify",
       "title": "The EVM endpoint dry-runs the submission",
-      "plain": "Before spending money submitting anything, the receiving endpoint runs the whole verification locally as a dry run. A failure it can see locally is caught before anyone pays.",
-      "protocol": "Endpoints MUST verify bundle proofs locally before submitting a transaction, otherwise they pay for payloads that fail post-consensus. The EVM relay simulates submitBundle with eth_call and skips the submission if it reverts.",
+      "plain": "Under the recommended practice, before paying to submit anything, the receiving endpoint checks that the bundle would be accepted, by a read-only preview. A bundle the ledger rejects still costs its submitter the transaction fee.",
+      "protocol": "Recommended practice: the receiving endpoint checks the progress criteria against its last view of the channel and previews the submission read-only. On EVM ledgers it previews every submission against pending state and skips any bundle that would revert. A rejected bundle still costs the submitter its transaction fee.",
       "lit": [
         "epB"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
         },
         {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "verifiers/qbft/state_proof.md",
-          "label": "verifiers/qbft/state_proof.md"
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
         }
       ]
     },
@@ -317,34 +366,28 @@
       "phase": "cross",
       "label": "submitBundle()",
       "title": "The bundle lands on the EVM CLPR Service",
-      "plain": "The endpoint sends an ordinary transaction on the destination ledger carrying the message and its proof. Everything from here until the reply is queued happens inside this single transaction.",
-      "protocol": "Any account may call submitBundle(channelId, proofBytes); submission is permissionless. The verifier checks the proof, and the service's own replay and running-hash checks still hold if it is buggy. msg.sender, the submitter, is paid the connector charges for this bundle; if that transfer fails, the EVM contracts pay the CLPR Service owner instead.",
+      "plain": "The endpoint sends an ordinary transaction on the destination ledger carrying the bundle. Everything from here until the reply is queued happens inside this single transaction.",
+      "protocol": "Any account may call submitBundle with the channel id and the bundle; submission is permissionless. Processing is atomic: a bundle rejected at any step changes nothing and costs the submitter its fee. Under the recommended design, the submitter receives every execution charge and slash penalty the bundle produces; if that transfer fails, the CLPR Service may pay its administrator instead, and on EVM ledgers a last fallback credits the submitter a pending withdrawal.",
       "lit": [
         "epB",
         "svcB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "64-messaging",
-          "label": "spec §6.4"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "economics",
+          "anchor": "2-payment-to-the-bundle-submitter",
+          "label": "Channel economics §2"
         },
         {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/interfaces/IClprService.sol",
-          "label": "IClprService.sol"
-        },
-        {
-          "doc": "design",
-          "anchor": "325-bundle-verification",
-          "label": "design §3.2.5"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/ConnectorLib.sol",
-          "label": "ConnectorLib.sol"
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
         }
       ]
     },
@@ -353,29 +396,34 @@
       "phase": "cross",
       "label": "verifyBundle()",
       "title": "The verifier checks the threshold signature and the Merkle paths",
-      "plain": "The destination ledger checks the source ledger's signature itself, against the identity it already trusts, and walks the proof back to the signed block. This is the step where the destination checks the source ledger's own signature itself, rather than relying on a relay's say-so.",
-      "protocol": "Bundle verification step 1: the service calls the Channel's verifier with (bundle_payload, Channel.trust_anchor, channel_context). For a Hiero peer the trust anchor is the ledger_id: the verifier recomputes the SHA-384 Merkle root from each leaf proof, checks the hinTS aggregate signature against the stored ledger_id, and returns sync data, the ordered messages, and the anchor id and running hash. The EVM HieroVerifier checks against the ledger id fixed at its deployment; what it keeps in Channel.trust_anchor is a cache, not the root of trust.",
+      "plain": "The verifier checks the Hiero nodes' joint signature and the proof paths against the signing key on record for this channel. If the network's roster has changed since, the bundle also proves the chain of keys from the recorded one to the new one. The endpoints that carried the bundle are trusted for none of it.",
+      "protocol": "The CLPR Service calls the channel's verifier with the bundle, the stored trust anchor and the channel context; the call is read-only and the verifier keeps no per-channel state. Under the hinTS proof scheme the trust anchor names one hinTS verification key. The verifier checks the Merkle paths to the block root of the channel record, the last message and, when present, the endpoint manifest; the earlier messages are bound by the running hash. It checks the threshold signature on that root, which counts only from nodes holding more than half of the consensus weight. A bundle signed under a later key carries a provenance chain, each key signed by its predecessor; the verifier then returns a trust anchor change, stored before any message is processed. It returns the queue metadata, the messages, and the last message's id and running hash.",
       "lit": [
         "svcB",
         "verB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "verifierIface",
+          "anchor": "3-verifybundle",
+          "label": "Verifier interface §3"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/verifier_contract.md",
-          "label": "verifiers/hiero/verifier_contract.md"
+          "path": "ledgers/hiero/proof-schemes/hints.md",
+          "label": "Hiero proof scheme: hinTS"
         },
         {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/hiero/HieroVerifier.sol",
-          "label": "HieroVerifier.sol"
+          "id": "clpr-spec",
+          "path": "ledgers/evm/verifier-api.md",
+          "label": "EVM verifier API"
         }
       ]
     },
@@ -384,27 +432,21 @@
       "phase": "cross",
       "label": "hash chain",
       "title": "Progress, size, replay and running-hash checks",
-      "plain": "Then the bookkeeping. Is this the next message in sequence? Have we seen it before? Does recomputing the running hash give the same answer as the proven one? Any mismatch and it stops here.",
-      "protocol": "Steps 1a–4: reject if no progress criterion holds; reject if the bundle exceeds max_messages_per_bundle or any payload exceeds max_message_payload_bytes; the first id must equal received_message_id + 1 with the rest contiguous (replay defence); recomputing SHA-256(prev ‖ payload) from received_running_hash must reproduce anchor_running_hash. These checks are the service's own and hold even if the verifier is buggy. The EVM contracts skip leading messages they already hold instead of rejecting the bundle, and fold the hash as sha256(prev ‖ sha256(payload)).",
+      "plain": "Then the bookkeeping. Does the bundle bring anything new? Do its messages follow on from the last one received, with no gap? Messages already received are skipped. Does recomputing the running hash give the proven value? Any mismatch and the whole bundle is rejected.",
+      "protocol": "Bundle processing then checks, in order: the bundle's message count and each DATA payload are within the destination's own limits, its size having been checked before the verifier was called; at least one progress criterion holds; any new endpoint manifest and trust anchor are installed; the message range has no gap, and messages already received are skipped; the running hash recomputed from the stored received running hash over the new messages equals the proven running hash of the last one; and the acknowledgement neither moves backwards nor covers a message never sent. These are the CLPR Service's own checks; they catch verifier bugs, not a compromised verifier.",
       "lit": [
         "svcB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
         },
         {
-          "doc": "spec",
-          "anchor": "212-bundle-progress-criteria",
-          "label": "spec §2.1.2"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/BundleLib.sol",
-          "label": "BundleLib.sol"
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
         }
       ]
     },
@@ -413,22 +455,28 @@
       "phase": "cross",
       "label": "gas budget",
       "title": "Connector resolved and the gas budget computed",
-      "plain": "The destination looks up the connector that agreed to pay and works out how much execution it can afford.",
-      "protocol": "The message's connector_id is resolved via (channel_id, connector_id) to the local Connector. A missing Connector yields a CONNECTOR_NOT_FOUND response; an unfunded one is slashed and yields CONNECTOR_UNDERFUNDED. Both are answers, not bundle failures. The EVM contracts also bound the gas forwarded to the application by what the Connector's balance can pay for.",
+      "plain": "The destination looks up the connector that agreed to pay, checks it can pay, and works out how much execution it can afford.",
+      "protocol": "The message's connector id resolves to the connector registered with that id on the channel. If none exists the outcome is CONNECTOR_NOT_FOUND; if it cannot pay, CONNECTOR_UNDERFUNDED, and the application is not called. Both are replies, not bundle failures. The execution budget is at most the destination's per-message gas limit; on EVM ledgers it is reduced to what the connector's balance can pay for. Recommended slashing: none for a missing connector, whose cost the submitter absorbs; the local connector for one that cannot pay.",
       "lit": [
         "svcB",
         "conB"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "333-receiving-routing-and-paying",
-          "label": "design §3.3.3"
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
         },
         {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "21-when-a-connector-is-slashed",
+          "label": "Stakes and bonds §2.1"
         }
       ]
     },
@@ -437,23 +485,23 @@
       "phase": "cross",
       "label": "onClprMessage()",
       "title": "The application receives the message and answers it",
-      "plain": "The application on the other ledger finally receives the message, does its work and returns its answer. This is the moment the message has actually crossed; everything before it was transport.",
-      "protocol": "The service dispatches IClprApplication.onClprMessage(channelId, sender, messageData) under a gas cap. The returned bytes become the reply and the status is SUCCESS; a revert becomes APPLICATION_ERROR with the revert data as the reply. An application failing does not fail the bundle.",
+      "plain": "The application on the other ledger receives the message, does its work and returns its answer. This is the moment the message has actually crossed; everything before it was transport.",
+      "protocol": "The CLPR Service calls the target application's onClprMessage with the channel id, the sender and the message data, within the execution budget. Returned bytes become the reply with status SUCCESS. A revert, a target that is not an application, or return data that is not bytes gives APPLICATION_ERROR, as does a reply too large for the peer. A failing application affects only its own reply, never the bundle.",
       "lit": [
         "svcB",
         "appB"
       ],
       "refs": [
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/interfaces/IClprApplication.sol",
-          "label": "IClprApplication.sol"
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
         },
         {
-          "doc": "design",
-          "anchor": "333-receiving-routing-and-paying",
-          "label": "design §3.3.3"
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
         }
       ]
     },
@@ -462,17 +510,22 @@
       "phase": "cross",
       "label": "settle gas",
       "title": "The connector is charged and the submitter reimbursed",
-      "plain": "The connector pays for the execution that just happened, plus a little extra, and the whole amount goes to whoever submitted the transaction. That margin is why anyone bothers running an endpoint.",
-      "protocol": "The Connector is charged actual_gas_used × (1 + margin_percent/100). The entire charge is paid to the submitting account; there is no protocol treasury and, for this message, no payment to anyone on the sending side.",
+      "plain": "Under the recommended design, the connector pays for the execution that just happened, plus a margin, and the whole amount goes to whoever submitted the bundle. The margin covers the submitter's overhead and gives it a reason to submit.",
+      "protocol": "Recommended charging: for each dispatched DATA message the destination connector pays the execution cost plus a margin, one value for the whole CLPR Service, and all of it goes to the bundle submitter. No share goes to the Service or its administrator, except as the fallback when the transfer fails. On EVM ledgers the cost is the gas the application used at the transaction's gas price, collected after dispatch; a failed charge slashes the connector and leaves the reply's status unchanged.",
       "lit": [
         "conB",
         "epB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "economics",
+          "anchor": "2-payment-to-the-bundle-submitter",
+          "label": "Channel economics §2"
         }
       ]
     },
@@ -481,40 +534,55 @@
       "phase": "cross",
       "label": "reply queued",
       "title": "The reply is enqueued as a REPLY message",
-      "plain": "The answer is placed in the destination ledger's own outbound queue, numbered and folded into the running hash the same way the original was. Every application message that gets accepted produces exactly one reply.",
-      "protocol": "A ClprMessageReply carrying the original message_id, a status and the reply bytes is appended to the destination Channel's outbound queue and chained into its sent_running_hash. Every Data Message produces exactly one Response Message, in order.",
+      "plain": "The answer is placed in the destination ledger's own outbound queue, numbered and folded into the running hash the same way the original was. Every DATA message receives exactly one reply, even when the connector was missing or could not pay.",
+      "protocol": "A REPLY carrying the original message id, the status and the reply data is appended to the destination's outbound queue and chained into its sent running hash, before the next message of the bundle is processed. Every DATA message receives exactly one REPLY, in the order of the DATA messages.",
       "lit": [
         "svcB",
         "qB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "14-message-queue",
-          "label": "spec §1.4"
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
         },
         {
-          "doc": "design",
-          "anchor": "328-response-ordering-and-correlation",
-          "label": "design §3.2.8"
+          "doc": "messaging",
+          "anchor": "2-message-identifiers-and-queue",
+          "label": "Messaging §2"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
         }
       ]
     },
     {
       "n": 19,
       "phase": "cross",
-      "label": "BundleProcessed",
-      "title": "The destination announces how far it has got",
-      "plain": "The destination records how far it has now received and acknowledged. The other side reads those numbers next time they talk and uses them to know what it can safely forget.",
-      "protocol": "The service's own ChannelSyncData (received_message_id, status, next_message_id) is updated; the EVM implementation also emits a BundleProcessed event once per accepted bundle. The peer learns the new received_message_id on the next sync and treats it as its acked_message_id.",
+      "label": "received id",
+      "title": "The destination records how far it has received",
+      "plain": "The destination records how far it has now received. The other ledger reads that number, proven, in the next bundle sent back, and uses it to know what it can safely delete.",
+      "protocol": "After dispatch the destination's received message id and received running hash advance to the bundle's last message. They are part of the shared channel state, so the next bundle in the other direction proves them as queue metadata, and the source takes that received message id as its acknowledgement. The reference contracts also emit an event when a bundle is processed in full.",
       "lit": [
         "svcB"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "321-channel-queue-data",
-          "label": "design §3.2.1"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "6-shared-channel-state",
+          "label": "Channel setup §6"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "9-acknowledgement",
+          "label": "Messaging §9"
         },
         {
           "doc": "repo",
@@ -529,8 +597,8 @@
       "phase": "return",
       "label": "QBFT proof",
       "title": "The EVM endpoint builds a QBFT state proof",
-      "plain": "Coming back, the proof works differently. This ledger's validators sign block headers directly, so the endpoint takes a header carrying those signatures plus a proof of the exact storage holding the reply.",
-      "protocol": "The relay assembles an RLP 5-tuple: the current block header (with QBFT committed seals in extraData), any headers needed to carry the validator set across a change, the EIP-1186 account proof for the CLPR Service, storage proofs for five Channel slots and the anchor message's running hash, and the serialized bundle content.",
+      "plain": "Coming back, the proof works differently. This ledger's validators seal each block header directly, so the endpoint takes a sealed header and a proof of the contract storage holding the channel's state; the reply is tied to that state by the running hash. If the validators have changed, it also carries the evidence of that change.",
+      "protocol": "The EVM endpoint reads one sealed block, which QBFT makes final, and builds every proof at it: the block header with its QBFT committed seals, the material that carries the validator set across any change since the peer's trust anchor, an account proof of the CLPR Service and storage proofs of the channel's state and, for a partial bundle, of the last message's running hash. The validator-change material depends on the channel's QBFT proof scheme: sealed headers at which the set changes, or proofs of a validator contract's storage.",
       "lit": [
         "epB",
         "chainB"
@@ -539,8 +607,20 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/state_proof.md",
-          "label": "verifiers/qbft/state_proof.md"
+          "path": "ledgers/besu/bundle-aggregation.md",
+          "label": "QBFT ledger bundle aggregation"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/besu/proof-schemes/qbft-header.md",
+          "label": "QBFT proof scheme: header"
         }
       ]
     },
@@ -549,8 +629,8 @@
       "phase": "return",
       "label": "gRPC back",
       "title": "Delivery to the Hiero endpoint, then pre-verification",
-      "plain": "The same discipline in reverse, on a later sync: the reply goes back down the line, and the receiving endpoint dry-runs it before paying to submit it.",
-      "protocol": "The reply exists only after the destination's consensus, so it travels back in a later sync cycle. The receiving endpoint verifies locally before paying to submit.",
+      "plain": "The reply exists only once the destination has processed the message, so a later sync carries it back. The receiving Hiero node is expected to check it before submitting it.",
+      "protocol": "A later sync cycle carries the REPLY back. Recommended practice on Hiero: the receiving node checks every bundle before submitting it, for the channel status, the size, local verification, the trust anchor and progress, and skips a bundle that makes no progress.",
       "lit": [
         "epB",
         "epA",
@@ -558,33 +638,49 @@
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
+          "doc": "overview",
+          "anchor": "3-message-flow",
+          "label": "Overview §3"
         },
         {
-          "doc": "design",
-          "anchor": "22-high-level-message-flow",
-          "label": "design §2.2"
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "33-sequence",
+          "label": "Endpoint sync §3.3"
         }
       ]
     },
     {
       "n": 22,
       "phase": "return",
-      "label": "HAPI submit",
+      "label": "node submits",
       "title": "Bundle submission on the Hiero ledger",
-      "plain": "The Hiero-side endpoint hands the reply to its ledger using that ledger's own transaction format rather than an EVM one.",
-      "protocol": "On Hiero the bundle is submitted as a HAPI transaction and processed post-consensus by the native CLPR Service.",
+      "plain": "The Hiero node that received the reply submits it to its own ledger, in a transaction of that ledger's own API rather than an EVM one.",
+      "protocol": "Recommended practice on Hiero: the receiving node submits the bundle as a node transaction paid by its node account, and the native CLPR Service runs the same bundle processing algorithm. The node is the submitter, so it receives the charges and penalties the bundle produces.",
       "lit": [
         "epA",
         "svcA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "323-bundle-transport",
-          "label": "design §3.2.3"
+          "doc": "service",
+          "anchor": "51-who-submits",
+          "label": "CLPR Service §5.1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
         }
       ]
     },
@@ -593,8 +689,8 @@
       "phase": "return",
       "label": "verify seals",
       "title": "QBFT committed seals checked against the trust anchor",
-      "plain": "The Hiero ledger checks the validator signatures on that block header against the validators it has on record for this channel, and follows any change of validators since. How many signatures are required depends on the verifier.",
-      "protocol": "The QBFT verifier recovers the ECDSA signers from the header's committed seals and requires a threshold to match the validator set hash in the trust anchor. Headers in the bundle that cross a change of validators advance the set; each must be sealed by the set trusted before it, so history cannot be skipped.",
+      "plain": "The Hiero ledger checks the validator seals on that block header against the validators it holds for this channel, and follows any change of validators since. A quorum of the trusted validators must have sealed it: two thirds when the set is unchanged.",
+      "protocol": "The channel's verifier on Hiero recovers the signers of the header's QBFT committed seals and requires a quorum of the trusted validator set among them, two thirds when the set is unchanged. When the set has changed since the trust anchor, the bundle carries the change: under the QBFT header scheme, each header at which the listed set changes, moving it by at most one member; under the QBFT contract scheme, each block at which the validator contract's set changes. Each must be sealed by enough of the set trusted before it, so history cannot be skipped; under the QBFT header scheme a header that changes the set by one member can need one signer fewer. The new set is returned as a trust anchor change.",
       "lit": [
         "svcA",
         "verA"
@@ -603,14 +699,25 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/trust_anchor.md",
-          "label": "verifiers/qbft/trust_anchor.md"
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
         },
         {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/qbft/qbft-verifier.md",
-          "label": "QBFT verifiers"
+          "id": "clpr-spec",
+          "path": "ledgers/besu/proof-schemes/qbft-header.md",
+          "label": "QBFT proof scheme: header"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/besu/proof-schemes/qbft-contract.md",
+          "label": "QBFT proof scheme: contract"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
         }
       ]
     },
@@ -619,8 +726,8 @@
       "phase": "return",
       "label": "verify state",
       "title": "Account and storage proofs, then replay and running-hash checks",
-      "plain": "Then it checks the proof tying the reply to that exact signed block, and repeats the same sequence and running hash checks as the outbound leg. The proof technology differs; the rules do not.",
-      "protocol": "The account proof ties the CLPR Service to the header's stateRoot; the storage proofs tie the queue state and anchor hash to that account. Then the service runs the same steps 1a–4 as on the outbound leg. Verification is symmetric; only the proof system changes.",
+      "plain": "Then it checks the proof tying the reply to that exact sealed block, and repeats the same sequence and running hash checks as the outbound leg. The proof technology differs; the rules do not.",
+      "protocol": "The account proof ties the CLPR Service contract, and its code hash, to the sealed header's state root; the storage proofs tie the channel's proven state, and for a partial bundle the last message's running hash, to that account. Every value comes from the one sealed block. The CLPR Service then runs the same processing steps as on the outbound leg: limits, progress, replay defence, running hash and acknowledgement. Only the proof scheme changes.",
       "lit": [
         "svcA"
       ],
@@ -628,13 +735,13 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/state_proof.md",
-          "label": "verifiers/qbft/state_proof.md"
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
         },
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
         }
       ]
     },
@@ -643,17 +750,22 @@
       "phase": "return",
       "label": "ordering",
       "title": "Response ordering verified against the retained message",
-      "plain": "Replies have to come back in the same order the messages went out. If one arrives out of turn, the channel pauses rather than delivering it.",
-      "protocol": "Response ordering verification: the incoming reply's message_id must match the oldest unresponded Data Message still retained in the outbound queue. A mismatch sets the Channel to PAUSED and rejects the bundle; the channel auto-resumes when a correctly ordered bundle arrives.",
+      "plain": "Replies have to come back in the order the messages went out. If one arrives out of turn, nothing in that bundle is delivered and the channel pauses. It resumes by itself once a bundle arrives in the right order.",
+      "protocol": "Every REPLY must answer the oldest unanswered DATA message in the outbound queue; the walk skips REPLY and CONTROL entries. A mismatch is a response ordering violation: nothing in the bundle is dispatched, an ACTIVE channel becomes PAUSED, and sends are rejected while queued messages keep syncing. The bundle's manifest and trust anchor changes still apply, and the CLPR Service may also apply its acknowledgement. The first bundle accepted without a violation returns the channel to ACTIVE.",
       "lit": [
         "svcA",
         "qA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "45-response-ordering-verification",
-          "label": "spec §4.5"
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "6-pause-and-resume",
+          "label": "Channel state transitions §6"
         }
       ]
     },
@@ -663,28 +775,32 @@
       "label": "onClprResponse()",
       "title": "The original application is called back",
       "plain": "The original application is called back with the message id, a status, and whatever the other side sent back.",
-      "protocol": "IClprApplication.onClprResponse(channelId, messageId, status, responseData) is invoked best-effort; the status is a ClprMessageReplyStatus: SUCCESS, APPLICATION_ERROR, CONNECTOR_NOT_FOUND or CONNECTOR_UNDERFUNDED.",
+      "protocol": "The CLPR Service delivers the message id, the status and the reply data to the application that sent the DATA message, through its onClprResponse callback. The status is SUCCESS, APPLICATION_ERROR, CONNECTOR_NOT_FOUND or CONNECTOR_UNDERFUNDED. Delivery is best effort: a failing callback does not affect processing of the REPLY, and on Hiero the callback is skipped when the source connector cannot prepay its gas. Under the recommended policy, a CONNECTOR_NOT_FOUND or CONNECTOR_UNDERFUNDED reply slashes the source connector.",
       "lit": [
         "svcA",
         "appA"
       ],
       "refs": [
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/interfaces/IClprApplication.sol",
-          "label": "IClprApplication.sol"
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
         },
         {
-          "doc": "spec",
-          "anchor": "14-message-queue",
-          "label": "spec §1.4"
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
         },
         {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/ClprTypes.sol",
-          "label": "ClprTypes.sol"
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "21-when-a-connector-is-slashed",
+          "label": "Stakes and bonds §2.1"
         }
       ]
     },
@@ -694,16 +810,16 @@
       "label": "delivered",
       "title": "Reply delivered; the original message deleted",
       "plain": "Only now is the original message deleted from the outbound queue. It was deliberately kept until its reply arrived, so the ordering check just before had something to compare against.",
-      "protocol": "Data Messages are retained after acknowledgement because they are the ordering reference for responses; they are deleted only when their response has been received and matched. Response and Control messages, by contrast, are deleted as soon as they are acknowledged.",
+      "protocol": "DATA messages are kept after acknowledgement because response ordering is checked against them; a DATA message is deleted when its REPLY is processed. REPLY and CONTROL messages, by contrast, are deleted as soon as they are acknowledged.",
       "lit": [
         "svcA",
         "qA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "44-message-lifecycle",
-          "label": "spec §4.4"
+          "doc": "messaging",
+          "anchor": "9-acknowledgement",
+          "label": "Messaging §9"
         }
       ]
     },
@@ -712,8 +828,8 @@
       "phase": "close",
       "label": "complete",
       "title": "Round trip complete",
-      "plain": "A message went to another ledger, ran there, and its answer came back. Each leg carried a proof of the other ledger's own consensus, checked on arrival by the channel's verifier, with no intermediary signer set in the middle.",
-      "protocol": "Two bundles, two proofs, two verifications, one reply. For correctness, the only parties trusted are the two ledgers' own consensus, their CLPR Services, the verifier each channel was created with, and the applications themselves. Delivery also depended on at least one honest endpoint per side and a connector that pays.",
+      "plain": "A message went to another ledger, ran there, and its answer came back. Each leg carried a proof of the other ledger's own consensus, checked on arrival by the channel's verifier, with no intermediary network or bridge validator set in the middle.",
+      "protocol": "Two bundles, two proofs, two verifications, one reply. The application trusted its own ledger's consensus and CLPR Service, the channel's verifier, the peer ledger's consensus and CLPR Service, and the remote application. Delivery also depended on at least one honest endpoint on each side and a connector that pays.",
       "lit": [
         "appA",
         "svcA",
@@ -724,9 +840,9 @@
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
         }
       ]
     }
@@ -750,21 +866,22 @@
       "label": "sendMessage()",
       "title": "The EVM application calls sendMessage on its CLPR Service",
       "plain": "The same call, started from the other side. The application on the EVM ledger hands the four things (channel, connector, recipient, message) to its CLPR Service contract and gets back a message id.",
-      "protocol": "The EVM application calls ClprService.sendMessage with the Hiero application's address as the target application. The service stamps msg.sender as the sender and returns the message id.",
+      "protocol": "The EVM application calls sendMessage on the CLPR Service contract, with the Hiero application's address as the target application. The CLPR Service sets the sender to the caller's address and returns the message id.",
       "lit": [
         "appB",
         "svcB"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "332-sending-a-message",
-          "label": "design §3.3.2"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         },
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
         }
       ]
     },
@@ -773,28 +890,21 @@
       "phase": "queue",
       "label": "channel checks",
       "title": "Channel ACTIVE; payload and queue-depth checks",
-      "plain": "The same checks as the other direction, this time written in Solidity rather than living inside the node. Channel switched on, message small enough, outbound queue not full.",
-      "protocol": "Enqueue steps 1, 4 and 5 in the Solidity service: Channel ACTIVE, payload within the peer's advertised max_message_payload_bytes, queue depth below the cap. The EVM contracts read the peer's limit from the throttles stored when the channel was completed.",
+      "plain": "The same checks as the other direction, this time in a smart contract rather than inside the node. Channel active, message small enough, outbound queue not full.",
+      "protocol": "The same enqueue checks: the channel ACTIVE, the payload within the peer's published payload limit, and the unacknowledged messages within the local queue depth. The peer's limits are the throttles stored with the channel at setup and replaced by each ConfigUpdate the peer sends.",
       "lit": [
         "svcB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         },
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "docs/bundle-flow.md",
-          "label": "docs/bundle-flow.md"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/logic/MessagingLogic.sol",
-          "label": "MessagingLogic.sol"
+          "doc": "ledgerConfig",
+          "anchor": "3-throttles",
+          "label": "Ledger configuration §3"
         }
       ]
     },
@@ -803,48 +913,52 @@
       "phase": "queue",
       "label": "quota",
       "title": "Connector queue quota checked",
-      "plain": "The connector's slice of the outbound queue is checked before it is asked to pay for anything.",
-      "protocol": "The EVM service enforces connectorQueueQuotaPct × maxQueueDepth per connector and reverts once the connector is at its quota; per-Connector quotas are one candidate mitigation for queue monopolization, not a protocol requirement.",
+      "plain": "Under the recommended design, the connector's share of the outbound queue is checked, so one connector cannot fill the queue for everyone.",
+      "protocol": "A recommendation, not a protocol rule: each connector is limited to a fixed share of the local queue depth. On EVM ledgers the count is the connector's DATA messages from enqueue until their REPLY arrives, and a send is rejected once the connector is at its quota.",
       "lit": [
         "svcB",
         "conB"
       ],
       "refs": [
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "docs/evm-platform-spec.md",
-          "label": "docs/evm-platform-spec.md E-5"
+          "doc": "economics",
+          "anchor": "3-queue-quotas",
+          "label": "Channel economics §3"
         },
         {
-          "doc": "spec",
-          "anchor": "811-queue-monopolization",
-          "label": "spec §8.11"
+          "doc": "service",
+          "anchor": "67-queue-monopolization",
+          "label": "CLPR Service §6.7"
         }
       ]
     },
     {
       "n": 4,
       "phase": "queue",
-      "label": "authorize()",
+      "label": "authorization",
       "title": "The connector authorizes the message",
-      "plain": "The connector on this side approves the message. The same connector is registered on both ledgers under one identity, and that is what makes a channel work in both directions.",
-      "protocol": "ClprService calls IClprConnector.authorizeOutboundMessage(channelId, targetApplication, sender, messageData). The connector id is derived from the channel id, the operator's public key and a salt, identical on both ledgers, so the destination will resolve the same connector to pay.",
+      "plain": "The connector on this side approves the message. The same connector is registered on both ledgers under one id: it approves the message here and pays for it on the other side.",
+      "protocol": "The CLPR Service calls the connector contract's authorization function with the channel, the target application, the sender and the message data. The connector id is derived from the channel id, the operator's public key and a salt, so an operator who registers with the same key and salt on both ledgers gets the same id on both, and the destination resolves that connector to pay.",
       "lit": [
         "svcB",
         "conB"
       ],
       "refs": [
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/interfaces/IClprConnector.sol",
-          "label": "IClprConnector.sol"
+          "doc": "connectorSetup",
+          "anchor": "4-authorization-of-outbound-messages",
+          "label": "Connector setup §4"
         },
         {
-          "doc": "spec",
-          "anchor": "22-connector",
-          "label": "spec §2.2"
+          "doc": "connectorSetup",
+          "anchor": "1-connector-identity",
+          "label": "Connector setup §1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
         }
       ]
     },
@@ -853,40 +967,45 @@
       "phase": "queue",
       "label": "config sync",
       "title": "A ConfigUpdate is queued first if this ledger's settings changed",
-      "plain": "A housekeeping message carrying changed limits goes into the queue ahead of yours when something has changed, and is skipped when nothing has.",
-      "protocol": "Lazy config propagation (enqueue step 1a): if the Channel's last_config_timestamp is behind the current configuration's timestamp, a CONTROL ConfigUpdate is enqueued before the Data Message.",
+      "plain": "If this ledger's configuration changed since it was last sent on this channel, a ConfigUpdate is put in the queue ahead of the message. When nothing has changed, this step is skipped.",
+      "protocol": "Enqueue step 1: when a ConfigUpdate is due on the channel, because the configuration changed after the last one propagated on it, the CLPR Service enqueues a CONTROL ConfigUpdate carrying its full configuration before the DATA message. Its place in the queue is fixed by consensus, so both ledgers agree on the point in the stream where the new limits apply.",
       "lit": [
         "svcB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "13-control-messages",
-          "label": "spec §1.3"
+          "doc": "ledgerConfig",
+          "anchor": "52-sending",
+          "label": "Ledger configuration §5.2"
         },
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         }
       ]
     },
     {
       "n": 6,
       "phase": "queue",
-      "label": "MessageQueued",
-      "title": "Message stored and MessageQueued(DATA) emitted",
-      "plain": "The message is written into the outbound queue and folded into the running hash. The service here is an ordinary contract, so storing your message also emits a log that anyone can read.",
-      "protocol": "The EVM service stores the ClprMessage under (channel_id, next_message_id), folds sent_running_hash as sha256(prev ‖ sha256(payload)) rather than SHA-256(prev ‖ payload), advances next_message_id, and emits MessageQueued.",
+      "label": "enqueue",
+      "title": "Message stored, running hash chained, next id advanced",
+      "plain": "The message is written into the outbound queue and folded into the running hash, exactly as on the Hiero side. The CLPR Service here is an ordinary contract, and the reference contracts also emit a log of the send that anyone can read.",
+      "protocol": "The DATA message is appended under the next message id, its running hash is chained over its canonical protobuf payload bytes, and the next message id advances, as on every ledger: both sides store and hash the same encoding. The reference contracts also emit an event for the send.",
       "lit": [
         "svcB",
         "qB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "41-running-hash-computation",
-          "label": "spec §4.1"
+          "doc": "messaging",
+          "anchor": "4-running-hash",
+          "label": "Messaging §4"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "3-payload-encoding",
+          "label": "Messaging §3"
         },
         {
           "doc": "repo",
@@ -901,8 +1020,8 @@
       "phase": "prove",
       "label": "QBFT proof",
       "title": "The EVM endpoint builds a QBFT state proof",
-      "plain": "This ledger's validators sign block headers directly, so the endpoint pairs a signed header with a proof of the exact storage slots holding your message.",
-      "protocol": "The relay assembles the RLP 5-tuple: the current block header with QBFT committed seals, any headers needed to carry the validator set across a change, the EIP-1186 account proof for the CLPR Service, storage proofs for five Channel slots and the anchor message's running hash, and the serialized bundle content.",
+      "plain": "This ledger's validators seal each block header directly, so the endpoint pairs a sealed header with a proof of the contract storage holding the channel's state, to which the message is tied by the running hash.",
+      "protocol": "The EVM endpoint reads one sealed block, which QBFT makes final, and builds every proof at it: the block header with its QBFT committed seals, the material that carries the validator set across any change since the peer's trust anchor, an account proof of the CLPR Service and storage proofs of the channel's state and, for a partial bundle, of the last message's running hash. The validator-change material depends on the channel's QBFT proof scheme: sealed headers at which the set changes, or proofs of a validator contract's storage.",
       "lit": [
         "epB",
         "chainB"
@@ -911,8 +1030,20 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/state_proof.md",
-          "label": "verifiers/qbft/state_proof.md"
+          "path": "ledgers/besu/bundle-aggregation.md",
+          "label": "QBFT ledger bundle aggregation"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/besu/proof-schemes/qbft-header.md",
+          "label": "QBFT proof scheme: header"
         }
       ]
     },
@@ -921,22 +1052,28 @@
       "phase": "prove",
       "label": "gRPC open",
       "title": "A sync stream opens and BundleRequests are exchanged",
-      "plain": "One connection per sync, with the receiving side saying what it still needs. The transport does not care which way the message is going.",
-      "protocol": "One bidirectional gRPC stream per sync cycle, specified to run under mutual TLS (the reference EVM endpoint runs it without TLS); each side's BundleRequest carries its received_message_id, status, trust_anchor_id and manifest version. The request is unproven and shapes the bundle; it never changes state.",
+      "plain": "One sync session, with each side saying what it has already received. The transport does not care which way the message is going.",
+      "protocol": "A sync cycle is one new bidirectional gRPC stream for one channel, opened by an initiator to an endpoint chosen from the peer manifest. Each side first sends a BundleRequest with its received message id, its channel status, the id of the trust anchor it holds and the manifest version it holds; each then answers the other with at most one bundle. Under the specification the stream runs over TLS when the responder's manifest entry carries a certificate, in plaintext otherwise, with no fallback and no client certificate; the reference endpoint serves it in plaintext. The request is unproven: it only shapes the bundle and never changes state.",
       "lit": [
         "epA",
         "epB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "15-sync-protocol",
-          "label": "spec §1.5"
+          "doc": "endpointSync",
+          "anchor": "3-exchange",
+          "label": "Endpoint sync §3"
         },
         {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
+          "doc": "endpointSync",
+          "anchor": "2-transport",
+          "label": "Endpoint sync §2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "docs/sync-protocol.md",
+          "label": "Reference endpoint: sync protocol"
         }
       ]
     },
@@ -945,8 +1082,8 @@
       "phase": "prove",
       "label": "gRPC send",
       "title": "The BundleResponse with the QBFT proof travels to the Hiero endpoint",
-      "plain": "The bundle and its proof travel down the open line to the Hiero-side endpoint.",
-      "protocol": "A BundleResponse carries one opaque bundle_payload: the ordered messages plus the state proof over the anchor message.",
+      "plain": "The bundle and its proof travel down the open stream to an endpoint of the Hiero ledger, one of its consensus nodes.",
+      "protocol": "A BundleResponse carries one opaque bundle: the proven queue metadata, a contiguous run of messages, and the proof over the state of one sealed block.",
       "lit": [
         "epB",
         "epA",
@@ -954,14 +1091,14 @@
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "15-sync-protocol",
-          "label": "spec §1.5"
+          "doc": "endpointSync",
+          "anchor": "33-sequence",
+          "label": "Endpoint sync §3.3"
         },
         {
-          "doc": "design",
-          "anchor": "323-bundle-transport",
-          "label": "design §3.2.3"
+          "doc": "bundle",
+          "anchor": "1-bundle-content",
+          "label": "Bundle §1"
         }
       ]
     },
@@ -970,35 +1107,41 @@
       "phase": "prove",
       "label": "pre-verify",
       "title": "The Hiero endpoint pre-verifies the bundle locally",
-      "plain": "The receiving endpoint verifies everything locally first, so it avoids paying to submit anything it can see will be rejected.",
-      "protocol": "Endpoints MUST verify bundle proofs before submitting, otherwise they pay for payloads that fail post-consensus.",
+      "plain": "The receiving node is expected to check the bundle locally first, so it does not pay to submit anything it can see will be rejected.",
+      "protocol": "Recommended practice on Hiero: the receiving node checks every bundle before submitting it, for the channel status, the size, local verification, the trust anchor and progress, and skips a bundle that makes no progress.",
       "lit": [
         "epA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
         }
       ]
     },
     {
       "n": 11,
       "phase": "cross",
-      "label": "HAPI submit",
+      "label": "node submits",
       "title": "Bundle submission on the Hiero ledger",
-      "plain": "The Hiero-side endpoint hands the bundle to its ledger. From here to the application call, everything runs inside that one transaction.",
-      "protocol": "The bundle is submitted as a HAPI transaction and processed post-consensus by the native CLPR Service.",
+      "plain": "The Hiero node hands the bundle to its own ledger. From here to the application call, everything runs inside that one transaction.",
+      "protocol": "Recommended practice on Hiero: the receiving node submits the bundle as a node transaction paid by its node account, and the native CLPR Service processes it. The node is the submitter, so it receives the charges and penalties the bundle produces.",
       "lit": [
         "epA",
         "svcA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "323-bundle-transport",
-          "label": "design §3.2.3"
+          "doc": "service",
+          "anchor": "51-who-submits",
+          "label": "CLPR Service §5.1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         }
       ]
     },
@@ -1007,8 +1150,8 @@
       "phase": "cross",
       "label": "verify seals",
       "title": "QBFT committed seals verified against the trust anchor",
-      "plain": "The Hiero ledger checks the signatures in the block header against the validator list it holds for this channel; how many are required depends on the verifier.",
-      "protocol": "The QBFT verifier recovers the ECDSA signers of the committed seals and requires a threshold to match the validator set hash stored in the Channel's trust anchor; headers that cross a change of validators, if present, advance the set.",
+      "plain": "The Hiero ledger checks the seals on the block header against the validator set it holds for this channel. A quorum of the trusted validators must have sealed it: two thirds when the set is unchanged.",
+      "protocol": "The channel's verifier on Hiero recovers the signers of the header's QBFT committed seals and requires a quorum of the trusted validator set among them, two thirds when the set is unchanged. When the set has changed since the trust anchor, the bundle carries the change: under the QBFT header scheme, each header at which the listed set changes, moving it by at most one member; under the QBFT contract scheme, each block at which the validator contract's set changes. Each must be sealed by enough of the set trusted before it, so history cannot be skipped; under the QBFT header scheme a header that changes the set by one member can need one signer fewer. The new set is returned as a trust anchor change.",
       "lit": [
         "svcA",
         "verA"
@@ -1017,20 +1160,25 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/trust_anchor.md",
-          "label": "verifiers/qbft/trust_anchor.md"
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/verifier_contract.md",
-          "label": "verifiers/qbft/verifier_contract.md"
+          "path": "ledgers/besu/proof-schemes/qbft-header.md",
+          "label": "QBFT proof scheme: header"
         },
         {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/qbft/qbft-verifier.md",
-          "label": "QBFT verifiers"
+          "id": "clpr-spec",
+          "path": "ledgers/besu/proof-schemes/qbft-contract.md",
+          "label": "QBFT proof scheme: contract"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
         }
       ]
     },
@@ -1038,9 +1186,9 @@
       "n": 13,
       "phase": "cross",
       "label": "verify proofs",
-      "title": "EIP-1186 account and storage proofs verified",
-      "plain": "Then it checks the proofs that tie the contract, and the queue inside it, to that exact sealed block.",
-      "protocol": "The account proof ties the CLPR Service contract to the header's stateRoot; the storage proofs tie the five queue slots and the anchor hash to that account's storageRoot.",
+      "title": "Account and storage proofs verified",
+      "plain": "Then it checks the proofs that tie the contract, and the channel's queue inside it, to that exact sealed block.",
+      "protocol": "The account proof ties the CLPR Service contract, and its code hash, to the sealed header's state root; the storage proofs tie the channel's proven state, and for a partial bundle the last message's running hash, to that account. Every value comes from the one sealed block.",
       "lit": [
         "svcA",
         "verA"
@@ -1049,8 +1197,8 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/qbft/state_proof.md",
-          "label": "verifiers/qbft/state_proof.md"
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
         }
       ]
     },
@@ -1059,16 +1207,21 @@
       "phase": "cross",
       "label": "hash chain",
       "title": "Progress, replay and running-hash checks",
-      "plain": "Sequence and running hash checks run exactly as on the other leg. The proof system changes; the rules about message integrity do not.",
-      "protocol": "Verification steps 1a–4: a progress criterion must hold; sizes within limits; first id equals received_message_id + 1 and the rest are contiguous; recomputing SHA-256(prev ‖ payload) from received_running_hash must equal anchor_running_hash.",
+      "plain": "Then the bookkeeping. Does the bundle bring anything new? Do its messages follow on from the last one received, with no gap? Messages already received are skipped. Does recomputing the running hash give the proven value? Any mismatch and the whole bundle is rejected.",
+      "protocol": "Bundle processing then checks, in order: the bundle's message count and each DATA payload are within the destination's own limits, its size having been checked before the verifier was called; at least one progress criterion holds; any new endpoint manifest and trust anchor are installed; the message range has no gap, and messages already received are skipped; the running hash recomputed from the stored received running hash over the new messages equals the proven running hash of the last one; and the acknowledgement neither moves backwards nor covers a message never sent. These are the CLPR Service's own checks; they catch verifier bugs, not a compromised verifier.",
       "lit": [
         "svcA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
         }
       ]
     },
@@ -1077,22 +1230,33 @@
       "phase": "cross",
       "label": "gas budget",
       "title": "Connector resolved and the gas budget computed",
-      "plain": "The Hiero-side connector's balance sets the budget for the application call it is about to pay for.",
-      "protocol": "The message's connector_id resolves via (channel_id, connector_id) to the local Connector; a missing one yields CONNECTOR_NOT_FOUND, an unfunded one is slashed and yields CONNECTOR_UNDERFUNDED.",
+      "plain": "The Hiero side looks up the connector that agreed to pay. Under the recommended design, it must be able to cover the worst-case charge before the application runs.",
+      "protocol": "The message's connector id resolves to the local connector on the channel; a missing one gives CONNECTOR_NOT_FOUND. Recommended on Hiero: the worst-case charge is collected before dispatch and unused gas is refunded after, so a connector whose contract balance is below it is underfunded, is slashed, and gets CONNECTOR_UNDERFUNDED. The application gets a share of the transaction's remaining gas, split over the calls still to be made in the bundle, and at most the per-message limit.",
       "lit": [
         "svcA",
         "conA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "333-receiving-routing-and-paying",
-          "label": "design §3.3.3"
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
         },
         {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "21-when-a-connector-is-slashed",
+          "label": "Stakes and bonds §2.1"
         }
       ]
     },
@@ -1102,7 +1266,7 @@
       "label": "onClprMessage()",
       "title": "The Hiero application receives the message and answers it",
       "plain": "The Hiero application receives the message and returns its answer. This is the crossing point for this direction.",
-      "protocol": "The native service dispatches onClprMessage(channelId, sender, messageData) to the contract under a gas cap; the returned bytes become the reply with status SUCCESS, a revert becomes APPLICATION_ERROR.",
+      "protocol": "The native CLPR Service calls the contract's onClprMessage with the channel id, the sender and the message data. A call that succeeds gives SUCCESS, with its returned bytes as the reply; a failed call, or return data that is not bytes, gives APPLICATION_ERROR with empty reply data. A gas budget of zero gives APPLICATION_ERROR with no call and no charge.",
       "lit": [
         "svcA",
         "appA"
@@ -1110,14 +1274,14 @@
       "refs": [
         {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/interfaces/IClprApplication.sol",
-          "label": "IClprApplication.sol"
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         },
         {
-          "doc": "design",
-          "anchor": "333-receiving-routing-and-paying",
-          "label": "design §3.3.3"
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
         }
       ]
     },
@@ -1126,17 +1290,22 @@
       "phase": "cross",
       "label": "settle gas",
       "title": "The connector is charged and the submitter reimbursed",
-      "plain": "The connector pays for the execution and the endpoint that submitted it is reimbursed, with a margin.",
-      "protocol": "The Connector is charged actual_gas_used × (1 + margin_percent/100), all of it paid to the submitting account.",
+      "plain": "Under the recommended design, the connector pays for the execution, with a margin, and the node that submitted the bundle receives the payment.",
+      "protocol": "Recommended charging on Hiero: the execution cost is a flat per-message cost plus the cost of the gas the call used, and the margin applies to the flat part only. The CLPR Service transfers the charge directly from the connector contract's account to the submitting node; there is no administrator fallback.",
       "lit": [
         "conA",
         "epA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "economics",
+          "anchor": "2-payment-to-the-bundle-submitter",
+          "label": "Channel economics §2"
         }
       ]
     },
@@ -1146,49 +1315,64 @@
       "label": "reply queued",
       "title": "The reply is enqueued in the Hiero outbound queue",
       "plain": "The answer goes into the Hiero ledger's outbound queue for this channel, numbered and folded into its running hash the same way the original was.",
-      "protocol": "A ClprMessageReply with the original message_id, status and reply bytes is appended to the Hiero Channel's outbound queue and chained into its sent_running_hash. Every Data Message produces exactly one Response Message, in order.",
+      "protocol": "A REPLY with the original message id, the status and the reply data is appended to the Hiero side's outbound queue and chained into its sent running hash, before the next message is processed. Every DATA message receives exactly one REPLY, in order.",
       "lit": [
         "svcA",
         "qA"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "14-message-queue",
-          "label": "spec §1.4"
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
         },
         {
-          "doc": "design",
-          "anchor": "328-response-ordering-and-correlation",
-          "label": "design §3.2.8"
+          "doc": "messaging",
+          "anchor": "2-message-identifiers-and-queue",
+          "label": "Messaging §2"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
         }
       ]
     },
     {
       "n": 19,
       "phase": "cross",
-      "label": "sync data",
+      "label": "received id",
       "title": "The Hiero side records how far it has received",
-      "plain": "The Hiero side records how far it has received and acknowledged; the other ledger reads those numbers on the next sync and uses them to know what it can forget.",
-      "protocol": "The native service updates its ChannelSyncData (received_message_id, status, next_message_id) and received_running_hash. The EVM peer will read received_message_id on the next sync and treat it as its acked_message_id.",
+      "plain": "The Hiero side records how far it has received. The EVM ledger reads that number, proven, in the next bundle sent back, and uses it to know what it can delete.",
+      "protocol": "After dispatch the Hiero side's received message id and received running hash advance to the bundle's last message. The next bundle to the EVM ledger proves them as queue metadata, and the EVM side takes that received message id as its acknowledgement.",
       "lit": [
         "svcA"
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "321-channel-queue-data",
-          "label": "design §3.2.1"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "6-shared-channel-state",
+          "label": "Channel setup §6"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "9-acknowledgement",
+          "label": "Messaging §9"
         }
       ]
     },
     {
       "n": 20,
       "phase": "return",
-      "label": "TSS signature",
+      "label": "threshold signature",
       "title": "The Hiero network signs the block root",
-      "plain": "The return leg is proved with the validators' joint signature over the block, the same mechanism the other direction used on its way out.",
-      "protocol": "Consensus signs the block root with the hinTS aggregate BLS12-381 threshold signature; the endpoint fetches the finished StateProof.",
+      "plain": "The return leg is proved with the Hiero nodes' joint signature over the block, the mechanism the other direction used on its way out.",
+      "protocol": "Hiero nodes sign block roots with a hinTS threshold signature, valid only from nodes holding more than half of the consensus weight. Toward an EVM ledger the endpoint uses the hinTS proof scheme, anchored to the current hinTS verification key, and proves from the starting state of a directly signed, and so final, block.",
       "lit": [
         "chainA"
       ],
@@ -1196,18 +1380,24 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/state_proof.md",
-          "label": "verifiers/hiero/state_proof.md"
+          "path": "ledgers/hiero/proof-schemes/hints.md",
+          "label": "Hiero proof scheme: hinTS"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/bundle-aggregation.md",
+          "label": "Hiero bundle aggregation"
         }
       ]
     },
     {
       "n": 21,
       "phase": "return",
-      "label": "fetch proof",
-      "title": "The Hiero endpoint fetches the StateProof for the reply",
-      "plain": "The endpoint fetches the proof tying the reply to that signed block, then sends it across; the destination dry-runs it before submitting.",
-      "protocol": "The endpoint retrieves the Channel leaf and one ClprMessageValue leaf per message, with their SHA-384 Merkle paths to the signed root, sends the bundle across the stream, and the EVM endpoint simulates submitBundle with eth_call before paying.",
+      "label": "gather proof",
+      "title": "The Hiero endpoint gathers the reply and its proof",
+      "plain": "The endpoint collects the proof tying the reply to that signed block, then sends it across; the receiving endpoint previews it before submitting.",
+      "protocol": "The endpoint reads the channel record and the messages from one signed snapshot, with a Merkle path for each to the signed block root, and sends the bundle in a later sync cycle. Recommended practice: the EVM endpoint previews the submission against pending state and skips it if it would revert.",
       "lit": [
         "epA",
         "epB",
@@ -1217,13 +1407,19 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/state_proof.md",
-          "label": "verifiers/hiero/state_proof.md"
+          "path": "ledgers/hiero/bundle-aggregation.md",
+          "label": "Hiero bundle aggregation"
         },
         {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/proof-schemes/hints.md",
+          "label": "Hiero proof scheme: hinTS"
+        },
+        {
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
         }
       ]
     },
@@ -1232,17 +1428,23 @@
       "phase": "return",
       "label": "submitBundle()",
       "title": "The reply bundle lands on the EVM CLPR Service",
-      "plain": "The reply is submitted back on this ledger as an ordinary transaction, and its acceptance is announced on-chain.",
-      "protocol": "Any account may call submitBundle(channelId, proofBytes). The EVM implementation emits BundleProcessed once the bundle is accepted.",
+      "plain": "The reply is submitted on this ledger as an ordinary transaction. The reference contracts log an event when a bundle is processed in full.",
+      "protocol": "Any account may call submitBundle with the channel id and the bundle. The reference contracts emit an event when the bundle is processed in full.",
       "lit": [
         "epB",
         "svcB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "64-messaging",
-          "label": "spec §6.4"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
         },
         {
           "doc": "repo",
@@ -1257,24 +1459,34 @@
       "phase": "return",
       "label": "verifyBundle()",
       "title": "The verifier checks the threshold signature and the Merkle paths",
-      "plain": "The verifier checks the joint signature and the proof paths against the identity on record for this channel.",
-      "protocol": "A Hiero peer's trust anchor is its ledger_id, and the verifier checks the hinTS aggregate signature against it. The EVM HieroVerifier decodes the StateProof, derives the SHA-384 block root, has TSSVerifier check the signature through the EIP-2537 BLS precompiles against its constructor's ledgerId, and walks the leaf paths; Channel.trust_anchor serves only as a cache.",
+      "plain": "The verifier checks the Hiero nodes' joint signature and the proof paths against the signing key on record for this channel. If the network's roster has changed since, the bundle also proves the chain of keys from the recorded one to the new one. The endpoints that carried the bundle are trusted for none of it.",
+      "protocol": "The CLPR Service calls the channel's verifier with the bundle, the stored trust anchor and the channel context; the call is read-only and the verifier keeps no per-channel state. Under the hinTS proof scheme the trust anchor names one hinTS verification key. The verifier checks the Merkle paths to the block root of the channel record, the last message and, when present, the endpoint manifest; the earlier messages are bound by the running hash. It checks the threshold signature on that root, which counts only from nodes holding more than half of the consensus weight. A bundle signed under a later key carries a provenance chain, each key signed by its predecessor; the verifier then returns a trust anchor change, stored before any message is processed. It returns the queue metadata, the messages, and the last message's id and running hash.",
       "lit": [
         "svcB",
         "verB"
       ],
       "refs": [
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/hiero/HieroVerifier.sol",
-          "label": "HieroVerifier.sol"
+          "doc": "verifierIface",
+          "anchor": "3-verifybundle",
+          "label": "Verifier interface §3"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/hiero/verifier_contract.md",
-          "label": "verifiers/hiero/verifier_contract.md"
+          "path": "ledgers/hiero/proof-schemes/hints.md",
+          "label": "Hiero proof scheme: hinTS"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/verifier-api.md",
+          "label": "EVM verifier API"
         }
       ]
     },
@@ -1283,22 +1495,21 @@
       "phase": "return",
       "label": "hash chain",
       "title": "Progress, replay and running-hash checks",
-      "plain": "Sequence and running hash are checked before any reply is handed to an application.",
-      "protocol": "The same steps 1a–4 of the verification algorithm run on the EVM side, where the contracts skip leading messages they already hold and fold the running hash as sha256(prev ‖ sha256(payload)) rather than SHA-256(prev ‖ payload).",
+      "plain": "Sequence and running hash are checked before any reply is handed to an application, by the same algorithm as on the Hiero side.",
+      "protocol": "Bundle processing then checks, in order: the bundle's message count and each DATA payload are within the destination's own limits, its size having been checked before the verifier was called; at least one progress criterion holds; any new endpoint manifest and trust anchor are installed; the message range has no gap, and messages already received are skipped; the running hash recomputed from the stored received running hash over the new messages equals the proven running hash of the last one; and the acknowledgement neither moves backwards nor covers a message never sent. These are the CLPR Service's own checks; they catch verifier bugs, not a compromised verifier.",
       "lit": [
         "svcB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
         },
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/BundleLib.sol",
-          "label": "BundleLib.sol"
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
         }
       ]
     },
@@ -1307,17 +1518,22 @@
       "phase": "return",
       "label": "ordering",
       "title": "Response ordering verified against the retained message",
-      "plain": "The reply is matched against the oldest message still waiting for one. Out-of-order delivery pauses the channel instead.",
-      "protocol": "The reply's message_id must match the oldest unresponded Data Message retained in the outbound queue; a mismatch sets PAUSED and rejects the bundle. The EVM contracts pause without reverting: nothing is dispatched, and the bundle's acknowledgement is kept.",
+      "plain": "Replies have to come back in the order the messages went out. If one arrives out of turn, nothing in that bundle is delivered and the channel pauses. It resumes by itself once a bundle arrives in the right order.",
+      "protocol": "Every REPLY must answer the oldest unanswered DATA message in the outbound queue; the walk skips REPLY and CONTROL entries. A mismatch is a response ordering violation: nothing in the bundle is dispatched, an ACTIVE channel becomes PAUSED, and sends are rejected while queued messages keep syncing. The bundle's manifest and trust anchor changes still apply, and the CLPR Service may also apply its acknowledgement. The first bundle accepted without a violation returns the channel to ACTIVE.",
       "lit": [
         "svcB",
         "qB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "45-response-ordering-verification",
-          "label": "spec §4.5"
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "6-pause-and-resume",
+          "label": "Channel state transitions §6"
         }
       ]
     },
@@ -1326,37 +1542,47 @@
       "phase": "close",
       "label": "onClprResponse()",
       "title": "The EVM application is called back",
-      "plain": "Your original contract is called back with the status and the other side's answer, closing the loop.",
-      "protocol": "IClprApplication.onClprResponse(channelId, messageId, status, responseData) is invoked best-effort on the sender, which must be a contract; a revert in the callback is caught and ignored.",
+      "plain": "The original contract is called back with the status and the other side's answer, closing the loop.",
+      "protocol": "The CLPR Service calls onClprResponse on the original sender with the message id, the status and the reply data, but only if the sender is a contract. The call is best effort: a revert is ignored and the reply stays delivered. Under the recommended charging, the source connector pays for the gas the callback used; a failed charge is not slashed.",
       "lit": [
         "svcB",
         "appB"
       ],
       "refs": [
         {
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
+        },
+        {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/interfaces/IClprApplication.sol",
-          "label": "IClprApplication.sol"
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
         }
       ]
     },
     {
       "n": 27,
       "phase": "close",
-      "label": "ReplyDelivered",
-      "title": "ReplyDelivered emitted and the original message deleted",
-      "plain": "One transaction does all of it: the service removes your original message from the queue, calls your contract back, then announces the delivery on-chain.",
-      "protocol": "The matched Data Message, retained past acknowledgement as the ordering reference, is deleted. The EVM service does this in the same transaction as the callback, in this order: it deletes the queue slot, calls onClprResponse, then emits ReplyDelivered.",
+      "label": "delivered",
+      "title": "Reply delivered; the original message deleted",
+      "plain": "The original message is deleted from the outbound queue now that its reply has arrived. In the reference contracts one transaction does all of it: it removes the message, calls the sending contract back, then announces the delivery on-chain.",
+      "protocol": "The matched DATA message, kept past acknowledgement as the ordering reference, is deleted when its REPLY is processed. The reference contracts do this in the same transaction as the callback, in this order: they delete the queue entry, call onClprResponse, then emit a delivery event.",
       "lit": [
         "svcB",
         "qB"
       ],
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "44-message-lifecycle",
-          "label": "spec §4.4"
+          "doc": "messaging",
+          "anchor": "9-acknowledgement",
+          "label": "Messaging §9"
         },
         {
           "doc": "repo",
@@ -1378,7 +1604,7 @@
       "label": "complete",
       "title": "Round trip complete",
       "plain": "The reverse journey closes the same way the forward one does, proved against each ledger's own consensus.",
-      "protocol": "Two bundles, two proofs, two verifications, one reply; on the EVM side, the service contract's MessageQueued and ReplyDelivered events record the send and the delivery.",
+      "protocol": "Two bundles, two proofs, two verifications, one reply. On the EVM side the reference contracts' events record the send and the delivery.",
       "lit": [
         "appA",
         "svcA",
@@ -1389,9 +1615,15 @@
       ],
       "refs": [
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-smart-contracts",
+          "path": "docs/bundle-flow.md",
+          "label": "docs/bundle-flow.md"
         }
       ]
     }

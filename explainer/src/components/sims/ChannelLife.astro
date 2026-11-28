@@ -1,10 +1,12 @@
 ---
 /**
- * Channel lifecycle state machine, per spec §2.1.1 and design §3.1.3.
- * detail=true adds the exact trigger conditions to each transition: short mono labels beside the
- * edges and the full condition on the log's first line. The flag is rendered at build time as
+ * Channel lifecycle state machine: the six statuses and the transitions of Channel state
+ * transitions §4 and §5 (bundle transitions, the administrative close and the recovery close).
+ * detail=true adds the trigger of each transition: short mono labels beside the edges and the
+ * condition, in words, on the log's first line. The flag is rendered at build time as
  * data-detail on the root (Astro's module scripts have no document.currentScript).
  */
+import Refs from '@kse/components/Refs.astro';
 const { id = 'channel-life', detail = false } = Astro.props as { id?: string; detail?: boolean };
 // kind: ok = normal operation, bad = paused, trans = in progress (dashed), end = terminal / nothing
 const S = [
@@ -13,8 +15,15 @@ const S = [
   { k: 'ACTIVE', x: 500, y: 70, w: 112, label: 'ACTIVE', sub: 'normal operation', kind: 'ok' },
   { k: 'CLOSING', x: 720, y: 70, w: 100, label: 'CLOSING', sub: 'no new sends', kind: 'trans' },
   { k: 'PAUSED', x: 480, y: 180, w: 130, label: 'PAUSED', sub: 'out-of-order replies', kind: 'bad' },
-  { k: 'DRAINED', x: 720, y: 180, w: 110, label: 'DRAINED', sub: 'all our data acked', kind: 'trans' },
+  { k: 'DRAINED', x: 720, y: 180, w: 110, label: 'DRAINED', sub: 'sends answered', kind: 'trans' },
   { k: 'CLOSED', x: 720, y: 290, w: 100, label: 'CLOSED', sub: 'terminal', kind: 'end' },
+];
+const refs = [
+  { doc: 'transitions', anchor: '4-status-transitions', label: 'Channel state transitions §4' },
+  { doc: 'transitions', anchor: '5-closing-and-draining', label: 'Channel state transitions §5' },
+  { doc: 'transitions', anchor: '6-pause-and-resume', label: 'Channel state transitions §6' },
+  { doc: 'channelSetup', anchor: '2-registration', label: 'Channel setup §2' },
+  { doc: 'service', anchor: '25-closing-a-channel', label: 'CLPR Service §2.5' },
 ];
 const arr = `${id}-arr`;
 const arrOk = `${id}-arr-ok`;
@@ -39,7 +48,7 @@ const arrOk = `${id}-arr-ok`;
           <path d="M720,95 V155" pathLength="1" data-edge="CLOSING-DRAINED" />
           <path d="M720,205 V265" pathLength="1" data-edge="DRAINED-CLOSED" />
         </g>
-        <text x="170" y="40" class="t small center muted">deleted</text>
+        <text x="170" y="40" class="t small center muted">removed</text>
         {detail && (
           <g class="triggers">
             <text x="170" y="27" class="t mono center muted">closeChannel</text>
@@ -50,11 +59,11 @@ const arrOk = `${id}-arr-ok`;
             <text x="472" y="116" class="t mono muted" text-anchor="end">reply mismatch</text>
             <text x="528" y="116" class="t mono muted">ordered bundle</text>
             <text x="605" y="176" class="t mono center muted">closeChannel</text>
-            <text x="605" y="188" class="t mono center muted">or peer CLOSING</text>
-            <text x="712" y="140" class="t mono muted" text-anchor="end">queue acked</text>
-            <text x="712" y="228" class="t mono muted" text-anchor="end">peer DRAINED/CLOSED</text>
-            <text x="712" y="240" class="t mono muted" text-anchor="end">+ queue acked</text>
-            <text x="712" y="252" class="t mono muted" text-anchor="end">or closeChannel</text>
+            <text x="712" y="140" class="t mono muted" text-anchor="end">data answered</text>
+            <text x="712" y="222" class="t mono muted" text-anchor="end">peer DRAINED/CLOSED</text>
+            <text x="712" y="234" class="t mono muted" text-anchor="end">+ ours acked</text>
+            <text x="712" y="246" class="t mono muted" text-anchor="end">+ theirs received</text>
+            <text x="712" y="258" class="t mono muted" text-anchor="end">or recovery close</text>
           </g>
         )}
         {S.map((s) => (
@@ -67,6 +76,7 @@ const arrOk = `${id}-arr-ok`;
       </svg>
     </div>
     <p class="sim__scroll-note">Wider than a phone; scroll it sideways if you need to.</p>
+    <Refs refs={[...refs]} />
   </div>
   <div class="sim__controls">
     <div class="group">
@@ -80,8 +90,8 @@ const arrOk = `${id}-arr-ok`;
       <button class="btn" type="button" data-ev="ooo">bundle: replies out of order</button>
       <button class="btn" type="button" data-ev="good">bundle: replies in order</button>
       <button class="btn" type="button" data-ev="peerclosing">bundle: peer says CLOSING</button>
-      <button class="btn" type="button" data-ev="acked">bundle: peer acked all our data</button>
-      <button class="btn" type="button" data-ev="peerdrained">bundle: peer DRAINED and our queue empty</button>
+      <button class="btn" type="button" data-ev="acked">bundle: last reply to our data</button>
+      <button class="btn" type="button" data-ev="peerdrained">bundle: peer DRAINED, all acked and received</button>
     </div>
     <span class="spacer"></span>
     <button class="btn" type="button" data-ev="reset">Reset</button>
@@ -121,8 +131,8 @@ const arrOk = `${id}-arr-ok`;
     };
     const words: Record<St, string> = {
       NONE: 'no channel yet', PENDING: 'PENDING: the id is claimed but nothing can be sent', ACTIVE: 'ACTIVE: messages flow both ways',
-      PAUSED: 'PAUSED: replies arrived out of order; no new sends until the peer fixes it', CLOSING: 'CLOSING: no new sends; everything in flight completes',
-      DRAINED: 'DRAINED: every data message we sent was acknowledged; waiting on the peer', CLOSED: 'CLOSED: terminal; after one final close-notification, endpoints stop syncing',
+      PAUSED: 'PAUSED: a reply arrived out of order; no new sends, and the next bundle without a violation resumes the channel', CLOSING: 'CLOSING: no new sends; every DATA message we sent is still answered',
+      DRAINED: 'DRAINED: every DATA message we sent has been answered; the peer\'s messages are still processed', CLOSED: 'CLOSED: terminal; every bundle and every send is rejected, and endpoints start no more sync cycles',
     };
     // Where each event leads from a given state (the edge it lights and the exact trigger, for detail mode).
     const target: Record<string, Partial<Record<St, St>>> = {
@@ -132,26 +142,31 @@ const arrOk = `${id}-arr-ok`;
       acked: { CLOSING: 'DRAINED' }, peerdrained: { DRAINED: 'CLOSED' },
     };
     const trigger: Record<string, string> = {
-      register: 'registerChannel(commitment); commitment = keccak256(channel_id ‖ public_key)',
-      complete: 'completeChannel: preimage revealed, signature over keccak256(channel_id), verifyConfig ok',
-      'close@PENDING': 'closeChannel on a PENDING claim: the claim is deleted',
-      'close@ACTIVE': 'closeChannel (admin only): sendMessage rejected, in flight completes',
-      'close@PAUSED': 'closeChannel (admin only): sendMessage rejected, in flight completes',
-      'close@DRAINED': 'closeChannel on DRAINED (recovery): outbound queue already fully acked',
-      ooo: 'response id != oldest unresponded Data Message id',
-      good: 'next inbound bundle has correctly ordered responses',
-      peerclosing: 'peer ChannelSyncData.status in {CLOSING, DRAINED, CLOSED}',
-      acked: 'no Data Message with id > acked_message_id left in the outbound queue',
-      peerdrained: 'peer status DRAINED or CLOSED and acked_message_id >= next_message_id - 1',
+      register: 'registerChannel: an ownership commitment is recorded as pending',
+      complete: 'completeChannel: commitment matched, key proven, verifier named, peer configuration proven',
+      'close@PENDING': 'recommended administration: closing a PENDING claim removes its commitment',
+      'close@ACTIVE': 'administrative close: sends rejected; DRAINED at once if no DATA message is queued',
+      'close@PAUSED': 'administrative close: sends rejected; DRAINED at once if no DATA message is queued',
+      'close@DRAINED': 'recovery close: the peer has acknowledged every message of ours',
+      ooo: 'bundle: a REPLY does not answer the oldest unanswered DATA message',
+      good: 'bundle accepted without a response ordering violation',
+      peerclosing: 'bundle: the peer status in its queue metadata is CLOSING, DRAINED or CLOSED',
+      'peerclosing@PAUSED': 'bundle: resumes to ACTIVE, then the peer status CLOSING, DRAINED or CLOSED',
+      acked: 'bundle: no DATA message left in the outbound queue',
+      peerdrained: 'bundle: peer DRAINED or CLOSED, every message of ours acknowledged, every message of the peer received',
     };
-    const edgeFor = (ev: string, from: St) => { const to = target[ev]?.[from]; return to ? `${from}-${to}` : ''; };
-    function paintEdges(lit: string) {
+    // A bundle reaches CLOSING from PAUSED only by first resuming to ACTIVE (Channel state transitions §4).
+    const route: Record<string, string[]> = { 'peerclosing@PAUSED': ['PAUSED-ACTIVE', 'ACTIVE-CLOSING'] };
+    const edgesFor = (ev: string, from: St): string[] => { const to = target[ev]?.[from]; return route[`${ev}@${from}`] ?? (to ? [`${from}-${to}`] : []); };
+    const edgeFor = (ev: string, from: St) => edgesFor(ev, from)[0] ?? '';
+    function paintEdges(litKeys: string[]) {
       for (const e of edges) {
         const key = e.dataset.edge!;
         const [from] = key.split('-');
         const avail = from === st && allowed[st].some((ev) => edgeFor(ev, st) === key);
-        e.classList.toggle('avail', avail && key !== lit);
-        if (key === lit) {
+        const isLit = litKeys.includes(key);
+        e.classList.toggle('avail', avail && !isLit);
+        if (isLit) {
           e.classList.remove('lit'); void e.getBoundingClientRect(); // restart the draw-on animation
           e.classList.add('lit'); e.setAttribute('marker-end', arrOk);
         } else { e.classList.remove('lit'); e.removeAttribute('marker-end'); }
@@ -160,7 +175,7 @@ const arrOk = `${id}-arr-ok`;
     function set(next: St, ev: string, why: string, init = false) {
       const prev = st; st = next;
       for (const g of Array.from(root.querySelectorAll<SVGGElement>('g[data-state]'))) g.classList.toggle('on', g.dataset.state === st);
-      paintEdges(ev ? `${prev}-${next}` : '');
+      paintEdges(ev ? edgesFor(ev, prev) : []);
       for (const b of buttons) b.disabled = b.dataset.ev !== 'reset' && !allowed[st].includes(b.dataset.ev!);
       const changed = pill.textContent !== (st === 'NONE' ? 'no channel yet' : st);
       pill.textContent = st === 'NONE' ? 'no channel yet' : st;
@@ -168,24 +183,28 @@ const arrOk = `${id}-arr-ok`;
       if (changed) pill.classList.add('pulse');
       if (ev) {
         const label = buttons.find((b) => b.dataset.ev === ev)?.textContent ?? ev;
-        line.textContent = detailMode ? `${prev} -> ${next} · ${trigger[`${ev}@${prev}`] ?? trigger[ev]}` : `${prev} -> ${next} · ${label}`;
+        const via = route[`${ev}@${prev}`] ? ' -> ACTIVE' : '';
+        line.textContent = detailMode ? `${prev}${via} -> ${next} · ${trigger[`${ev}@${prev}`] ?? trigger[ev]}` : `${prev}${via} -> ${next} · ${label}`;
       } else line.textContent = `state: ${st}`;
       if (!init) log.innerHTML = why ? `${why} <br/><strong>${words[st]}</strong>` : words[st];
     }
     pill.addEventListener('animationend', () => pill.classList.remove('pulse'));
     const handlers: Record<string, () => void> = {
-      register: () => set('PENDING', 'register', 'Anyone may register a 32-byte ownership commitment, keccak256(channel_id ‖ public_key). Neither value is revealed yet, so nobody can race to claim the same id on the other ledger.'),
-      complete: () => set('ACTIVE', 'complete', 'The registrant reveals the channel id and public key, proves control of the key with a signature, names the verifier contract (fixed for life), and supplies proofs of the peer\'s configuration and endpoint list. The service verifies all of it.'),
+      register: () => set('PENDING', 'register', 'Anyone may register an ownership commitment that binds a channel id to the registrant\'s key. Neither the id nor the key is revealed yet, and no channel record exists: bundles and sends are rejected.'),
+      complete: () => set('ACTIVE', 'complete', 'The registrant reveals the channel id and public key, proves control of the key with a signature, names the verifier contract (fixed for the life of the channel), and supplies proofs of the peer\'s ledger configuration and endpoint manifest. The CLPR Service checks all of it and creates the channel.'),
       close: () => {
-        if (st === 'PENDING') set('NONE', 'close', 'An abandoned claim is simply deleted; no messages were ever exchanged.');
-        else if (st === 'ACTIVE' || st === 'PAUSED') set('CLOSING', 'close', 'Only the CLPR Service admin can close. From ACTIVE or PAUSED the channel starts a graceful drain: no new sends, but everything in flight still completes. The peer learns of it through the status carried in the next sync.');
-        else if (st === 'DRAINED') set('CLOSED', 'close', 'Recovery path: if the peer\'s endpoint can never deliver its final close-notification, the admin closes a DRAINED channel directly. Nothing is abandoned because the outbound queue is already fully acknowledged.');
+        if (st === 'PENDING') set('NONE', 'close', 'In the recommended administration, closing a PENDING claim removes its commitment; no channel was ever created.');
+        else if (st === 'ACTIVE' || st === 'PAUSED') set('CLOSING', 'close', 'The administrative close. Who may close a channel is a deployment choice. No new sends; the DATA messages already sent are still answered. If no DATA message is waiting for its reply, the channel goes on to DRAINED in the same step. The peer learns of it from the status in the queue metadata of the next bundle.');
+        else if (st === 'DRAINED') set('CLOSED', 'close', 'The recovery close: when no bundle from the peer will close the channel, the administration closes a DRAINED channel directly. It requires that the peer has acknowledged every message of this side, so nothing of ours is abandoned.');
       },
-      ooo: () => set('PAUSED', 'ooo', 'A reply arrived that does not match the oldest unanswered data message. That means the peer\'s reply generation is broken, so the channel pauses rather than delivering out of order. Nothing from the bad bundle is dispatched.'),
-      good: () => set('ACTIVE', 'good', 'A bundle with correctly ordered replies arrived. The channel resumes on its own; no admin action is needed.'),
-      peerclosing: () => set('CLOSING', 'peerclosing', 'The peer\'s sync data says CLOSING (or DRAINED, or CLOSED). Our side follows into CLOSING so both drain together.'),
-      acked: () => set('DRAINED', 'acked', 'No data message with an id above acked_message_id remains in our outbound queue: the peer has everything we sent. Replies we generated while closing may still be in flight; they drain through this state.'),
-      peerdrained: () => set('CLOSED', 'peerdrained', 'The peer reports DRAINED or CLOSED and our own queue is fully acknowledged (acked_message_id ≥ next_message_id − 1). Both sides are done. The endpoint\'s last duty is one close-notification bundle to the peer.'),
+      ooo: () => set('PAUSED', 'ooo', 'A REPLY arrived that does not answer the oldest unanswered DATA message: a response ordering violation. It shows that the peer\'s outbound queue is inconsistent, so the channel pauses and no message of that bundle is processed. Applications cannot send; queued messages still sync to the peer.'),
+      good: () => set('ACTIVE', 'good', 'The first bundle accepted without a response ordering violation returns the channel to ACTIVE, and is then processed normally. No admin action is needed; the peer has to correct its outbound queue.'),
+      peerclosing: () => {
+        const fromPaused = st === 'PAUSED';
+        set('CLOSING', 'peerclosing', `The queue metadata in the bundle shows the peer is CLOSING (or DRAINED, or CLOSED). Our side follows into CLOSING so both drain together.${fromPaused ? ' From PAUSED the bundle first resumes the channel to ACTIVE, then moves it to CLOSING.' : ''}`);
+      },
+      acked: () => set('DRAINED', 'acked', 'The REPLY to our last DATA message arrived: no DATA message is left in our outbound queue, so every one we sent has been answered. REPLY messages we generated for the peer can still be unacknowledged; the peer\'s messages are still delivered and answered in this state.'),
+      peerdrained: () => set('CLOSED', 'peerdrained', 'The bundle shows that the peer is DRAINED or CLOSED, that the peer has acknowledged every message we sent, and that we have received every message in the peer\'s proven queue. Both sides are done. There is no close notification: an endpoint may still answer a sync with a bundle that reports CLOSED, which lets a DRAINED peer close too.'),
       reset: () => set('NONE', '', ''),
     };
     for (const b of buttons) {

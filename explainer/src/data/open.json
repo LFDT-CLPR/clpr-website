@@ -1,89 +1,75 @@
 {
-  "$comment": "What the design document itself marks as unresolved or as a caution for anyone relying on it. marker \"‼️\" rows are the passages the document flags with that sign, one row each, so check-data.mjs can tell when one is added or resolved; marker \"prose\" rows are gaps the document states in running text. plain is the site's short reading of each; optionsDoc points at the separate list of possible changes to the specification.",
+  "$comment": "The open issues of the specification, one row per OI-n heading of protocol/open-issues.md, so check-data.mjs can tell when one is added or resolved. plain is the site's short reading of the problem and of the current behaviour; refs point at the issue's own heading first.",
   "open": [
     {
-      "id": "ledger-configuration",
-      "marker": "‼️",
-      "title": "Anyone can register a channel claiming any chain id",
-      "plain": "Channel creation needs nobody's permission, so anyone can construct a ledger configuration with any chain id they like. An application has to check for itself that a channel really leads to the ledger it intends; a channel's existence proves nothing about its peer.",
+      "id": "config-proof-scope",
+      "title": "What the configuration proof must prove is not settled",
+      "plain": "When a channel is opened, its verifier returns the peer's identity, limits, first trust anchor and endpoint manifest, and the channel stores them. The specification does not say which of these values the proof must establish from the peer ledger's committed state and which a verifier may accept as supplied. The first trust anchor cannot be checked against anything already trusted, so unless the verifier fixes it itself, it is accepted on first use and needs a check outside the protocol. For now each proof scheme decides: one checks the configuration against a ledger identity its verifier holds, the others take the starting authority from the proof itself, and channel users rely on the registrant's choice of verifier and on their own checks.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "311-ledger-identity-and-configuration",
-          "label": "design §3.1.1"
-        }
+        { "doc": "openIssues", "anchor": "oi-1-what-the-configuration-proof-must-authenticate", "label": "Open issues OI-1" },
+        { "doc": "verifierIface", "anchor": "2-verifyconfig", "label": "Verifier interface §2" }
       ]
     },
     {
-      "id": "sybil-endpoints",
-      "marker": "‼️",
-      "title": "Open endpoint registration rests on admin curation",
-      "plain": "Where anyone can register an endpoint, keeping the list honest rests mainly on the admin admitting each one; the bond adds friction but is not sized against attack costs on any particular chain. Peers should be picked with some randomness so no two endpoints pair up for good. On Hiero the network's own stake-weighted consensus covers this.",
+      "id": "qbft-epoch-config-proof",
+      "title": "The QBFT epoch proof scheme has no configuration proof",
+      "plain": "Opening a channel needs a proof of the peer ledger's configuration. The QBFT epoch proof scheme defines none, so there is no specified proof for opening a channel whose verifier uses it. The other two QBFT proof schemes define forms that are candidates.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "312-endpoint-manifest",
-          "label": "design §3.1.2"
-        }
+        { "doc": "openIssues", "anchor": "oi-2-configuration-proof-format-for-the-qbft-epoch-scheme", "label": "Open issues OI-2" }
       ]
     },
     {
-      "id": "upgradeable-verifiers",
-      "marker": "‼️",
-      "title": "A verifier behind an upgradeable proxy can change under a channel",
-      "plain": "The verifier's address is fixed for a channel's life, but the contract at that address may be a proxy whose logic can be replaced without the protocol noticing. The protocol allows it; anyone evaluating a channel should check whether its verifier is a proxy and who holds the upgrade key.",
+      "id": "undrained-replies",
+      "title": "Messages on a channel that cannot drain may never get a reply",
+      "plain": "A channel paused because the peer's replies came out of order stays paused until the peer corrects them, and a channel closed from that state cannot drain until then. If the peer never corrects them, or the channel was closed because its verifier is no longer trusted, messages sent on it might never receive a reply, and a connector with messages in flight cannot be removed. Today the channel stays paused or closing indefinitely, and applications reconcile those messages outside the protocol.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
-        }
+        { "doc": "openIssues", "anchor": "oi-3-messages-left-without-replies-when-a-channel-cannot-drain", "label": "Open issues OI-3" },
+        { "doc": "transitions", "anchor": "6-pause-and-resume", "label": "Channel state transitions §6" }
+      ]
+    },
+    {
+      "id": "sending-compensation",
+      "title": "Sending bundles to the peer is unpaid",
+      "plain": "An endpoint is paid only for the bundles it submits to its own ledger; building proofs and serving bundles to the peer earns nothing. An endpoint can therefore receive without sending, and on a ledger that mostly sends, the margin on received messages might not pay for running endpoints. The only mitigation today is that endpoints prefer peers that deliver bundles to them.",
+      "refs": [
+        { "doc": "openIssues", "anchor": "oi-4-compensation-for-sending-bundles", "label": "Open issues OI-4" },
+        { "doc": "economics", "anchor": "2-payment-to-the-bundle-submitter", "label": "Channel economics §2" }
       ]
     },
     {
       "id": "stake-sizing",
-      "marker": "‼️",
-      "title": "How large a connector's stake must be is not yet quantified",
-      "plain": "A connector's locked stake must cover the worst case: on the receiving side, the cost of running in-flight messages from a connector that has run dry; on the sending side, the fines for failed deliveries. A bond that is too small lets an attacker drain endpoints of more execution cost than the fines can repay. The minimum is a design parameter still to be quantified before production.",
+      "title": "How large a connector's stake must be is not yet derived",
+      "plain": "A connector's locked stake has to cover the worst-case losses its messages can cause: on the destination, the execution cost of messages that arrive while it cannot pay; on the source, the penalties for failure replies. A stake that is too small lets a connector authorize a burst of messages that costs endpoints more than slashing recovers. Each CLPR Service enforces a configured minimum, but no method derives it from the connector's possible exposure.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "334-failure-consequences-and-slashing",
-          "label": "design §3.3.4"
-        }
+        { "doc": "openIssues", "anchor": "oi-5-calibration-of-the-connector-stake", "label": "Open issues OI-5" },
+        { "doc": "stakes", "anchor": "1-connector-stake", "label": "Stakes and bonds §1" }
       ]
     },
     {
-      "id": "queue-monopolization",
-      "marker": "‼️",
-      "title": "One connector could fill a shared queue",
-      "plain": "A single connector could approve enough messages to fill a channel's queue and block everyone else on it. Candidate answers: money escrowed per message and returned when the reply arrives, a per-connector share of the queue, or prices that rise as the queue fills. Unresolved before production.",
+      "id": "qbft-epoch-catch-up",
+      "title": "QBFT epoch catch-up can stall across a validator change",
+      "plain": "Under the QBFT epoch proof scheme a bundle carries a limited number of epoch boundary headers. When a peer's trust anchor is further behind than that, the bundle proves state at the peer ledger's latest block, and the validator set has changed by more than the quorum overlap tolerates, the verifier rejects the bundle and the trust anchor does not advance, so the peer cannot catch up. Today catch-up over several bundles succeeds only when the validators named in the last boundary header a bundle carries still reach a quorum among the signers of its block.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "335-open-economic-design-issues",
-          "label": "design §3.3.5"
-        }
+        { "doc": "openIssues", "anchor": "oi-6-qbft-epoch-catch-up-across-a-validator-change", "label": "Open issues OI-6" }
       ]
     },
     {
-      "id": "admin-incentive",
-      "marker": "prose",
-      "title": "The admin has duties but no reward",
-      "plain": "The service admin must close a compromised channel promptly and gains nothing in the protocol for doing so: a known gap between responsibility and motivation.",
+      "id": "protocol-version-setup",
+      "title": "The protocol version is not checked when a channel opens",
+      "plain": "Both sides of a channel must use the same protocol version, but opening a channel does not check the peer's, so a channel can be opened between CLPR Services on different versions. The mismatch shows only when the peer's first configuration update arrives and is rejected.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "46-clpr-service-admin",
-          "label": "design §4.6"
-        }
+        { "doc": "openIssues", "anchor": "oi-7-protocol-version-at-channel-setup", "label": "Open issues OI-7" },
+        { "doc": "ledgerConfig", "anchor": "4-protocol-version", "label": "Ledger configuration §4" }
+      ]
+    },
+    {
+      "id": "hints-wraps-parameters",
+      "title": "The hinTS with WRAPS proof scheme does not give its verification parameters",
+      "plain": "The scheme describes the signature layout and the checks a verifier performs, but not the keys, parameters and proof layout a verifier needs, nor the full hinTS verification steps. Without them, an independent verifier for this scheme cannot be built from the specification alone.",
+      "refs": [
+        { "doc": "openIssues", "anchor": "oi-8-hints-and-wraps-verification-parameters", "label": "Open issues OI-8" },
+        { "doc": "repo", "id": "clpr-spec", "path": "ledgers/hiero/proof-schemes/hints-wraps.md", "label": "Hiero proof scheme: hinTS with WRAPS" }
       ]
     }
-  ],
-  "optionsDoc": {
-    "doc": "repo",
-    "id": "clpr-spec",
-    "path": "clpr-options-to-consider.md",
-    "label": "options to consider"
-  }
+  ]
 }

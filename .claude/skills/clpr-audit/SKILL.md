@@ -14,10 +14,10 @@ and never edits: its output is a report the maintainer or the `clpr-sync` skill 
 | Surface | Where | Judged against | Input |
 |---|---|---|---|
 | Explainer sections and data rows, with their figures and simulations | `explainer/src/content/*.mdx`, `explainer/src/data/*.json` | each section's or row's `refs` | `kse audit-input` |
-| Explainer journey, titles, act text, pack text and page chrome | `journey.json`, `sections.json`, `pack.json`, `SiteHeader`, `SiteFooter`, `Repos`, pages | the steps' refs; design §1 and §2.3 | `repo-input.mjs` |
+| Explainer journey, titles, act text, pack text and page chrome | `journey.json`, `sections.json`, `pack.json`, `SiteHeader`, `SiteFooter`, `Repos`, pages | the steps' refs; Overview §1 and §4 | `repo-input.mjs` |
 | Website copy | `src/content/site.ts`, one input per export; the blog posts in `content/posts/` join the `blog` input | `src/content/site-refs.json` | `repo-input.mjs` |
 | Website drawings and animations | hero, story phases, the comparison, use-case and component drawings, every section | the passages of the block that feeds them | `website-shots.mjs` |
-| Text in components and the repository's documents | `src/components`, `src/app`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, the explainer's README, CLAUDE.md and docs | design §1, org profile | `repo-input.mjs` |
+| Text in components and the repository's documents | `src/components`, `src/app`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, the explainer's README, CLAUDE.md and docs | Overview §1, org profile | `repo-input.mjs` |
 | Live facts | implementation status, releases, licences, lab status | the checks under `live` in `site-refs.json` | `repo-input.mjs --live` |
 
 ## Ground rules
@@ -86,8 +86,8 @@ and never edits: its output is a report the maintainer or the `clpr-sync` skill 
    well as what it says: a label, an arrow or an empty middle is a claim. Judge actor placement
    in every drawing, explainer figures and simulations included: Endpoint, then CLPR Service,
    then the ledger's own Verifier; the Connector beside the Service; one Verifier per ledger. Where
-   a figure models the specification and the pinned contracts or endpoint differ (running-hash
-   fold, streaming versus single-call `sync`, update-then-dispatch order, who is charged when),
+   a figure models the specification and the pinned contracts or endpoint differ (TLS on `sync`,
+   whether charges are taken before or after the application call, who is charged when),
    it must say which it shows. Groups are in
    `_GROUPS.json`; one agent per group with `_BRIEF.md` fans out well. If agents stall, judge
    in-session and say so in the report.
@@ -133,11 +133,11 @@ and never edits: its output is a report the maintainer or the `clpr-sync` skill 
 
 | Location | Statement | Verdict | Upstream | Suggested action |
 |---|---|---|---|---|
-| website `hero.title` | "Cross-ledger messaging with nothing in between." | overstatement | design §2.3: availability depends on at least one honest endpoint per side | "no bridge to trust"; say endpoints can delay, not forge |
+| website `hero.title` | "Cross-ledger messaging with nothing in between." | overstatement | Overview §4: availability needs at least one honest endpoint on each side | "no bridge to trust"; say endpoints can delay, not forge |
 | website `repositories` hiero card | "pending approval by the Hiero TSC" | drifted | HIP-1535 status: Approved; the HIP calls the service opt-in | "specified by the approved HIP-1535", opt-in, with no merge date, version or default |
-| explainer general §bridges | "The usual fixes, and why they keep failing" | non-neutral | design §1 says only that other solutions "introduc[e] intermediary consensus layers or federated bridges" | "Why a trusted party in the middle is the weak point" |
-| explainer general §patterns | "Here is what people build on it" | overstatement | design §3.4: "This section is a placeholder"; the patterns are outlined only | "what the design anticipates people building", outlined, not specified |
+| explainer general §bridges | "The usual fixes, and why they keep failing" | non-neutral | Overview §1 says only that CLPR "adds no intermediary network, bridge validator set or token" | "Why a trusted party in the middle is the weak point" |
+| explainer general §patterns | "Here is what people build on it" | overstatement | Overview §8 names three patterns and specifies none of them | "patterns built on CLPR messages", named, not specified |
 | website `repositories` Besu card | "deployable to Hyperledger Besu" | overstatement | the Endpoint's proof types are QBFT and CometBFT; Besu is the test stack | "EVM ledgers (QBFT, CometBFT)" |
-| website comparison, custody drawing | empty middle labelled "Nothing held" | drifted | design §3.1.0: the CLPR Service is custodian of Connector funds and endpoint bonds | "No pooled assets" |
-| explainer `cast.json` verifier | "An immutable contract" | drifted | design §3.1.5: the verifier may sit behind an upgradeable proxy | address fixed for the Channel's lifetime |
-| developers §12 endpoints | "the leaf is regenerated after 86 400 seconds by default" | matches | design §3.1.2: `leaf_certificate_validity_seconds`, default 86400 | none |
+| website comparison, custody drawing | empty middle labelled "Nothing held" | drifted | Stakes and bonds §1: the CLPR Service holds each connector's stake; §3: endpoints are not slashed and post none | "No pooled assets" |
+| explainer `cast.json` verifier | "An immutable contract" | drifted | Channel setup §4: the verifier binding is fixed for the channel's life; CLPR Service §6.1: the verifier contract may be upgradeable | address fixed for the Channel's lifetime |
+| developers §13 sync | "TLS when the endpoint's manifest entry has a certificate, plaintext otherwise" | matches | Endpoint sync §2: transport security follows the entry's `tls_certificate`, with no fallback to plaintext | none |

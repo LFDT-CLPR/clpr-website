@@ -1,8 +1,10 @@
 ---
 /**
  * Sections 3–4: "Who do you trust?" Compare three ways of carrying a message between ledgers
- * and attack each one. Outcomes follow the CLPR design document §2.3 (trust model) and §3.1.4
- * (endpoints must be unable to forge; availability depends on at least one honest endpoint).
+ * and attack each one. CLPR's outcomes follow Overview §4 (trust model: endpoints cannot forge,
+ * because every bundle is proven; availability needs at least one honest endpoint on each side),
+ * Messaging §4 and Bundle §4 (the running hash binds every message to the proven last one) and
+ * Endpoint manifest §4 (bundle submission is open to any caller).
  */
 const { id = 'trust-designs' } = Astro.props as { id?: string };
 const markerId = `${id}-arrow`;
@@ -142,9 +144,9 @@ const arrow = `url(#${markerId})`;
       offline: { ok: false, b: 'hears nothing', log: '<span class="warn">Stalled.</span> If fewer than three members are online, nothing is delivered.', stall: true },
     },
     clpr: {
-      steal: { ok: true, b: 'rejects it', log: '<span class="ok">Rejected.</span> None of the endpoint\'s keys can make Ledger B accept a message. What B checks is a proof, accepted by the channel\'s verifier, that the message is in A\'s sealed state. An endpoint cannot produce that signature, so a stolen endpoint key forges nothing.' },
+      steal: { ok: true, b: 'rejects it', log: '<span class="ok">Rejected.</span> None of the endpoint\'s keys can make Ledger B accept a message. What B checks is a proof, accepted by the channel\'s verifier, that the message is in A\'s committed state. An endpoint cannot produce that proof, so a stolen endpoint key forges nothing.' },
       tamper: { ok: true, b: 'rejects it', log: '<span class="ok">Rejected.</span> The message is folded into a running hash chain that the proof commits to. Change one byte and the running hash B recomputes no longer matches the proven one. The endpoint only wasted its own transaction fee.' },
-      offline: { ok: false, b: 'hears nothing, for now', log: '<span class="warn">Delayed, not broken.</span> An endpoint can refuse or delay, but it cannot forge. Messages wait in Ledger A\'s queue until any honest endpoint, even a brand-new one, carries them across. Safety never depended on the endpoint; only liveness does.', stall: true },
+      offline: { ok: false, b: 'hears nothing, for now', log: '<span class="warn">Delayed, not broken.</span> An endpoint can refuse or delay, but it cannot forge. Messages wait in Ledger A\'s queue until an honest endpoint carries them across: availability needs at least one on each side, and anyone may submit a bundle. Safety never depended on the endpoint; only liveness does.', stall: true },
     },
   };
   // Left and right edges of each design's middle box, in SVG units; the token stops at the

@@ -1,55 +1,55 @@
 ---
-/** The chain of vetting from design §2.4 and §4: each role checks the one to its right, money at risk peaks at the connector operator and is absent at the verifier developer, and the endpoint operator and admin sit outside the chain. */
+/** The chain of vetting from Overview §5: each role vets the one it depends on, in proportion to the value it puts at risk; the verifier developer has no economic part, and the endpoint operator and the administrator sit outside the chain. */
 import Figure from '@kse/components/Figure.astro';
-import { design } from '../../../lib/sources';
+import { overview } from '../../../lib/sources';
 ---
 <Figure
   lead="A chain of vetting."
-  caption="Each role checks the next role in the chain before it risks anything. The connector operator carries the most money and is expected to look hardest; the verifier developer, whose code every channel depends on, has nothing at stake inside the protocol; the admin has power without stake. Both are known gaps: nothing in the protocol pays for verifier maintenance, and the admin has no economic incentive to act."
-  source={[{ label: 'design §2.4', href: design('24-participant-roles') }, { label: 'design §4', href: design('4-roles-and-operations') }]}
+  caption="Each role vets the one it depends on, in proportion to the value it puts at risk. The verifier developer, whose code every channel depends on, has no economic part in the protocol, and neither has the administrator. Endpoints are not slashed; the endpoint operator pays transaction fees and earns the margin on executed messages."
+  source={[{ label: 'Overview §5', href: overview('5-roles') }, { label: 'Overview §4', href: overview('4-trust-model') }]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 356" role="img" aria-label="Four roles in a row, user to verifier developer, each with an arrow to the next meaning it checks that role, ending at the other ledger's proof system. A bar under the row shows money at risk: highest under the connector operator, none under the verifier developer. The endpoint operator and the service admin sit in a second row outside the chain.">
+  <svg viewBox="0 0 760 356" role="img" aria-label="Four roles in a row, end user to verifier developer, each with an arrow to the next meaning it vets that role, ending at the source ledger's proof scheme. A bar under the row marks which roles put value at risk: the end user, the application developer and the connector operator; none under the verifier developer. The endpoint operator and the administrator sit in a second row outside the chain.">
     <defs>
       <marker id="vc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)"/></marker>
       <marker id="vc-arrow-money" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--money)"/></marker>
       <marker id="vc-arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker>
     </defs>
 
-    <text x="380" y="24" class="t small center muted">Each arrow: checks the next role before putting anything at risk</text>
+    <text x="380" y="24" class="t small center muted">Each arrow: vets what it depends on, in proportion to the value it puts at risk</text>
 
     <!-- the chain -->
     <rect x="12" y="40" width="118" height="96" rx="8" class="d-grey"/>
-    <text x="71" y="68" class="t b center">User</text>
-    <text x="71" y="96" class="t small center">at stake: what</text>
-    <text x="71" y="110" class="t small center">the app holds</text>
-    <text x="71" y="124" class="t small center">for them</text>
+    <text x="71" y="68" class="t b center">End user</text>
+    <text x="71" y="96" class="t small center">bears the</text>
+    <text x="71" y="110" class="t small center">application-</text>
+    <text x="71" y="124" class="t small center">level risk</text>
 
     <rect x="153" y="40" width="134" height="96" rx="8" class="d-surface"/>
     <text x="220" y="60" class="t b center">Application</text>
     <text x="220" y="76" class="t b center">developer</text>
-    <text x="220" y="96" class="t small center">at stake: users'</text>
-    <text x="220" y="110" class="t small center">assets and their</text>
-    <text x="220" y="124" class="t small center">fees to connectors</text>
+    <text x="220" y="96" class="t small center">pays connectors,</text>
+    <text x="220" y="110" class="t small center">under their</text>
+    <text x="220" y="124" class="t small center">own terms</text>
 
     <rect x="310" y="40" width="140" height="96" rx="8" class="d-money"/>
     <text x="380" y="60" class="t b center">Connector</text>
     <text x="380" y="76" class="t b center">operator</text>
-    <text x="380" y="96" class="t small center">at stake: the most;</text>
-    <text x="380" y="110" class="t small center">balance plus stake,</text>
-    <text x="380" y="124" class="t small center">fined on failure</text>
+    <text x="380" y="96" class="t small center">funds execution;</text>
+    <text x="380" y="110" class="t small center">posts a stake that</text>
+    <text x="380" y="124" class="t small center">can be slashed</text>
 
     <rect x="473" y="40" width="134" height="96" rx="8" class="d-ok"/>
     <text x="540" y="60" class="t b center">Verifier</text>
     <text x="540" y="76" class="t b center">developer</text>
-    <text x="540" y="96" class="t small center">at stake: nothing</text>
-    <text x="540" y="110" class="t small center">inside the protocol;</text>
+    <text x="540" y="96" class="t small center">no economic part</text>
+    <text x="540" y="110" class="t small center">in the protocol;</text>
     <text x="540" y="124" class="t small center">channels rest on it</text>
 
     <rect x="630" y="40" width="118" height="96" rx="8" class="d-b"/>
-    <text x="689" y="60" class="t b center">Other ledger's</text>
-    <text x="689" y="76" class="t b center">proof system</text>
+    <text x="689" y="60" class="t b center">Source ledger's</text>
+    <text x="689" y="76" class="t b center">proof scheme</text>
     <text x="689" y="96" class="t small center">what the verifier</text>
     <text x="689" y="110" class="t small center">must get right</text>
 
@@ -61,26 +61,26 @@ import { design } from '../../../lib/sources';
     <!-- money at risk -->
     <rect x="22" y="172" width="98" height="18" rx="3" class="d-money"/>
     <rect x="163" y="172" width="114" height="18" rx="3" class="d-money"/>
-    <rect x="320" y="156" width="120" height="34" rx="3" class="d-money"/>
-    <rect x="483" y="156" width="114" height="34" rx="3" class="d-surface" stroke-dasharray="4 3"/>
-    <text x="540" y="177" class="t small center muted">none</text>
+    <rect x="320" y="172" width="120" height="18" rx="3" class="d-money"/>
+    <rect x="483" y="172" width="114" height="18" rx="3" class="d-surface" stroke-dasharray="4 3"/>
+    <text x="540" y="185" class="t small center muted">none</text>
     <line x1="12" y1="190" x2="607" y2="190" class="line"/>
-    <text x="310" y="208" class="t small center muted">Money at risk: most in the middle, none at the end</text>
+    <text x="310" y="208" class="t small center muted">Value at risk in every role but the verifier developer</text>
 
     <!-- outside the chain -->
     <text x="380" y="236" class="t small center muted">Outside the chain</text>
     <rect x="170" y="246" width="200" height="78" rx="8" class="d-c"/>
     <text x="270" y="268" class="t b center">Endpoint operator</text>
-    <text x="270" y="286" class="t small center">fronts fees; repaid with a</text>
-    <text x="270" y="300" class="t small center">margin when the connector pays;</text>
-    <text x="270" y="314" class="t small center">trusts its ledger's CLPR Service</text>
+    <text x="270" y="286" class="t small center">pays transaction fees,</text>
+    <text x="270" y="300" class="t small center">earns the margin;</text>
+    <text x="270" y="314" class="t small center">serves every channel</text>
 
     <rect x="390" y="246" width="200" height="78" rx="8" class="d-grey"/>
-    <text x="490" y="268" class="t b center">Service admin</text>
-    <text x="490" y="286" class="t small center">sets limits, admits endpoints,</text>
-    <text x="490" y="300" class="t small center">closes channels in emergencies;</text>
-    <text x="490" y="314" class="t small center">stake: none</text>
+    <text x="490" y="268" class="t b center">Administrator</text>
+    <text x="490" y="286" class="t small center">configures, closes channels,</text>
+    <text x="490" y="300" class="t small center">admits endpoints where</text>
+    <text x="490" y="314" class="t small center">admission is curated</text>
 
-    <text x="380" y="346" class="t take center">Follow the arrows: each role checks the next. Follow the money: heaviest in the middle, absent at the end.</text>
+    <text x="380" y="346" class="t take center">Follow the arrows: each role vets the next. The verifier developer has no economic part.</text>
   </svg>
 </Figure>

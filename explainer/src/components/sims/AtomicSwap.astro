@@ -1,25 +1,29 @@
 ---
 /**
- * The N-ledger atomic swap pattern (design §3.4.3): several ledgers make state changes tied
- * together by two-phase commit; all enter a ready-or-roll-back state, and if any one fails, all
- * roll back. The three sentences upstream are the whole specification of the pattern; the
- * mechanics drawn here (an application on A coordinating, prepare and commit as ordinary messages,
- * each with its reply) are the site's illustration of how such an application would use CLPR.
- * General page section 11.
+ * Two-phase commit across ledgers, one of the application patterns Overview §8 names, with no
+ * more said about it upstream. The mechanics drawn here (an application on A coordinating,
+ * prepare and commit as ordinary DATA messages, each answered by exactly one reply, sends
+ * asynchronous) are the site's illustration of how such an application could use CLPR; the only
+ * protocol behaviour they rely on is Overview §3 and §8 (asynchronous sends, one reply per DATA
+ * message, in order). General page section 11.
  */
 import Refs from '@kse/components/Refs.astro';
 const { id = 'swap-sim' } = Astro.props as { id?: string };
-const refs = [{ doc: 'design', anchor: '343-n-ledger-atomic-swap-2pc', label: 'design §3.4.3' }] as const;
+const refs = [
+  { doc: 'overview', anchor: '8-application-patterns', label: 'Overview §8' },
+  { doc: 'overview', anchor: '3-message-flow', label: 'Overview §3' },
+  { doc: 'messaging', anchor: '8-response-ordering', label: 'Messaging §8' },
+] as const;
 ---
 <div class="sim swap" id={id}>
-  <div class="sim__head"><div><span class="kind">Simulation · an illustration</span><h3>A three-ledger atomic swap, illustrated</h3></div><span class="pill grey" data-role="status">idle</span></div>
+  <div class="sim__head"><div><span class="kind">Simulation · an illustration</span><h3>Two-phase commit across three ledgers, illustrated</h3></div><span class="pill grey" data-role="status">idle</span></div>
   <div class="sim__body">
     <div class="sim__scroll">
       <svg viewBox="0 0 760 262" role="img" aria-label="Three ledgers side by side. An application on Ledger A sends prepare messages to B and C over two channels, collects their replies, then sends commit or roll back.">
         <rect x="20" y="30" width="180" height="170" rx="12" class="d-a" />
         <text x="110" y="56" class="t b center">Ledger A</text>
         <rect x="35" y="70" width="150" height="58" rx="8" class="d-surface" />
-        <text x="110" y="97" class="t center">the swap application</text>
+        <text x="110" y="97" class="t center">the coordinating app</text>
         <text x="110" y="112" class="t small center">starts it, keeps the tally</text>
         <rect x="35" y="142" width="150" height="40" rx="8" class="d-surface" data-role="lockA" />
         <text x="110" y="160" class="t center">its own change</text>
@@ -61,7 +65,7 @@ const refs = [{ doc: 'design', anchor: '343-n-ledger-atomic-swap-2pc', label: 'd
     <span class="spacer"></span>
     <button class="btn" type="button" data-role="reset">Reset</button>
   </div>
-  <div class="sim__log" data-role="log">Two-phase commit, carried as ordinary CLPR messages: first "get ready", then "commit" or "roll back". Every data message gets exactly one reply, which is what the tally relies on.</div>
+  <div class="sim__log" data-role="log">An illustration of two-phase commit across ledgers, one of the patterns built on CLPR messages, carried as ordinary messages: first "get ready", then "commit" or "roll back". Sends are asynchronous: each outcome arrives later as a reply. Every DATA message gets exactly one reply, in the order of the messages on its channel, which is what the tally relies on. The protocol carries the messages; the coordination is the application's.</div>
 </div>
 <style is:global>
   .sim.swap [data-role^="lock"] { transition: fill 250ms, stroke 250ms; }
@@ -82,7 +86,7 @@ const refs = [{ doc: 'design', anchor: '343-n-ledger-atomic-swap-2pc', label: 'd
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const wait = (ms: number) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
     let runId = 0;
-    const IDLE = 'Two-phase commit, carried as ordinary CLPR messages: first "get ready", then "commit" or "roll back". Every data message gets exactly one reply, which is what the tally relies on.';
+    const IDLE = 'An illustration of two-phase commit across ledgers, one of the patterns built on CLPR messages, carried as ordinary messages: first "get ready", then "commit" or "roll back". Sends are asynchronous: each outcome arrives later as a reply. Every DATA message gets exactly one reply, in the order of the messages on its channel, which is what the tally relies on. The protocol carries the messages; the coordination is the application\'s.';
     function setState(k: string, cls: string, text: string) {
       const lock = $(`[data-role="lock${k}"]`); lock.classList.remove('ready', 'done', 'undone'); if (cls) lock.classList.add(cls);
       $(`[data-role="state${k}"]`).textContent = text;
@@ -109,15 +113,16 @@ const refs = [{ doc: 'design', anchor: '343-n-ledger-atomic-swap-2pc', label: 'd
       reset();
       const id = ++runId;
       status.textContent = 'phase 1: get ready'; status.className = 'pill b';
-      log.innerHTML = '<span class="line">phase 1 · prepare</span>The application on A makes its own change ready, then sends "get ready" to B and to C, one message on each channel.';
+      log.innerHTML = '<span class="line">phase 1 · prepare</span>The application on A makes its own change ready, then sends "get ready" to B and to C, one message on each channel. Each send returns at once; the answers come back later, as replies.';
       setState('A', 'ready', 'ready, not final');
       if (!(await carry(id, 'A', 'B', 'prepare'))) return;
       setState('B', 'ready', 'ready, not final');
-      if (!(await carry(id, 'B', 'A', 'reply: ready'))) return;
-      log.innerHTML = '<span class="line">phase 1 · B replied</span>B made its change ready and its reply says so. One message, one reply: the tally on A now has B.';
       if (!(await carry(id, 'A', 'C', 'prepare'))) return;
+      if (fail) setState('C', 'undone', 'cannot');
+      else setState('C', 'ready', 'ready, not final');
+      if (!(await carry(id, 'B', 'A', 'reply: ready'))) return;
+      log.innerHTML = '<span class="line">phase 1 · B replied</span>B made its change ready, and the reply to A\'s message says so. One message, one reply: the tally on A now has B and waits for C.';
       if (fail) {
-        setState('C', 'undone', 'cannot');
         if (!(await carry(id, 'C', 'A', 'reply: cannot'))) return;
         status.textContent = 'phase 2: roll back'; status.className = 'pill bad';
         log.innerHTML = '<span class="line">phase 2 · one said no</span>C\'s reply says it cannot. The tally is incomplete, so A sends "roll back" to everyone who was ready.';
@@ -127,9 +132,8 @@ const refs = [{ doc: 'design', anchor: '343-n-ledger-atomic-swap-2pc', label: 'd
         if (!(await carry(id, 'B', 'A', 'reply: undone'))) return;
         env.setAttribute('hidden', '');
         status.textContent = 'rolled back'; status.className = 'pill bad';
-        log.innerHTML = '<span class="line">done · nothing landed</span><span class="bad">Rolled back everywhere.</span> Here every roll-back message was relayed and honoured, so no ledger kept a change the others did not. CLPR carried three messages and three replies; the decision was the application\'s.';
+        log.innerHTML = '<span class="line">done · nothing landed</span><span class="bad">Rolled back everywhere.</span> In this illustration every roll-back message was relayed and honoured, so no ledger kept a change the others did not. CLPR carried three messages and three replies; the decision was the application\'s.';
       } else {
-        setState('C', 'ready', 'ready, not final');
         if (!(await carry(id, 'C', 'A', 'reply: ready'))) return;
         status.textContent = 'phase 2: commit'; status.className = 'pill ok';
         log.innerHTML = '<span class="line">phase 2 · everyone ready</span>Both replies say ready. A sends "commit" on each channel and makes its own change final.';
@@ -142,7 +146,7 @@ const refs = [{ doc: 'design', anchor: '343-n-ledger-atomic-swap-2pc', label: 'd
         if (!(await carry(id, 'C', 'A', 'reply: done'))) return;
         env.setAttribute('hidden', '');
         status.textContent = 'committed'; status.className = 'pill ok';
-        log.innerHTML = '<span class="line">done · all three landed</span><span class="ok">Committed everywhere.</span> Three ledgers changed together. Each message was verified by the channel\'s verifier against its source ledger\'s proof; the tally that tied them together lived in the application.';
+        log.innerHTML = '<span class="line">done · all three landed</span><span class="ok">Committed everywhere.</span> In this illustration the three ledgers changed together. Each message was checked by its channel\'s verifier against its source ledger\'s proof; the tally that tied them together lived in the application.';
       }
     }
     for (const b of Array.from(root.querySelectorAll<HTMLButtonElement>('button[data-run]'))) b.addEventListener('click', () => { void run(b.dataset.run === 'fail'); });

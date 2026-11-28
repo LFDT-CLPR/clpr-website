@@ -1,21 +1,23 @@
 ---
-/** Three kinds of failure and their three outcomes: endpoint trouble rejects a bundle, replies out of order pause the channel, a connector's broken promise is fined (spec §4.2, §4.5, §4.6; design §5). */
+/** Three kinds of failure and their three outcomes: a bad bundle is rejected and changes nothing, replies out of order pause the channel, a failure inside one message becomes a failure reply and, for a connector's failure, a slash in the recommended design. Channel state transitions §2, §6; Messaging §7, §8; Stakes and bonds §2.1; CLPR Service §7 (R6). No endpoint is penalized. */
 import Figure from '@kse/components/Figure.astro';
-import { design, spec } from '../../../lib/sources';
+import { messaging, transitions, service, stakes } from '../../../lib/sources';
 ---
 <Figure
-  lead="Reject, pause, or fine."
-  caption="A bundle that fails verification is rejected and changes nothing. Replies out of order are treated as corruption and pause the channel. A failure inside one message, such as a connector or an application error, produces a failure reply instead; only the connector's failures are fined. With every endpoint offline, messages wait in the queue, up to its depth limit."
+  lead="Reject, pause, or slash."
+  caption="A bundle that fails verification or any other check is rejected and changes nothing; its submitter loses the transaction fee. Replies out of order show that the peer's queue is inconsistent, so the channel pauses until a bundle arrives with its replies in order. A failure inside one message, a missing or underfunded connector or an application error, produces a failure reply for that message only; the recommended design slashes a connector's stake for the connector failures, never for an application error. With every endpoint offline, messages wait in the queue up to its depth limit, and then new sends are rejected."
   source={[
-    { label: 'spec §4.2', href: spec('42-bundle-verification-algorithm') },
-    { label: 'spec §4.5', href: spec('45-response-ordering-verification') },
-    { label: 'spec §4.6', href: spec('46-slashing-decision') },
-    { label: 'design §5', href: design('5-recovery-scenarios') },
+    { label: 'Channel state transitions §2', href: transitions('2-bundle-processing') },
+    { label: 'Channel state transitions §6', href: transitions('6-pause-and-resume') },
+    { label: 'Messaging §7', href: messaging('7-replies') },
+    { label: 'Messaging §8', href: messaging('8-response-ordering') },
+    { label: 'Stakes and bonds §2.1', href: stakes('21-when-a-connector-is-slashed') },
+    { label: 'CLPR Service §7', href: service('7-recovery-scenarios') },
   ]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 342" role="img" aria-label="Three horizontal lanes. Top: endpoint trouble, such as a tampered or replayed bundle or one whose proof fails, leads to the bundle being rejected and nothing changing. Middle: replies out of order, the one failure treated as corruption, leads to the channel being paused. Bottom: a connector's broken promise, not registered on the other side or out of funds, leads to a fine from its locked stake, paid to whoever submitted the bundle. Below: endpoints can only cause delay; with all of them offline, messages wait in the queue.">
+  <svg viewBox="0 0 760 342" role="img" aria-label="Three horizontal lanes. Top: endpoint trouble, such as a tampered or replayed bundle or one whose proof fails, leads to the bundle being rejected and nothing changing. Middle: replies out of order, the one failure treated as corruption, leads to the channel being paused. Bottom: a connector's broken promise, not registered on the other side or out of funds, leads to a failure reply and, in the recommended design, a penalty from the connector's stake, paid to whoever submitted the bundle. Below: endpoints can only cause delay; with all of them offline, messages wait in the queue.">
     <defs>
       <marker id="ftr-arrow-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)" /></marker>
       <marker id="ftr-arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)" /></marker>
@@ -36,8 +38,8 @@ import { design, spec } from '../../../lib/sources';
 
     <rect x="468" y="44" width="276" height="70" rx="8" class="d-grey" />
     <text x="606" y="68" class="t b center">Bundle rejected, nothing changes</text>
-    <text x="606" y="86" class="t small center">channel stays ACTIVE</text>
-    <text x="606" y="102" class="t small center">an endpoint can lose the fee it pays to submit</text>
+    <text x="606" y="86" class="t small center">channel status unchanged</text>
+    <text x="606" y="102" class="t small center">the submitter loses its transaction fee</text>
 
     <!-- Lane 2: replies out of order -->
     <rect x="16" y="134" width="216" height="70" rx="8" class="d-bad" />
@@ -63,12 +65,12 @@ import { design, spec } from '../../../lib/sources';
     <text x="350" y="252" class="t small center">priced, not ignored</text>
 
     <rect x="468" y="224" width="276" height="70" rx="8" class="d-money" />
-    <text x="606" y="248" class="t b center">Fined from locked stake</text>
-    <text x="606" y="266" class="t small center">the fine reimburses whoever</text>
-    <text x="606" y="282" class="t small center">submitted the bundle</text>
+    <text x="606" y="248" class="t b center">Failure reply, connector slashed</text>
+    <text x="606" y="266" class="t small center">recommended: a penalty from its stake</text>
+    <text x="606" y="282" class="t small center">paid to whoever submitted the bundle</text>
 
     <!-- takeaway -->
     <text x="380" y="316" class="t take center">Endpoints can only cause delay: with all of them offline, messages wait in the queue.</text>
-    <text x="380" y="331" class="t take center">A broken promise costs the connector part of its stake; a rejected bundle costs its submitter.</text>
+    <text x="380" y="331" class="t take center">A broken promise costs the connector stake; a rejected bundle costs its submitter the fee.</text>
   </svg>
 </Figure>

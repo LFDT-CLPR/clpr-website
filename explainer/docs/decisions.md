@@ -1,7 +1,7 @@
 # Decisions
 
 Short records of the choices that shape the repository, in the spirit of the ADRs the CLPR
-specification itself uses. Newest last.
+specification kept before CLIP-0001 (now archived upstream; see D23). Newest last.
 
 ## D1. Two pages, one centrepiece
 
@@ -57,7 +57,7 @@ are stated on screen.
 ## D8. The sync is a procedure, not a pipeline
 
 The scripts fetch, diff, report, pin and check. They deliberately do not edit prose. Deciding
-what a renumbered section or a new ADR means for a sentence on the page is a reading task; the
+what a renumbered section or a new CLIP means for a sentence on the page is a reading task; the
 `clpr-sync` skill makes that task explicit and repeatable, and a human reviews the result.
 
 ## D9. Phone width and both themes are requirements, not polish
@@ -105,11 +105,13 @@ line is marked `vocab-allow`.
 
 ## D13. Upstream facts are data rows with references; prose states, the footer cites
 
+*The inventories `check-data.mjs` compares changed with the modular specification (D23).*
+
 Two things pushed the facts out of the prose. The maintainer wanted both pages to read as being
 about CLPR rather than about a document ("the specification says" on every other line), with the
-commits named once at the end. And a sync has to be mechanical: when upstream adds a verifier, an
-ADR, a role or a pattern, something must fail until the site describes it. So the components,
-ledgers, patterns, roles, open issues, failure cases, cast and ADRs are rows in `src/data/*.json`,
+commits named once at the end. And a sync has to be mechanical: when upstream adds a verifier, a
+role or a pattern, something must fail until the site describes it. So the components,
+ledgers, patterns, roles, open issues, failure cases and cast are rows in `src/data/*.json`,
 each with `refs` in the shape the anchor check already resolved for `journey.json`, and every
 section in `sections.json` carries the refs that back it. `check-data.mjs` validates the rows and
 compares the inventories with `.upstream/`. The developer page renders a section's refs under its
@@ -123,7 +125,7 @@ same reason: a number that lives in the registry cannot go stale.
 The general page had grown into a shorter copy of the developer page, and both read as a
 commentary on the specification ("the specification says" on every other paragraph). On
 2026-10-01 the maintainer set the two jobs apart: the general page is a 10,000-foot introduction
-for readers with no technical background (why CLPR exists, how it differs from the usual bridge
+for readers with no technical background (why CLPR exists, how it differs from many bridge
 designs, what people build with it, what shapes of network pairs allow, who runs what), and the
 developer page builds up from what you can build to the full protocol. Neither attributes claims
 in prose; the backing lives in the registry and the data rows, the developer page renders it under
@@ -216,7 +218,7 @@ source supports. A fix that lives only in a changed sentence comes back at the n
 
 **Consequences.** "Besu" is "EVM ledger" everywhere; the Hiero status is limited to what HIP-1535
 states until a maintainer confirms the rest; the bridge comparison says "many bridges" and uses
-only what the design and HIP-1535 say about them. If a later source supports a retired claim,
+only what HIP-1535's Motivation says about them. If a later source supports a retired claim,
 remove its pattern in the same change that adds the evidence.
 
 ## D21. Light by default, dark or the system's on request, as the website
@@ -266,3 +268,28 @@ for; the switch remains for anyone who wants the other theme.
 **Consequences.** The rest of D21 stands. `DARK=1 kse check-sims` in verify once more shows the dark
 theme, through the default; `check:dark` still covers a stored Dark choice.
 
+## D23. The site rests on the modular v0.2 specification
+
+**Decision.** The CLPR specification was reorganised under CLIP-0001 into an overview, Protocol
+modules, Ledger Specifications, Recommendations and a list of open issues, released as v0.2 (final).
+The site was re-based on that text. `pack.json` `docs` registers one document key per specification
+file, and `src/lib/sources.ts` exports one link helper per key (`overview()`, `messaging()`,
+`stakes()` and the rest); `design()` and `spec()` are gone. The two documents the pages used to cite,
+the ADRs, the verifier documents and the options document now sit in the specification's archive,
+which upstream keeps for reference only; the archive is not a source for any claim. The ADR table,
+`adrs.json` and the ADR lifecycle and redaction figures were removed, and the developer page's
+section on how the specification evolves describes the CLIP process instead. `open.json` mirrors the
+numbered open issues, one row per OI heading. The fourth application pattern, native Hiero asset
+management, was removed: Overview §8 names three.
+
+**Why.** The new text is the reference, and a claim that rests only on archived text cites a
+document upstream no longer maintains. One key per file keeps every reference in the
+specification's own citation style (Messaging §4, Stakes and bonds §2.1) and lets the anchor check
+resolve it against the right file.
+
+**Consequences.** `check-data.mjs` compares the inventories of the new text: ledger directories,
+the OI headings, the Overview §5 roles, the patterns Overview §8 names, the Overview §2 parts and the
+CLPR Service §7 recovery rows. Recommendations are stated as what the specification recommends, not
+as protocol rules. Endpoints post no bond and are not slashed (Stakes and bonds §3), so the pages,
+figures and simulations no longer say they are. The specification now documents Besu as a ledger, so
+the retired-word pattern for "Besu" was removed with this change and the name may appear in prose.

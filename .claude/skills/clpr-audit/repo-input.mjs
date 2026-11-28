@@ -166,7 +166,7 @@ for (const dir of ['src/components', 'src/components/ui', 'src/app']) {
 files.push({
   name: 'website-components.md',
   text: [`# Audit input: website, text in components`, '', `Pinned commits: ${pins}. Text not taken from site.ts. Judge each line against the design summary below.`, '', '## Site text', '', ...(componentLines.length ? componentLines : ['none']), '', ...claimNotes(componentLines),
-    '## Upstream passages (at the pinned commits)', '', passage({ doc: 'design', anchor: '23-trust-model', label: 'design §2.3' }, 'components'), ''].join('\n'),
+    '## Upstream passages (at the pinned commits)', '', passage({ doc: 'overview', anchor: '4-trust-model', label: 'Overview §4' }, 'components'), ''].join('\n'),
 });
 
 // The repository's own documents: only the sentences that describe CLPR itself.
@@ -188,7 +188,7 @@ files.push({
   name: 'website-docs.md',
   text: [`# Audit input: repository documents`, '', `Pinned commits: ${pins}. Lines that mention CLPR or its parts. Most are about tooling and need no source; judge only the ones that describe the protocol, its status or its licences.`, '', '## Site text', '', ...docLines, '', ...claimNotes(docLines),
     ...liveSection(['hiero-native', 'spec-license']),
-    '## Upstream passages (at the pinned commits)', '', passage({ doc: 'design', anchor: '1-executive-summary', label: 'design §1' }, 'docs'), passage({ doc: 'repo', id: 'org-profile', path: 'profile/README.md', label: 'org profile' }, 'docs'), ''].join('\n'),
+    '## Upstream passages (at the pinned commits)', '', passage({ doc: 'overview', anchor: '1-purpose', label: 'Overview §1' }, 'docs'), passage({ doc: 'repo', id: 'org-profile', path: 'profile/README.md', label: 'org profile' }, 'docs'), ''].join('\n'),
 });
 
 // The explainer's own text that the engine's audit-input skips: the journey, act and section
@@ -230,7 +230,7 @@ const otherLines = [...sectionLines, ...packLines, ...chromeLines];
 files.push({
   name: 'explainer-titles-and-chrome.md',
   text: [`# Audit input: explainer titles, act text, pack text and page chrome`, '', `Pinned commits: ${pins}. Titles and goals are judged against the refs of the sections they introduce (see the section files); the chrome against the summary below.`, '', '## Site text', '', ...otherLines, '', ...claimNotes(otherLines),
-    '## Upstream passages (at the pinned commits)', '', passage({ doc: 'design', anchor: '1-executive-summary', label: 'design §1' }, 'titles'), passage({ doc: 'design', anchor: '23-trust-model', label: 'design §2.3' }, 'titles'), ''].join('\n'),
+    '## Upstream passages (at the pinned commits)', '', passage({ doc: 'overview', anchor: '1-purpose', label: 'Overview §1' }, 'titles'), passage({ doc: 'overview', anchor: '4-trust-model', label: 'Overview §4' }, 'titles'), ''].join('\n'),
 });
 
 mkdirSync(outDir, { recursive: true });

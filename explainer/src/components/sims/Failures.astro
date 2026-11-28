@@ -1,7 +1,7 @@
 ---
 /**
- * "What can go wrong" picker. Every outcome is taken from the design document §2.3, §3.2.8,
- * §3.3.3–3.3.4, §5 (recovery scenarios R1–R9) and the spec §4.2, §4.5, §4.6.
+ * "What can go wrong" picker. The cases, their outcomes and their refs are rows in
+ * src/data/failures.json; this component only renders them.
  */
 import data from '../../data/failures.json';
 import { refHref, isDeveloperPage, type Ref } from '../../lib/sources';
@@ -39,7 +39,7 @@ const recoverTone = (recovers: string) => (recovers.startsWith('Outside') ? 'bad
       </div>
     ))}
   </div>
-  <div class="sim__log" data-role="log"><span class="line" data-role="line">case: {cases[0].k} · state: {short(cases[0].state)} · source: {cases[0].refLabel}</span>Thirteen cases; pick one above and the card and the state pill follow it.</div>
+  <div class="sim__log" data-role="log"><span class="line" data-role="line">case: {cases[0].k} · state: {short(cases[0].state)} · source: {cases[0].refLabel}</span>{cases.length} cases; pick one above and the card and the state pill follow it.</div>
 </div>
 <style>
   .failures .sim__controls.picker { flex-direction: column; align-items: stretch; gap: 10px; border-top: 0; border-bottom: 1px solid var(--border); }

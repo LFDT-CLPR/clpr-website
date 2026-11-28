@@ -83,10 +83,7 @@ export function BridgeArt() {
 
 export function ClprArt() {
   const id = "clpr-trust";
-  // One Verifier per ledger: each checks the other's proofs. The message drawn here travels A to B, so B's lights up.
-  const verifier = { x: B.x - 16, y: B.y + 24 };
-  const verifierA = { x: A.x + 16, y: A.y + 24 };
-  const diamond = (at: { x: number; y: number }) => `M${at.x} ${at.y - 7}L${at.x + 7} ${at.y}L${at.x} ${at.y + 7}L${at.x - 7} ${at.y}Z`;
+  // Endpoints on each rim carry the proven bundle; the message drawn here travels A to B, so B lights up as it checks the proof.
   return (
     <Art id={id}>
       <LaneGradient id={`${id}-lane`} x1={A_RIM.x} x2={B_RIM.x} />
@@ -95,11 +92,6 @@ export function ClprArt() {
       <MiniLedger id={id} tone="pink" x={B.x} y={B.y} r={RADIUS} seed={9} />
       <Endpoint x={A_RIM.x} y={A_RIM.y} tone="violet" />
       <Endpoint x={B_RIM.x} y={B_RIM.y} tone="pink" />
-      <path d={diamond(verifierA)} fill="var(--art-fill)" stroke={TONES.pink} strokeWidth={1.3} />
-      <path d={diamond(verifier)} fill="var(--art-fill)" stroke={TONES.pink} strokeWidth={1.3} />
-      <Pulse x={verifier.x} y={verifier.y} motion="prop-ring" delay={2.02} rest={0}>
-        <circle r={16} stroke={TONES.pink} strokeWidth={1.4} />
-      </Pulse>
       <Pulse x={B.x} y={B.y} motion="prop-ring" delay={2.1} rest={0}>
         <circle r={54} stroke={TONES.pink} strokeOpacity={0.7} strokeWidth={1.2} />
       </Pulse>

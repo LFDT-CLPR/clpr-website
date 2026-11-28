@@ -1,16 +1,16 @@
 ---
-/** Who acts, in what order, when a channel needs a different verifier: both a compromise and a proof format upgrade end in a new channel, because the verifier address is fixed for the channel's life; design §4.7 and §5, spec §8.8. */
+/** Who acts, in what order, when a channel needs a different verifier: both a compromised verifier and a change of the peer's proof format end in a new channel, because the verifier binding is fixed for the channel's life; Overview §5, Channel setup §4, CLPR Service §7 (R2, R4), Open issues OI-3. */
 import Figure from '@kse/components/Figure.astro';
-import { design } from '../../../lib/sources';
+import { overview, service, channelSetup, openIssues } from '../../../lib/sources';
 ---
 <Figure
   lead="A different verifier means a new channel."
-  caption="The verifier developer publishes, the connector operator registers, the application developer migrates and the admin closes the old channel. For a compromise the close comes first and in-flight messages may end UNRESOLVED; for a planned format upgrade the close comes last, after the source has kept the old format alive long enough to migrate."
-  source={[{ label: 'design §4.7', href: design('47-cross-role-scenarios') }, { label: 'design §5', href: design('5-recovery-scenarios') }]}
+  caption="The verifier developer publishes, the connector operator opens a new channel with the new verifier, the application developer migrates and the administrator closes the old channel. For a compromised verifier the close comes first and messages in flight can be lost; for a change of the peer's proof format the close comes last, after migration."
+  source={[{ label: 'Overview §5', href: overview('5-roles') }, { label: 'Channel setup §4', href: channelSetup('4-verifier-binding') }, { label: 'CLPR Service §7', href: service('7-recovery-scenarios') }, { label: 'Open issues OI-3', href: openIssues('oi-3-messages-left-without-replies-when-a-channel-cannot-drain') }]}
   kind="spec"
   minWidth={760}
 >
-  <svg viewBox="0 0 760 396" role="img" aria-label="A trigger, either a security advisory or a proof format change, reaches the verifier developer and the CLPR Service admin. The verifier developer publishes a patched or new-format verifier; the connector operator registers a new channel with it and a connector on both ledgers; the application developer migrates to the new channel. The admin closes the old channel, at once for a compromise and after migration for an upgrade; the old channel drains through CLOSING and DRAINED to CLOSED, and in-flight messages may end UNRESOLVED, while new traffic moves to the new one.">
+  <svg viewBox="0 0 760 396" role="img" aria-label="A trigger, either a compromised or broken verifier or a change of the peer's proof format, reaches the verifier developer and the CLPR Service administrator. The verifier developer publishes a correct or new-format verifier; the connector operator registers a new channel with it and a connector on both ledgers; the application developer migrates to the new channel. The administrator closes the old channel, at once for a compromise and after migration for a format change; the old channel drains through CLOSING and DRAINED to CLOSED if it can, and messages in flight can be lost, while new traffic moves to the new one.">
     <defs>
       <marker id="ncm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--text-3)" /></marker>
       <marker id="ncm-arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)" /></marker>
@@ -22,22 +22,22 @@ import { design } from '../../../lib/sources';
     <!-- row 1: trigger, verifier developer, connector operator -->
     <rect x="20" y="34" width="196" height="66" rx="8" class="d-surface" />
     <text x="118" y="56" class="t b center">Trigger</text>
-    <text x="118" y="74" class="t small center">compromise: security advisory</text>
-    <text x="118" y="90" class="t small center">upgrade: proof format change</text>
+    <text x="118" y="74" class="t small center">verifier compromised,</text>
+    <text x="118" y="90" class="t small center">or peer proof format change</text>
     <circle cx="30" cy="21" r="9" class="d-grey" /><text x="30" y="25" class="t small center b">1</text>
 
     <line x1="216" y1="67" x2="280" y2="67" class="line" marker-end="url(#ncm-arrow)" />
 
     <rect x="282" y="34" width="196" height="66" rx="8" class="d-ok" />
-    <text x="380" y="56" class="t b center">Verifier Developer</text>
-    <text x="380" y="74" class="t small center">publishes a patched or</text>
+    <text x="380" y="56" class="t b center">Verifier developer</text>
+    <text x="380" y="74" class="t small center">publishes a correct or</text>
     <text x="380" y="90" class="t small center">new-format verifier</text>
     <circle cx="292" cy="21" r="9" class="d-grey" /><text x="292" y="25" class="t small center b">2</text>
 
     <line x1="478" y1="67" x2="542" y2="67" class="line ok" marker-end="url(#ncm-arrow-ok)" />
 
     <rect x="544" y="34" width="196" height="66" rx="8" class="d-money" />
-    <text x="642" y="56" class="t b center">Connector Operator</text>
+    <text x="642" y="56" class="t b center">Connector operator</text>
     <text x="642" y="74" class="t small center">new channel with it;</text>
     <text x="642" y="90" class="t small center">connector on both ledgers</text>
     <circle cx="554" cy="21" r="9" class="d-grey" /><text x="554" y="25" class="t small center b">3</text>
@@ -49,19 +49,19 @@ import { design } from '../../../lib/sources';
 
     <!-- row 2: admin, old channel, new channel -->
     <rect x="20" y="148" width="196" height="80" rx="8" class="d-grey" />
-    <text x="118" y="170" class="t b center">CLPR Service Admin</text>
-    <text x="118" y="188" class="t mono center">closeChannel(old)</text>
+    <text x="118" y="170" class="t b center">Administrator</text>
+    <text x="118" y="188" class="t small center">closes the old channel</text>
     <text x="118" y="204" class="t small center">compromise: at once;</text>
-    <text x="118" y="218" class="t small center">upgrade: after migration</text>
+    <text x="118" y="218" class="t small center">format: after migration</text>
 
     <line x1="216" y1="188" x2="280" y2="188" class="line bad" marker-end="url(#ncm-arrow-bad)" />
     <text x="248" y="180" class="t small center">closes</text>
 
     <rect x="282" y="148" width="196" height="80" rx="8" class="d-bad" />
     <text x="380" y="170" class="t b center">Old channel</text>
-    <text x="380" y="188" class="t small center">in-flight may end UNRESOLVED</text>
+    <text x="380" y="188" class="t small center">in flight: may be lost</text>
     <text x="380" y="206" class="t small center">CLOSING → DRAINED → CLOSED</text>
-    <text x="380" y="220" class="t small center">verifier address fixed</text>
+    <text x="380" y="220" class="t small center">verifier binding fixed</text>
 
     <line x1="478" y1="188" x2="542" y2="188" class="line dash" marker-end="url(#ncm-arrow)" />
 
@@ -76,12 +76,12 @@ import { design } from '../../../lib/sources';
     <text x="650" y="256" class="t small">migrates</text>
 
     <rect x="544" y="274" width="196" height="60" rx="8" class="d-a" />
-    <text x="642" y="296" class="t b center">Application Developer</text>
-    <text x="642" y="314" class="t mono center">channel_id · connector_id</text>
+    <text x="642" y="296" class="t b center">Application developer</text>
+    <text x="642" y="314" class="t small center">new channel and connector</text>
     <text x="642" y="328" class="t small center">switch and migrate users</text>
     <circle cx="554" cy="261" r="9" class="d-grey" /><text x="554" y="265" class="t small center b">4</text>
 
-    <text x="380" y="364" class="t take center">A channel's verifier address is fixed for its life, so a different verifier means a new channel.</text>
-    <text x="380" y="380" class="t take center">For a compromise, the window of vulnerability is between discovery and close.</text>
+    <text x="380" y="364" class="t take center">A channel's verifier binding is fixed for its life, so a different verifier means a new channel.</text>
+    <text x="380" y="380" class="t take center">On a channel that cannot drain, messages in flight stay without a reply (an open issue).</text>
   </svg>
 </Figure>

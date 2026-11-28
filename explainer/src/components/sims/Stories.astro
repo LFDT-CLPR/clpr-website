@@ -1,9 +1,11 @@
 ---
 /**
- * Four stories in which the roles work together, from design §4.7, as step-throughs: setting up a
- * new route, a proof format upgrade, responding to a compromised verifier, and a connector
- * withdrawing under load. The steps come from src/data/roles.json (scenarios); the roles that act
- * in a step are lit. General page section 13; the developer page uses it with `detail`.
+ * Four stories in which the six roles of Overview §5 work together, as step-throughs: opening a
+ * new route, a proof format change, responding to a compromised verifier, and withdrawing a
+ * connector (Overview §5, Connector setup §5, CLPR Service §7). The steps come from
+ * src/data/roles.json (scenarios); the roles that act in a step are lit. Role boxes are 230 wide so
+ * the longest role name, "CLPR Service administrator", has room. General page section 13; the
+ * developer page uses it with `detail`.
  */
 import data from '../../data/roles.json';
 import Refs from '@kse/components/Refs.astro';
@@ -29,7 +31,7 @@ const actors = scenarios.map((s) => s.steps.map((st) => roles.filter((r) => keys
       <svg viewBox="0 0 760 200" role="img" aria-label="Six role boxes in two rows; the ones acting in the current step are highlighted.">
         {roles.map((r) => (
           <g data-actor={r.id}>
-            <rect x={pos[r.id][0] - 100} y={pos[r.id][1] - 26} width="200" height="52" rx="10" class={cls[r.id]} />
+            <rect x={pos[r.id][0] - 115} y={pos[r.id][1] - 26} width="230" height="52" rx="10" class={cls[r.id]} />
             <text x={pos[r.id][0]} y={pos[r.id][1] - 4} class="t b center">{r.name}</text>
             <text x={pos[r.id][0]} y={pos[r.id][1] + 14} class="t small center" data-role="say"></text>
           </g>

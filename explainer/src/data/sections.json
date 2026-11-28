@@ -5,9 +5,19 @@
       "title": "A ledger is a shared record",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "21-common-terminology",
-          "label": "design §2.1"
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
+        },
+        {
+          "doc": "overview",
+          "anchor": "7-vocabulary",
+          "label": "Overview §7"
+        },
+        {
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
         }
       ]
     },
@@ -17,9 +27,9 @@
       "illustration": true,
       "refs": [
         {
-          "doc": "design",
-          "anchor": "2-core-concepts-and-terminology",
-          "label": "design §2"
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
         }
       ]
     },
@@ -29,14 +39,14 @@
       "illustration": true,
       "refs": [
         {
-          "doc": "design",
-          "anchor": "1-executive-summary",
-          "label": "design §1"
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
         },
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
         },
         {
           "doc": "repo",
@@ -51,29 +61,39 @@
       "title": "What CLPR does instead: proof, not trust",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "22-high-level-message-flow",
-          "label": "design §2.2"
+          "doc": "overview",
+          "anchor": "3-message-flow",
+          "label": "Overview §3"
         },
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
         },
         {
-          "doc": "spec",
-          "anchor": "88-upgradeable-verifier-contracts",
-          "label": "spec §8.8"
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
         },
         {
-          "doc": "spec",
-          "anchor": "810-endpoint-pre-funding",
-          "label": "spec §8.10"
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
         },
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
+        },
+        {
+          "doc": "service",
+          "anchor": "51-who-submits",
+          "label": "CLPR Service §5.1"
         }
       ]
     },
@@ -82,14 +102,19 @@
       "title": "What makes CLPR different",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "1-executive-summary",
-          "label": "design §1"
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
         },
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
+        },
+        {
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
         },
         {
           "doc": "repo",
@@ -98,14 +123,14 @@
           "label": "organization profile"
         },
         {
-          "doc": "design",
-          "anchor": "310-the-clpr-service",
-          "label": "design §3.1.0"
+          "doc": "stakes",
+          "anchor": "1-connector-stake",
+          "label": "Stakes and bonds §1"
         },
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
         }
       ]
     },
@@ -114,25 +139,25 @@
       "title": "The cast",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "21-common-terminology",
-          "label": "design §2.1"
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
+        },
+        {
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
+        },
+        {
+          "doc": "connectorSetup",
+          "anchor": "1-connector-identity",
+          "label": "Connector setup §1"
         },
         {
           "doc": "repo",
           "id": "org-profile",
           "path": "profile/README.md",
           "label": "organization profile"
-        },
-        {
-          "doc": "design",
-          "anchor": "310-the-clpr-service",
-          "label": "design §3.1.0"
-        },
-        {
-          "doc": "design",
-          "anchor": "331-connectors",
-          "label": "design §3.3.1"
         }
       ]
     },
@@ -141,41 +166,61 @@
       "title": "The message journey, step by step",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "22-high-level-message-flow",
-          "label": "design §2.2"
+          "doc": "overview",
+          "anchor": "3-message-flow",
+          "label": "Overview §3"
         },
         {
-          "doc": "design",
-          "anchor": "333-receiving-routing-and-paying",
-          "label": "design §3.3.3"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/README.md",
+          "label": "Ledger Specifications"
         }
       ]
     },
     {
       "id": "running-hash",
-      "title": "One proof for a whole batch",
+      "title": "One proof can cover a whole batch",
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "41-running-hash-computation",
-          "label": "spec §4.1"
+          "doc": "messaging",
+          "anchor": "4-running-hash",
+          "label": "Messaging §4"
         },
         {
-          "doc": "design",
-          "anchor": "322-message-storage",
-          "label": "design §3.2.2"
+          "doc": "messaging",
+          "anchor": "2-message-identifiers-and-queue",
+          "label": "Messaging §2"
         },
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
         },
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/BundleLib.sol",
-          "label": "BundleLib.sol"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
         }
       ]
     },
@@ -184,19 +229,74 @@
       "title": "Who pays, and who gets paid",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "33-payment--routing-layer",
-          "label": "design §3.3"
+          "doc": "connectorSetup",
+          "anchor": "3-connectors-on-both-ledgers",
+          "label": "Connector setup §3"
         },
         {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
+          "doc": "connectorSetup",
+          "anchor": "4-authorization-of-outbound-messages",
+          "label": "Connector setup §4"
         },
         {
-          "doc": "design",
-          "anchor": "335-open-economic-design-issues",
-          "label": "design §3.3.5"
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "economics",
+          "anchor": "2-payment-to-the-bundle-submitter",
+          "label": "Channel economics §2"
+        },
+        {
+          "doc": "economics",
+          "anchor": "3-queue-quotas",
+          "label": "Channel economics §3"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "1-connector-stake",
+          "label": "Stakes and bonds §1"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "21-when-a-connector-is-slashed",
+          "label": "Stakes and bonds §2.1"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-4-compensation-for-sending-bundles",
+          "label": "Open issues OI-4"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-5-calibration-of-the-connector-stake",
+          "label": "Open issues OI-5"
+        },
+        {
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
+        },
+        {
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
+        },
+        {
+          "doc": "connectorSetup",
+          "anchor": "1-connector-identity",
+          "label": "Connector setup §1"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "22-penalty",
+          "label": "Stakes and bonds §2.2"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "23-proceeds",
+          "label": "Stakes and bonds §2.3"
         }
       ]
     },
@@ -205,31 +305,72 @@
       "title": "What can go wrong",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "5-recovery-scenarios",
-          "label": "design §5"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
         },
         {
-          "doc": "design",
-          "anchor": "328-response-ordering-and-correlation",
-          "label": "design §3.2.8"
+          "doc": "transitions",
+          "anchor": "6-pause-and-resume",
+          "label": "Channel state transitions §6"
         },
         {
-          "doc": "design",
-          "anchor": "334-failure-consequences-and-slashing",
-          "label": "design §3.3.4"
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "2-slashing-and-bans",
+          "label": "Stakes and bonds §2"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "3-endpoints",
+          "label": "Stakes and bonds §3"
+        },
+        {
+          "doc": "service",
+          "anchor": "7-recovery-scenarios",
+          "label": "CLPR Service §7"
+        },
+        {
+          "doc": "service",
+          "anchor": "63-endpoint-admission",
+          "label": "CLPR Service §6.3"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
         }
       ]
     },
     {
       "id": "patterns",
-      "title": "Four patterns the design outlines",
+      "title": "Three patterns built on CLPR messages",
       "illustration": true,
       "refs": [
         {
-          "doc": "design",
-          "anchor": "34-application-layer",
-          "label": "design §3.4"
+          "doc": "overview",
+          "anchor": "8-application-patterns",
+          "label": "Overview §8"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
         }
       ]
     },
@@ -239,24 +380,29 @@
       "illustration": true,
       "refs": [
         {
-          "doc": "design",
-          "anchor": "21-common-terminology",
-          "label": "design §2.1"
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
         },
         {
-          "doc": "design",
-          "anchor": "1-executive-summary",
-          "label": "design §1"
+          "doc": "channelSetup",
+          "anchor": "1-channel-identity",
+          "label": "Channel setup §1"
         },
         {
-          "doc": "design",
-          "anchor": "312-endpoint-manifest",
-          "label": "design §3.1.2"
+          "doc": "messaging",
+          "anchor": "1-message-types",
+          "label": "Messaging §1"
         },
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "manifest",
+          "anchor": "1-endpoint",
+          "label": "Endpoint manifest §1"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "1-purpose-and-roles",
+          "label": "Endpoint sync §1"
         }
       ]
     },
@@ -265,19 +411,39 @@
       "title": "Who runs what",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "24-participant-roles",
-          "label": "design §2.4"
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
         },
         {
-          "doc": "design",
-          "anchor": "4-roles-and-operations",
-          "label": "design §4"
+          "doc": "service",
+          "anchor": "63-endpoint-admission",
+          "label": "CLPR Service §6.3"
         },
         {
-          "doc": "design",
-          "anchor": "47-cross-role-scenarios",
-          "label": "design §4.7"
+          "doc": "service",
+          "anchor": "7-recovery-scenarios",
+          "label": "CLPR Service §7"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "5-closing-and-draining",
+          "label": "Channel state transitions §5"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-3-messages-left-without-replies-when-a-channel-cannot-drain",
+          "label": "Open issues OI-3"
+        },
+        {
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
         }
       ]
     },
@@ -286,9 +452,20 @@
       "title": "Adding a new kind of ledger",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/README.md",
+          "label": "Ledger Specifications"
         },
         {
           "doc": "repo",
@@ -299,8 +476,8 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/README.md",
-          "label": "verifier specifications"
+          "path": "ledgers/besu/ledger.md",
+          "label": "QBFT ledger specification"
         }
       ]
     },
@@ -309,30 +486,40 @@
       "title": "What CLPR does not do",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
         },
         {
-          "doc": "spec",
-          "anchor": "8-security-considerations",
-          "label": "spec §8"
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
         },
         {
-          "doc": "design",
-          "anchor": "335-open-economic-design-issues",
-          "label": "design §3.3.5"
+          "doc": "service",
+          "anchor": "62-finality",
+          "label": "CLPR Service §6.2"
         },
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "service",
+          "anchor": "65-application-payloads",
+          "label": "CLPR Service §6.5"
+        },
+        {
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
         },
         {
           "doc": "repo",
-          "id": "org-profile",
-          "path": "profile/README.md",
-          "label": "org profile"
+          "id": "clpr-spec",
+          "path": "protocol/open-issues.md",
+          "label": "Open issues"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "1-message-types",
+          "label": "Messaging §1"
         }
       ]
     },
@@ -353,21 +540,78 @@
           "label": "teams.yml"
         },
         {
-          "doc": "design",
-          "anchor": "1-executive-summary",
-          "label": "design §1"
-        },
-        {
           "doc": "repo",
           "id": "governance",
           "path": "lf-decentralized-trust-labs_Charter.pdf",
           "label": "Labs charter"
         },
         {
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
+        },
+        {
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
+        },
+        {
           "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "docs/lifecycle.md",
-          "label": "contracts docs/lifecycle.md"
+          "id": "clpr-spec",
+          "path": "README.md",
+          "label": "Specification README"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "clips/clip-0001.md",
+          "label": "CLIP-0001"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "LICENSE.md",
+          "label": "Community Specification License 1.0"
+        },
+        {
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
+        },
+        {
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "31-messages",
+          "label": "Endpoint sync §3.1"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "4-running-hash",
+          "label": "Messaging §4"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "2-slashing-and-bans",
+          "label": "Stakes and bonds §2"
         }
       ]
     }
@@ -378,19 +622,44 @@
       "title": "What CLPR is for, and what you can build",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "1-executive-summary",
-          "label": "design §1"
+          "doc": "overview",
+          "anchor": "1-purpose",
+          "label": "Overview §1"
         },
         {
-          "doc": "design",
-          "anchor": "34-application-layer",
-          "label": "design §3.4"
+          "doc": "overview",
+          "anchor": "3-message-flow",
+          "label": "Overview §3"
         },
         {
-          "doc": "design",
-          "anchor": "22-high-level-message-flow",
-          "label": "design §2.2"
+          "doc": "overview",
+          "anchor": "8-application-patterns",
+          "label": "Overview §8"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
+        },
+        {
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
+        },
+        {
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
+        },
+        {
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
         }
       ]
     },
@@ -399,19 +668,24 @@
       "title": "The mental model: the trust chain, safety and liveness",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "1-executive-summary",
-          "label": "design §1"
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
         },
         {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
         },
         {
-          "doc": "spec",
-          "anchor": "82-trust-model",
-          "label": "spec §8.2"
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "2-slashing-and-bans",
+          "label": "Stakes and bonds §2"
         }
       ]
     },
@@ -420,15 +694,29 @@
       "title": "The four layers",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "3-architecture",
-          "label": "design §3"
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
         },
         {
-          "doc": "repo",
-          "id": "org-profile",
-          "path": "profile/README.md",
-          "label": "organization profile"
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
+        },
+        {
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "2-registration",
+          "label": "Channel setup §2"
+        },
+        {
+          "doc": "overview",
+          "anchor": "8-application-patterns",
+          "label": "Overview §8"
         }
       ]
     },
@@ -437,36 +725,78 @@
       "title": "Send, and two callbacks",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "34-application-layer",
-          "label": "design §3.4"
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
         },
         {
-          "doc": "spec",
-          "anchor": "64-messaging",
-          "label": "spec §6.4"
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
         },
         {
-          "doc": "spec",
-          "anchor": "application-delivery",
-          "label": "spec §6.5 Application Delivery"
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "service",
+          "anchor": "65-application-payloads",
+          "label": "CLPR Service §6.5"
         },
         {
           "doc": "repo",
           "id": "clpr-smart-contracts",
           "path": "src/interfaces/IClprApplication.sol",
           "label": "IClprApplication.sol"
+        },
+        {
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "7-recovery-scenarios",
+          "label": "CLPR Service §7"
         }
       ]
     },
     {
       "id": "journey",
-      "title": "The 28 steps, in protocol terms",
+      "title": "One message, step by step, in protocol terms",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "22-high-level-message-flow",
-          "label": "design §2.2"
+          "doc": "overview",
+          "anchor": "3-message-flow",
+          "label": "Overview §3"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
         }
       ]
     },
@@ -475,24 +805,49 @@
       "title": "The message queue and the running hash",
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "14-message-queue",
-          "label": "spec §1.4"
+          "doc": "messaging",
+          "anchor": "1-message-types",
+          "label": "Messaging §1"
         },
         {
-          "doc": "spec",
-          "anchor": "41-running-hash-computation",
-          "label": "spec §4.1"
+          "doc": "messaging",
+          "anchor": "2-message-identifiers-and-queue",
+          "label": "Messaging §2"
         },
         {
-          "doc": "spec",
-          "anchor": "43-message-enqueue-algorithm",
-          "label": "spec §4.3"
+          "doc": "messaging",
+          "anchor": "3-payload-encoding",
+          "label": "Messaging §3"
         },
         {
-          "doc": "design",
-          "anchor": "322-message-storage",
-          "label": "design §3.2.2"
+          "doc": "messaging",
+          "anchor": "4-running-hash",
+          "label": "Messaging §4"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "5-configuration-propagation",
+          "label": "Ledger configuration §5"
+        },
+        {
+          "doc": "service",
+          "anchor": "14-enqueue",
+          "label": "CLPR Service §1.4"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "service",
+          "anchor": "1-structure-and-internal-state",
+          "label": "CLPR Service §1"
         }
       ]
     },
@@ -501,31 +856,49 @@
       "title": "Bundles and progress",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "323-bundle-transport",
-          "label": "design §3.2.3"
+          "doc": "bundle",
+          "anchor": "1-bundle-content",
+          "label": "Bundle §1"
         },
         {
-          "doc": "spec",
-          "anchor": "212-bundle-progress-criteria",
-          "label": "spec §2.1.2"
+          "doc": "bundle",
+          "anchor": "2-queue-metadata",
+          "label": "Bundle §2"
         },
         {
-          "doc": "design",
-          "anchor": "326-bundle-size-and-throughput-limits",
-          "label": "design §3.2.6"
+          "doc": "bundle",
+          "anchor": "3-partial-bundles",
+          "label": "Bundle §3"
         },
         {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "ADR/2026-07-17-queue-metadata-and-partial-bundle-proofs.md",
-          "label": "ADR 2026-07-17"
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
         },
         {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/common/ClprEvmBundleVerifier.sol",
-          "label": "ClprEvmBundleVerifier.sol"
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "4-message-range",
+          "label": "Endpoint sync §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "3-throttles",
+          "label": "Ledger configuration §3"
+        },
+        {
+          "doc": "service",
+          "anchor": "4-configuration-parameters",
+          "label": "CLPR Service §4"
         }
       ]
     },
@@ -534,14 +907,577 @@
       "title": "Verifying a bundle",
       "refs": [
         {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
+          "doc": "transitions",
+          "anchor": "2-bundle-processing",
+          "label": "Channel state transitions §2"
         },
         {
-          "doc": "design",
-          "anchor": "325-bundle-verification",
-          "label": "design §3.2.5"
+          "doc": "verifierIface",
+          "anchor": "3-verifybundle",
+          "label": "Verifier interface §3"
+        },
+        {
+          "doc": "overview",
+          "anchor": "4-trust-model",
+          "label": "Overview §4"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "6-pause-and-resume",
+          "label": "Channel state transitions §6"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "5-enqueue",
+          "label": "Messaging §5"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "6-delivery-to-the-application",
+          "label": "Messaging §6"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "7-replies",
+          "label": "Messaging §7"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "9-acknowledgement",
+          "label": "Messaging §9"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "52-sending",
+          "label": "Ledger configuration §5.2"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "53-receiving",
+          "label": "Ledger configuration §5.3"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "3-progress",
+          "label": "Channel state transitions §3"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "economics",
+          "anchor": "2-payment-to-the-bundle-submitter",
+          "label": "Channel economics §2"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "2-slashing-and-bans",
+          "label": "Stakes and bonds §2"
+        },
+        {
+          "doc": "service",
+          "anchor": "5-bundle-submission",
+          "label": "CLPR Service §5"
+        }
+      ]
+    },
+    {
+      "id": "ordering",
+      "title": "Response ordering and correlation",
+      "refs": [
+        {
+          "doc": "messaging",
+          "anchor": "8-response-ordering",
+          "label": "Messaging §8"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "9-acknowledgement",
+          "label": "Messaging §9"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "6-pause-and-resume",
+          "label": "Channel state transitions §6"
+        },
+        {
+          "doc": "overview",
+          "anchor": "7-vocabulary",
+          "label": "Overview §7"
+        }
+      ]
+    },
+    {
+      "id": "identity",
+      "title": "Ledger identity and configuration",
+      "refs": [
+        {
+          "doc": "ledgerConfig",
+          "anchor": "1-ledger-identity",
+          "label": "Ledger configuration §1"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "2-ledger-configuration",
+          "label": "Ledger configuration §2"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "3-throttles",
+          "label": "Ledger configuration §3"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "4-protocol-version",
+          "label": "Ledger configuration §4"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-7-protocol-version-at-channel-setup",
+          "label": "Open issues OI-7"
+        },
+        {
+          "doc": "conventions",
+          "anchor": "3-abstract-data-structures",
+          "label": "Conventions §3"
+        },
+        {
+          "doc": "service",
+          "anchor": "23-initialization-and-kill-switch",
+          "label": "CLPR Service §2.3"
+        },
+        {
+          "doc": "service",
+          "anchor": "4-configuration-parameters",
+          "label": "CLPR Service §4"
+        },
+        {
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        }
+      ]
+    },
+    {
+      "id": "channels",
+      "title": "Channels",
+      "refs": [
+        {
+          "doc": "channelSetup",
+          "anchor": "1-channel-identity",
+          "label": "Channel setup §1"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "2-registration",
+          "label": "Channel setup §2"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "5-initial-peer-state",
+          "label": "Channel setup §5"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "6-shared-channel-state",
+          "label": "Channel setup §6"
+        },
+        {
+          "doc": "service",
+          "anchor": "11-channel-record",
+          "label": "CLPR Service §1.1"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "1-channel-status",
+          "label": "Channel state transitions §1"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "5-closing-and-draining",
+          "label": "Channel state transitions §5"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/evm/ledger-family.md",
+          "label": "EVM family"
+        },
+        {
+          "doc": "messaging",
+          "anchor": "2-message-identifiers-and-queue",
+          "label": "Messaging §2"
+        },
+        {
+          "doc": "service",
+          "anchor": "25-closing-a-channel",
+          "label": "CLPR Service §2.5"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
+        },
+        {
+          "doc": "overview",
+          "anchor": "8-application-patterns",
+          "label": "Overview §8"
+        }
+      ]
+    },
+    {
+      "id": "endpoints",
+      "title": "Endpoints and manifests",
+      "refs": [
+        {
+          "doc": "manifest",
+          "anchor": "1-endpoint",
+          "label": "Endpoint manifest §1"
+        },
+        {
+          "doc": "manifest",
+          "anchor": "2-endpoint-manifest",
+          "label": "Endpoint manifest §2"
+        },
+        {
+          "doc": "manifest",
+          "anchor": "4-peer-manifest",
+          "label": "Endpoint manifest §4"
+        },
+        {
+          "doc": "manifest",
+          "anchor": "5-manifest-proofs",
+          "label": "Endpoint manifest §5"
+        },
+        {
+          "doc": "service",
+          "anchor": "32-registration-and-admission",
+          "label": "CLPR Service §3.2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "3-endpoints",
+          "label": "Stakes and bonds §3"
+        },
+        {
+          "doc": "service",
+          "anchor": "53-peer-selection",
+          "label": "CLPR Service §5.3"
+        },
+        {
+          "doc": "service",
+          "anchor": "63-endpoint-admission",
+          "label": "CLPR Service §6.3"
+        },
+        {
+          "doc": "service",
+          "anchor": "7-recovery-scenarios",
+          "label": "CLPR Service §7"
+        },
+        {
+          "doc": "manifest",
+          "anchor": "3-local-manifest",
+          "label": "Endpoint manifest §3"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "1-purpose-and-roles",
+          "label": "Endpoint sync §1"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "2-transport",
+          "label": "Endpoint sync §2"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "3-exchange",
+          "label": "Endpoint sync §3"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "4-message-range",
+          "label": "Endpoint sync §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "51-who-submits",
+          "label": "CLPR Service §5.1"
+        },
+        {
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
+        }
+      ]
+    },
+    {
+      "id": "sync",
+      "title": "The sync protocol",
+      "refs": [
+        {
+          "doc": "endpointSync",
+          "anchor": "1-purpose-and-roles",
+          "label": "Endpoint sync §1"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "2-transport",
+          "label": "Endpoint sync §2"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "3-exchange",
+          "label": "Endpoint sync §3"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "4-message-range",
+          "label": "Endpoint sync §4"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "53-channel-status",
+          "label": "Endpoint sync §5.3"
+        },
+        {
+          "doc": "service",
+          "anchor": "52-checks-before-submitting",
+          "label": "CLPR Service §5.2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "docs/sync-protocol.md",
+          "label": "endpoint docs/sync-protocol.md"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "clpr-relay-grpc-client/src/main/java/org/hiero/clpr/relay/grpc/client/ClprEndpointClient.java",
+          "label": "ClprEndpointClient.java"
+        },
+        {
+          "doc": "service",
+          "anchor": "68-transport-and-sync-hygiene",
+          "label": "CLPR Service §6.8"
+        },
+        {
+          "doc": "manifest",
+          "anchor": "1-endpoint",
+          "label": "Endpoint manifest §1"
+        }
+      ]
+    },
+    {
+      "id": "verifiers",
+      "title": "Verifiers and trust anchors",
+      "refs": [
+        {
+          "doc": "verifierIface",
+          "anchor": "1-verifier-contracts-and-trust-anchors",
+          "label": "Verifier interface §1"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "3-verifybundle",
+          "label": "Verifier interface §3"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-1-what-the-configuration-proof-must-authenticate",
+          "label": "Open issues OI-1"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "51-trust-anchor-catch-up",
+          "label": "Endpoint sync §5.1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/README.md",
+          "label": "Ledger Specifications index"
+        },
+        {
+          "doc": "bundle",
+          "anchor": "4-proof-requirements",
+          "label": "Bundle §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "62-finality",
+          "label": "CLPR Service §6.2"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/proof-schemes/hints-wraps.md",
+          "label": "Hiero proof scheme: hinTS with WRAPS"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/besu/proof-schemes/qbft-epoch.md",
+          "label": "QBFT proof scheme: epoch"
+        }
+      ]
+    },
+    {
+      "id": "connectors",
+      "title": "Connectors, payment and slashing",
+      "refs": [
+        {
+          "doc": "connectorSetup",
+          "anchor": "1-connector-identity",
+          "label": "Connector setup §1"
+        },
+        {
+          "doc": "connectorSetup",
+          "anchor": "3-connectors-on-both-ledgers",
+          "label": "Connector setup §3"
+        },
+        {
+          "doc": "connectorSetup",
+          "anchor": "4-authorization-of-outbound-messages",
+          "label": "Connector setup §4"
+        },
+        {
+          "doc": "economics",
+          "anchor": "1-execution-charges",
+          "label": "Channel economics §1"
+        },
+        {
+          "doc": "economics",
+          "anchor": "2-payment-to-the-bundle-submitter",
+          "label": "Channel economics §2"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "21-when-a-connector-is-slashed",
+          "label": "Stakes and bonds §2.1"
+        },
+        {
+          "doc": "stakes",
+          "anchor": "22-penalty",
+          "label": "Stakes and bonds §2.2"
+        },
+        {
+          "doc": "economics",
+          "anchor": "3-queue-quotas",
+          "label": "Channel economics §3"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-4-compensation-for-sending-bundles",
+          "label": "Open issues OI-4"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-5-calibration-of-the-connector-stake",
+          "label": "Open issues OI-5"
+        },
+        {
+          "doc": "connectorSetup",
+          "anchor": "2-registration",
+          "label": "Connector setup §2"
+        }
+      ]
+    },
+    {
+      "id": "recovery",
+      "title": "Recovery scenarios",
+      "refs": [
+        {
+          "doc": "service",
+          "anchor": "7-recovery-scenarios",
+          "label": "CLPR Service §7"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-3-messages-left-without-replies-when-a-channel-cannot-drain",
+          "label": "Open issues OI-3"
+        },
+        {
+          "doc": "service",
+          "anchor": "25-closing-a-channel",
+          "label": "CLPR Service §2.5"
+        },
+        {
+          "doc": "transitions",
+          "anchor": "5-closing-and-draining",
+          "label": "Channel state transitions §5"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Security considerations",
+      "refs": [
+        {
+          "doc": "service",
+          "anchor": "6-security-considerations",
+          "label": "CLPR Service §6"
+        },
+        {
+          "doc": "service",
+          "anchor": "64-reentrancy-and-external-calls",
+          "label": "CLPR Service §6.4"
+        },
+        {
+          "doc": "service",
+          "anchor": "68-transport-and-sync-hygiene",
+          "label": "CLPR Service §6.8"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-smart-contracts",
+          "path": "src/libraries/service/BundleLib.sol",
+          "label": "BundleLib.sol"
         },
         {
           "doc": "repo",
@@ -552,246 +1488,14 @@
         {
           "doc": "repo",
           "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/BundleLib.sol",
-          "label": "BundleLib.sol"
-        }
-      ]
-    },
-    {
-      "id": "ordering",
-      "title": "Response ordering and correlation",
-      "refs": [
-        {
-          "doc": "design",
-          "anchor": "328-response-ordering-and-correlation",
-          "label": "design §3.2.8"
-        },
-        {
-          "doc": "spec",
-          "anchor": "45-response-ordering-verification",
-          "label": "spec §4.5"
-        },
-        {
-          "doc": "spec",
-          "anchor": "44-message-lifecycle",
-          "label": "spec §4.4"
-        }
-      ]
-    },
-    {
-      "id": "identity",
-      "title": "Ledger identity and configuration",
-      "refs": [
-        {
-          "doc": "design",
-          "anchor": "311-ledger-identity-and-configuration",
-          "label": "design §3.1.1"
-        },
-        {
-          "doc": "spec",
-          "anchor": "11-ledger-identity-and-configuration",
-          "label": "spec §1.1"
-        },
-        {
-          "doc": "spec",
-          "anchor": "7-configuration-parameters",
-          "label": "spec §7"
-        }
-      ]
-    },
-    {
-      "id": "channels",
-      "title": "Channels",
-      "refs": [
-        {
-          "doc": "spec",
-          "anchor": "21-channel",
-          "label": "spec §2.1"
-        },
-        {
-          "doc": "spec",
-          "anchor": "51-channel-registration",
-          "label": "spec §5.1"
-        },
-        {
-          "doc": "design",
-          "anchor": "313-establishing-and-updating-channels",
-          "label": "design §3.1.3"
+          "path": "docs/architecture.md",
+          "label": "contracts docs/architecture.md"
         },
         {
           "doc": "repo",
           "id": "clpr-smart-contracts",
-          "path": "docs/lifecycle.md",
-          "label": "contracts docs/lifecycle.md"
-        }
-      ]
-    },
-    {
-      "id": "endpoints",
-      "title": "Endpoints and manifests",
-      "refs": [
-        {
-          "doc": "design",
-          "anchor": "312-endpoint-manifest",
-          "label": "design §3.1.2"
-        },
-        {
-          "doc": "spec",
-          "anchor": "12-endpoint-identity",
-          "label": "spec §1.2"
-        },
-        {
-          "doc": "spec",
-          "anchor": "24-endpoint-manifest",
-          "label": "spec §2.4"
-        },
-        {
-          "doc": "spec",
-          "anchor": "65-endpoint-management",
-          "label": "spec §6.5"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "ADR/2026-07-03-clpr-endpoint-manifests.md",
-          "label": "ADR 2026-07-03"
-        }
-      ]
-    },
-    {
-      "id": "sync",
-      "title": "The sync protocol",
-      "refs": [
-        {
-          "doc": "spec",
-          "anchor": "15-sync-protocol",
-          "label": "spec §1.5"
-        },
-        {
-          "doc": "design",
-          "anchor": "314-endpoint-communication-protocol",
-          "label": "design §3.1.4"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "ADR/2026-07-14-endpoint-sync-streaming-and-mtls.md",
-          "label": "ADR 2026-07-14"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-endpoint",
-          "path": "docs/sync-protocol.md",
-          "label": "endpoint docs/sync-protocol.md"
-        }
-      ]
-    },
-    {
-      "id": "verifiers",
-      "title": "Verifiers and trust anchors",
-      "refs": [
-        {
-          "doc": "spec",
-          "anchor": "31-verifier-contract-interface",
-          "label": "spec §3.1"
-        },
-        {
-          "doc": "spec",
-          "anchor": "32-endpoint-trust-anchor-rotation-obligations",
-          "label": "spec §3.2"
-        },
-        {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "verifiers/README.md",
-          "label": "verifiers/"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/hiero/HieroVerifier.sol",
-          "label": "HieroVerifier.sol"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/verifiers/evm/qbft/qbft-verifier.md",
-          "label": "QBFT verifiers"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-spec",
-          "path": "ADR/2026-07-02-channel-context-verifier-interface.md",
-          "label": "ADR 2026-07-02"
-        }
-      ]
-    },
-    {
-      "id": "connectors",
-      "title": "Connectors, payment and slashing",
-      "refs": [
-        {
-          "doc": "design",
-          "anchor": "33-payment--routing-layer",
-          "label": "design §3.3"
-        },
-        {
-          "doc": "spec",
-          "anchor": "22-connector",
-          "label": "spec §2.2"
-        },
-        {
-          "doc": "spec",
-          "anchor": "33-connector-authorization-interface",
-          "label": "spec §3.3"
-        },
-        {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
-        },
-        {
-          "doc": "spec",
-          "anchor": "63-connector-management",
-          "label": "spec §6.3"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/BundleLib.sol",
-          "label": "BundleLib.sol"
-        }
-      ]
-    },
-    {
-      "id": "recovery",
-      "title": "Recovery scenarios",
-      "refs": [
-        {
-          "doc": "design",
-          "anchor": "5-recovery-scenarios",
-          "label": "design §5"
-        },
-        {
-          "doc": "spec",
-          "anchor": "9-recovery-scenarios",
-          "label": "spec §9"
-        }
-      ]
-    },
-    {
-      "id": "security",
-      "title": "Security considerations",
-      "refs": [
-        {
-          "doc": "spec",
-          "anchor": "8-security-considerations",
-          "label": "spec §8"
+          "path": "src/logic/BundleLogic.sol",
+          "label": "BundleLogic.sol"
         }
       ]
     },
@@ -800,19 +1504,34 @@
       "title": "Roles, operations and four scenarios",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "24-participant-roles",
-          "label": "design §2.4"
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
         },
         {
-          "doc": "design",
-          "anchor": "4-roles-and-operations",
-          "label": "design §4"
+          "doc": "connectorSetup",
+          "anchor": "5-removal",
+          "label": "Connector setup §5"
         },
         {
-          "doc": "design",
-          "anchor": "47-cross-role-scenarios",
-          "label": "design §4.7"
+          "doc": "service",
+          "anchor": "51-who-submits",
+          "label": "CLPR Service §5.1"
+        },
+        {
+          "doc": "service",
+          "anchor": "7-recovery-scenarios",
+          "label": "CLPR Service §7"
+        },
+        {
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "openIssues",
+          "anchor": "oi-3-messages-left-without-replies-when-a-channel-cannot-drain",
+          "label": "Open issues OI-3"
         }
       ]
     },
@@ -821,26 +1540,31 @@
       "title": "Adding a ledger: the verifier developer",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
+          "doc": "overview",
+          "anchor": "5-roles",
+          "label": "Overview §5"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "verifiers/README.md",
-          "label": "verifier specifications"
+          "path": "ledgers/README.md",
+          "label": "Ledger Specifications index"
         },
         {
           "doc": "repo",
-          "id": "org-profile",
-          "path": "profile/README.md",
-          "label": "organization profile"
+          "id": "clpr-spec",
+          "path": "clips/clip-0001.md",
+          "label": "CLIP-0001"
         },
         {
-          "doc": "design",
-          "anchor": "44-verifier-developer",
-          "label": "design §4.4"
+          "doc": "channelSetup",
+          "anchor": "4-verifier-binding",
+          "label": "Channel setup §4"
+        },
+        {
+          "doc": "service",
+          "anchor": "61-verifier-choice",
+          "label": "CLPR Service §6.1"
         }
       ]
     },
@@ -862,14 +1586,27 @@
         },
         {
           "doc": "repo",
+          "id": "clpr-spec",
+          "path": "releases/v0.2.md",
+          "label": "Release notes"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "clips/clip-0001.md",
+          "label": "CLIP-0001 §6.5"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "ledgers/hiero/ledger.md",
+          "label": "Hiero ledger specification"
+        },
+        {
+          "doc": "repo",
           "id": "clpr-endpoint",
           "path": "README.md",
           "label": "endpoint README"
-        },
-        {
-          "doc": "design",
-          "anchor": "315-verifier-contracts",
-          "label": "design §3.1.5"
         },
         {
           "doc": "repo",
@@ -882,6 +1619,29 @@
           "id": "org-profile",
           "path": "profile/README.md",
           "label": "org profile"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "2-transport",
+          "label": "Endpoint sync §2"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "clpr-relay-grpc-client/src/main/java/org/hiero/clpr/relay/grpc/client/ClprEndpointClient.java",
+          "label": "ClprEndpointClient.java"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "clpr-relay-sync/src/main/java/org/hiero/clpr/relay/sync/ChannelSyncTask.java",
+          "label": "ChannelSyncTask.java"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-endpoint",
+          "path": "clpr-relay-grpc-server/src/main/java/org/hiero/clpr/relay/grpc/server/ClprSyncSession.java",
+          "label": "ClprSyncSession.java"
         }
       ]
     },
@@ -892,14 +1652,41 @@
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "ADR/README.md",
-          "label": "ADR guide"
+          "path": "clips/clip-0001.md",
+          "label": "CLIP-0001"
         },
         {
           "doc": "repo",
           "id": "clpr-spec",
-          "path": "clpr-options-to-consider.md",
-          "label": "options to consider"
+          "path": "clips/README.md",
+          "label": "CLIPs index"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "README.md",
+          "label": "Specification README"
+        },
+        {
+          "doc": "repo",
+          "id": "clpr-spec",
+          "path": "releases/v0.2.md",
+          "label": "Release v0.2"
+        },
+        {
+          "doc": "overview",
+          "anchor": "6-how-the-specification-is-organized",
+          "label": "Overview §6"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "4-protocol-version",
+          "label": "Ledger configuration §4"
+        },
+        {
+          "doc": "conventions",
+          "anchor": "3-abstract-data-structures",
+          "label": "Conventions §3"
         }
       ]
     },
@@ -938,9 +1725,29 @@
       "title": "Glossary",
       "refs": [
         {
-          "doc": "design",
-          "anchor": "21-common-terminology",
-          "label": "design §2.1"
+          "doc": "overview",
+          "anchor": "2-major-parts",
+          "label": "Overview §2"
+        },
+        {
+          "doc": "overview",
+          "anchor": "7-vocabulary",
+          "label": "Overview §7"
+        },
+        {
+          "doc": "verifierIface",
+          "anchor": "4-trust-anchor-changes",
+          "label": "Verifier interface §4"
+        },
+        {
+          "doc": "endpointSync",
+          "anchor": "51-trust-anchor-catch-up",
+          "label": "Endpoint sync §5.1"
+        },
+        {
+          "doc": "ledgerConfig",
+          "anchor": "1-ledger-identity",
+          "label": "Ledger configuration §1"
         }
       ]
     }
@@ -952,7 +1759,7 @@
         "numeral": "I",
         "name": "The problem",
         "title": "Why two ledgers cannot just talk",
-        "goal": "Know what a ledger is, why two of them cannot see each other, and why a trusted party in the middle makes every message only as safe as that party.",
+        "goal": "Know what a ledger is, why two of them cannot see each other, and why CLPR adds no party in the middle to trust.",
         "first": "ledger"
       },
       {
@@ -975,8 +1782,8 @@
         "id": "build",
         "numeral": "IV",
         "name": "What you can build",
-        "title": "What the design anticipates people building",
-        "goal": "The four patterns the design outlines, the shapes of network that pairs of ledgers can form, and who runs what.",
+        "title": "Patterns built on CLPR messages",
+        "goal": "The three patterns built on CLPR messages, the shapes of network that pairs of ledgers can form, and who runs what.",
         "first": "patterns"
       },
       {
@@ -994,7 +1801,7 @@
         "numeral": "I",
         "name": "Foundations",
         "title": "What it is for, and the mental model",
-        "goal": "What CLPR delivers, what the design anticipates people building on it, whom an application trusts and why, and the four layers the rest of the page walks down.",
+        "goal": "What CLPR delivers, the patterns built on its messages, whom an application trusts and why, and the four layers the rest of the page walks down.",
         "first": "why"
       },
       {
@@ -1002,7 +1809,7 @@
         "numeral": "II",
         "name": "Your first message",
         "title": "One message through the API",
-        "goal": "The three calls an application sees, the twenty-eight steps one message takes, and the queue and running hash that make the steps checkable.",
+        "goal": "The three calls an application sees, the steps one message takes, and the queue and running hash that make the steps checkable.",
         "first": "api"
       },
       {

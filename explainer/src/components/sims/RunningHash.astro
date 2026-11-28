@@ -1,9 +1,10 @@
 ---
 /**
  * The running hash chain. Real SHA-256 (WebCrypto) over a toy queue, so the numbers on screen
- * are genuine. Spec §4.1: running_hash = SHA-256(previous_running_hash || serialized_payload),
- * initial value 32 zero bytes. Here the "serialized payload" is the UTF-8 text shown, which is a
- * simplification of the protobuf encoding the protocol actually hashes.
+ * are genuine. Messaging §4: each step hashes the previous running hash followed by the SHA-256 of
+ * the message's payload bytes, and both sides start the chain at 32 zero bytes. Here the payload
+ * bytes are the UTF-8 text shown, a simplification of the canonical protobuf encoding the protocol
+ * hashes (Messaging §3).
  */
 const { id = 'running-hash-sim', detail = false } = Astro.props as { id?: string; detail?: boolean };
 const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
@@ -11,7 +12,7 @@ const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
 <div class="sim rhash" id={id} aria-busy="true">
   <div class="sim__head"><div><span class="kind">Simulation</span><h3>Five messages, one chain of running hashes</h3></div><span class="pill ok" data-role="status">chain intact</span></div>
   <div class="sim__body">
-    {detail && <p class="small" style="margin:0 0 10px"><code>H<sub>n</sub> = SHA-256( H<sub>n−1</sub> ‖ payload<sub>n</sub> )</code>, with <code>H<sub>0</sub></code> = 32 zero bytes. Only <code>H<sub>5</sub></code>, the anchor, is covered by the state proof. This is the specification's form; the pinned EVM contracts hash the payload first: <code>sha256( H<sub>n−1</sub> ‖ sha256(payload<sub>n</sub>) )</code>. The receiver recomputes the chain from its own stored hash and compares.</p>}
+    {detail && <p class="small" style="margin:0 0 10px">Each running hash is computed from the previous running hash and the SHA-256 of the message's payload bytes, and both sides start the chain at 32 zero bytes. The bundle proves only the running hash of its last message; the receiver recomputes the chain from its own stored running hash and compares. Here each payload is the text shown; the protocol hashes the canonical protobuf bytes of the message.</p>}
     <div class="table-wrap rhash__wrap" style="margin:0">
       <table>
         <thead><tr><th>#</th><th>message</th><th>running hash after it</th><th>proven?</th><th>check</th></tr></thead>
@@ -21,14 +22,14 @@ const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
               <td class="n" data-role="id">{i + 1}</td>
               <td><code data-role="payload">{m}</code></td>
               <td class="hash"><code data-role="hash" class="pending">…</code><span class="break" data-role="break" hidden>chain breaks here</span></td>
-              <td data-role="proven">{i === msgs.length - 1 ? '🔏 anchor' : '-'}</td>
+              <td data-role="proven">{i === msgs.length - 1 ? 'proven' : '-'}</td>
               <td data-role="check"></td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
-    <p class="anchor">🔏 anchor: <code data-role="anchor">…</code></p>
+    <p class="anchor">proven running hash of the last message: <code data-role="anchor">…</code></p>
   </div>
   <div class="sim__controls">
     <div class="group">
@@ -78,8 +79,9 @@ const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
     let h = new Uint8Array(32);
     const out: Uint8Array[] = [];
     for (const m of msgs) {
-      const p = enc.encode(m);
-      const buf = new Uint8Array(h.length + p.length); buf.set(h); buf.set(p, h.length);
+      // h[k] = SHA-256(h[k-1] ‖ SHA-256(p[k])), from h[0] = 32 zero bytes (Messaging §4).
+      const payloadHash = await sha256(enc.encode(m));
+      const buf = new Uint8Array(h.length + payloadHash.length); buf.set(h); buf.set(payloadHash, h.length);
       h = await sha256(buf); out.push(h);
     }
     return out;
@@ -92,7 +94,7 @@ const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
     const anchorEl = $('[data-role="anchor"]');
     const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>('button[data-op]'));
     const faults = buttons.filter((b) => b.dataset.op !== 'restore');
-    const INTACT_LOG = 'Each running hash is computed from the previous running hash and the message. The receiver recomputes all five from its own last known running hash and compares only the final one with the proven anchor. Try changing something.';
+    const INTACT_LOG = 'Each running hash is computed from the previous running hash and the message. The receiver recomputes all five from its own last known running hash and compares only the final one with the running hash proven for the last message. Try changing something.';
     if (!subtle) {
       root.removeAttribute('aria-busy');
       status.textContent = 'no WebCrypto';
@@ -148,7 +150,7 @@ const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
         code.classList.remove('pending');
         code.classList.toggle('bad', !ok);
         cell('break').hidden = i !== broken;
-        cell('proven').textContent = last ? '🔏 anchor' : '-';
+        cell('proven').textContent = last ? 'proven' : '-';
         cell('check').innerHTML = last
           ? (h === anchor ? '<span class="pill ok">matches proof</span>' : '<span class="pill bad">does not match</span>')
           : ok ? '<span class="pill grey">recomputed</span>' : '<span class="pill bad">differs</span>';
@@ -159,10 +161,10 @@ const msgs = ['ping', 'pay Bo 5', 'config update', 'ping', 'pay Cy 2'];
       setStatus(intact ? 'chain intact' : 'bundle rejected', intact ? 'ok' : 'bad', op !== 'init');
       for (const b of faults) b.setAttribute('aria-pressed', String(b.dataset.op === op));
       if (op === 'restore' || op === 'init') {
-        log.innerHTML = intact ? `<span class="line">intact: H${n} == anchor</span>${INTACT_LOG}` : '';
+        log.innerHTML = intact ? `<span class="line">intact: H${n} == proven</span>${INTACT_LOG}` : '';
       } else {
         const from = broken < 0 ? n : broken + 1;
-        log.innerHTML = `<span class="line">${op}: H${from}..H${n} differ; H${n} != anchor</span><span class="bad">Rejected.</span> From message ${broken + 1} onwards every recomputed running hash is different, so the final one no longer equals the anchor proven by Ledger A's state proof. The receiver does not need to know <em>what</em> changed; a single mismatch is enough to throw the whole bundle away. This is why proving only the last message is sufficient.`;
+        log.innerHTML = `<span class="line">${op}: H${from}..H${n} differ; H${n} != proven</span><span class="bad">Rejected.</span> From message ${broken + 1} onwards every recomputed running hash is different, so the final one no longer equals the running hash that Ledger A's state proof proves for the last message. The receiver does not need to know <em>what</em> changed; a single mismatch is enough to throw the whole bundle away. This is why proving only the last message is sufficient.`;
       }
     }
     for (const b of buttons) {

@@ -1,100 +1,80 @@
 {
-  "$comment": "The \"what can go wrong\" cases of the Failures simulation. Every outcome is taken from the design document and the specification, and a detail that only the EVM contracts add says so; refs point at the passage each case rests on.",
+  "$comment": "The \"what can go wrong\" cases of the Failures simulation. Every outcome rests on the specification: bundle processing (Channel state transitions §2 and §6), replies and response ordering (Messaging §5, §7 and §8), slashing (Stakes and bonds §2, a Recommendation), the recovery table (CLPR Service §7) or the trust model (Overview §4). The first ref is the passage the simulation shows as the source; recovery names the row of the CLPR Service §7 recovery table a case follows.",
   "cases": [
     {
       "k": "app",
-      "q": "The application on the other side crashes",
-      "what": "The bundle still succeeds. The application's revert is caught and the reply carries APPLICATION_ERROR; the EVM contracts also put the revert data in it. Delivery worked; the application simply did not like the message.",
-      "pays": "The connector pays for the gas used, as normal. No fine.",
+      "q": "The application on the other side fails",
+      "what": "The bundle still succeeds. The reply carries APPLICATION_ERROR, and the other messages in the bundle are processed normally. Delivery worked; the application did not accept the message.",
+      "pays": "Under the recommended design the connector pays the execution charge, as for any delivered message, and is not slashed, because the failure is not its fault. On EVM ledgers it is slashed if that charge itself fails after dispatch.",
       "state": "ACTIVE",
       "recovers": "Nothing to recover. The sending application decides what to do with the error.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "333-receiving-routing-and-paying",
-          "label": "design §3.3.3"
-        },
-        {
-          "doc": "repo",
-          "id": "clpr-smart-contracts",
-          "path": "src/libraries/service/BundleLib.sol",
-          "label": "BundleLib.sol"
-        }
+        { "doc": "messaging", "anchor": "7-replies", "label": "Messaging §7" },
+        { "doc": "messaging", "anchor": "6-delivery-to-the-application", "label": "Messaging §6" },
+        { "doc": "stakes", "anchor": "21-when-a-connector-is-slashed", "label": "Stakes and bonds §2.1" },
+        { "doc": "economics", "anchor": "1-execution-charges", "label": "Channel economics §1" }
       ]
     },
     {
       "k": "nf",
       "q": "The connector was never registered on the other side",
       "what": "The message gets a deterministic answer: CONNECTOR_NOT_FOUND. The application is not called.",
-      "pays": "The destination submitter absorbs the execution cost with no compensation there. When the reply reaches home, the source connector that approved the message is fined from its locked stake, paid to the submitter of the reply bundle.",
+      "pays": "Under the recommended slashing rules, nobody is slashed on the destination, because there is no connector there; the submitter absorbs the execution cost. When the reply reaches the source, the source connector that authorized the message is slashed, and the penalty goes to the submitter of the bundle that carried the reply.",
       "state": "ACTIVE",
-      "recovers": "Yes; other messages in the same bundle are unaffected. The uncompensated destination submitter is a known limitation.",
+      "recovers": "Yes; the other messages in the same bundle are unaffected.",
       "refs": [
-        {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
-        }
+        { "doc": "stakes", "anchor": "21-when-a-connector-is-slashed", "label": "Stakes and bonds §2.1" },
+        { "doc": "connectorSetup", "anchor": "3-connectors-on-both-ledgers", "label": "Connector setup §3" },
+        { "doc": "stakes", "anchor": "23-proceeds", "label": "Stakes and bonds §2.3" }
       ]
     },
     {
       "k": "uf",
-      "q": "The connector on the other side has run out of funds",
-      "what": "CONNECTOR_UNDERFUNDED. The destination connector's locked stake is slashed and the failure reply is queued.",
-      "pays": "Slash proceeds reimburse the destination submitter on the spot. The source connector is fined too when the reply arrives. Penalties can escalate, and repeated failures may get the connector banned from the channel.",
+      "q": "The connector on the other side cannot pay",
+      "what": "CONNECTOR_UNDERFUNDED. The message is not dispatched and the failure reply is queued. Under the recommended slashing rules, the destination connector is slashed.",
+      "pays": "The penalty goes to the submitter of the bundle on the destination. The source connector is slashed too when the reply arrives. Penalties escalate, and repeated slashes end in a ban from the channel.",
       "state": "ACTIVE",
-      "recovers": "Yes; the connector operator tops up or is replaced by the application.",
+      "recovers": "Yes, once the connector can pay again, or the application uses another connector.",
       "refs": [
-        {
-          "doc": "spec",
-          "anchor": "46-slashing-decision",
-          "label": "spec §4.6"
-        }
+        { "doc": "stakes", "anchor": "21-when-a-connector-is-slashed", "label": "Stakes and bonds §2.1" },
+        { "doc": "stakes", "anchor": "22-penalty", "label": "Stakes and bonds §2.2" }
       ]
     },
     {
       "k": "tamper",
       "q": "An endpoint changes a message in transit",
-      "what": "Recomputing the running hash over the delivered messages no longer reproduces the proven anchor hash. The whole bundle is rejected before any message is dispatched.",
-      "pays": "The endpoint paid the transaction fee and gets nothing back.",
-      "state": "ACTIVE (a bad bundle changes no state)",
+      "what": "Recomputing the running hash over the delivered messages no longer reproduces the proven running hash of the bundle's last message. The whole bundle is rejected before any message is dispatched.",
+      "pays": "The submitter paid its transaction fee and gets nothing back.",
+      "state": "ACTIVE (a rejected bundle changes no state)",
       "recovers": "Immediately: any honest endpoint can deliver the genuine bundle.",
       "refs": [
-        {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2"
-        }
+        { "doc": "transitions", "anchor": "2-bundle-processing", "label": "Channel state transitions §2" },
+        { "doc": "overview", "anchor": "4-trust-model", "label": "Overview §4" }
       ]
     },
     {
       "k": "replay",
       "q": "An endpoint re-submits an old bundle",
-      "what": "Every new message must carry the id one past the last one received, in unbroken order, and a bundle with nothing new makes no progress. A stale bundle fails this check even if its proof is valid.",
-      "pays": "The endpoint wasted its own fee.",
+      "what": "Messages the channel has already received are skipped, and every bundle must make progress: new messages, a trust anchor change, a newer endpoint manifest, a new acknowledgement or a step towards closing. An old bundle offers none of these, so it is rejected even if its proof is valid.",
+      "pays": "The submitter wasted its own transaction fee.",
       "state": "ACTIVE",
       "recovers": "Nothing to recover.",
       "refs": [
-        {
-          "doc": "spec",
-          "anchor": "42-bundle-verification-algorithm",
-          "label": "spec §4.2, step 3"
-        }
+        { "doc": "transitions", "anchor": "2-bundle-processing", "label": "Channel state transitions §2" },
+        { "doc": "transitions", "anchor": "3-progress", "label": "Channel state transitions §3" }
       ]
     },
     {
       "k": "offline",
       "q": "All the endpoints on one side go offline",
-      "what": "Nothing is delivered. Messages queue up until the outbound queue reaches its depth limit, then new sends are refused (backpressure). Nothing is lost or forged.",
+      "what": "Nothing is delivered. Messages queue up until the outbound queue reaches its depth limit, then new sends are refused. Nothing is lost or forged.",
       "pays": "Nobody; nothing happened.",
       "state": "ACTIVE",
-      "recovers": "Automatically, as soon as any endpoint, including a brand-new one, submits a valid bundle. Safety never depended on the endpoints; only liveness does.",
+      "recovers": "Automatically, as soon as any endpoint, or anyone else, submits a valid bundle. Safety never depended on the endpoints; only liveness does.",
+      "recovery": "R6",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "5-recovery-scenarios",
-          "label": "design §5, R7–R8"
-        }
+        { "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" },
+        { "doc": "overview", "anchor": "4-trust-model", "label": "Overview §4" }
       ]
     },
     {
@@ -103,88 +83,78 @@
       "what": "Same as above from this side's point of view: the queue fills to its limit and then refuses new messages.",
       "pays": "Nobody.",
       "state": "ACTIVE",
-      "recovers": "When the peer returns, syncs resume from exactly where they stopped; message ids and running hashes make the resumption verifiable.",
+      "recovers": "When the peer is reachable again, sync resumes; message ids and running hashes keep delivery exact.",
+      "recovery": "R6",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "5-recovery-scenarios",
-          "label": "design §5, R8"
-        }
+        { "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" }
       ]
     },
     {
       "k": "order",
       "q": "Replies come back in the wrong order",
-      "what": "This is the one failure the protocol treats as corruption rather than noise. The channel is set to PAUSED: no new sends, and nothing from a bundle with out-of-order replies is delivered. Syncs continue.",
-      "pays": "Nobody is slashed; you cannot slash a ledger.",
+      "what": "This is the only failure that changes a channel's status: it shows that the peer's outbound queue is inconsistent, which resending cannot repair. The channel is set to PAUSED: no new sends, and no message of a bundle with out-of-order replies is processed. Queued messages keep syncing to the peer.",
+      "pays": "Nobody is slashed for it.",
       "state": "PAUSED",
-      "recovers": "Automatically, if the peer produces a correctly ordered bundle. Otherwise the admin can close the channel; it drains once the peer fixes its ordering. Some in-flight messages may end up needing reconciliation outside the protocol.",
+      "recovers": "Automatically, once the peer's replies are in order: the first bundle accepted without a violation returns the channel to ACTIVE. Otherwise the administrator can close the channel; it drains once the peer is fixed. Messages that never get a reply are reconciled outside the protocol.",
+      "recovery": "R5",
       "refs": [
-        {
-          "doc": "spec",
-          "anchor": "45-response-ordering-verification",
-          "label": "spec §4.5"
-        }
+        { "doc": "messaging", "anchor": "8-response-ordering", "label": "Messaging §8" },
+        { "doc": "transitions", "anchor": "6-pause-and-resume", "label": "Channel state transitions §6" },
+        { "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" }
       ]
     },
     {
       "k": "big",
       "q": "The message is larger than the other side accepts",
-      "what": "Rejected at send time on the source ledger, against the limit the peer published, before it costs anyone a delivery. The destination independently rejects any oversized bundle too.",
-      "pays": "The sender pays only for the failed attempt.",
+      "what": "Rejected at send time on the source ledger, against the limit the peer published, before it costs anyone a delivery. The destination independently rejects a bundle that exceeds its own limits.",
+      "pays": "The sender pays only the transaction fee of the failed send.",
       "state": "ACTIVE",
       "recovers": "Send a smaller message.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "326-bundle-size-and-throughput-limits",
-          "label": "design §3.2.6"
-        }
+        { "doc": "messaging", "anchor": "5-enqueue", "label": "Messaging §5" },
+        { "doc": "transitions", "anchor": "2-bundle-processing", "label": "Channel state transitions §2" },
+        { "doc": "ledgerConfig", "anchor": "3-throttles", "label": "Ledger configuration §3" }
       ]
     },
     {
       "k": "rotate",
       "q": "Every endpoint on the other side was replaced and nobody knows the new addresses",
-      "what": "The list of peer endpoints lives on-chain and can be proved. Anyone can read the new list from the remote ledger, wrap it in a proof, and submit it as an ordinary transaction. No connection to the old endpoints is needed.",
+      "what": "The list of peer endpoints is proven state. Anyone can obtain from the peer ledger a bundle that carries its current endpoint manifest and submit it as an ordinary transaction; the channel's copy is replaced and sync resumes. No connection to the old endpoints is needed.",
       "pays": "Whoever submits pays a transaction fee.",
       "state": "ACTIVE",
-      "recovers": "Yes. This case was the reason the endpoint manifest was moved out of the message queue.",
+      "recovers": "Yes; sync resumes with the new endpoints.",
+      "recovery": "R1",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "5-recovery-scenarios",
-          "label": "design §5, R1/R9"
-        }
+        { "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" },
+        { "doc": "manifest", "anchor": "4-peer-manifest", "label": "Endpoint manifest §4" }
       ]
     },
     {
       "k": "verifier",
       "q": "The verifier turns out to be buggy or compromised",
-      "what": "A bad verifier can accept fabricated proofs, so the protocol's own checks cannot save a channel whose verifier lies. The admin closes the channel; because a channel's verifier address is fixed for its lifetime, a new channel with a correct verifier is registered.",
-      "pays": "Whoever trusted the channel. Connector operators are expected to vet verifiers before staking.",
-      "state": "CLOSING → DRAINED → CLOSED",
-      "recovers": "Yes, on a new channel. Messages in flight when it closed may be left unresolved and need application-level reconciliation.",
+      "what": "The CLPR Service's own checks of message ids, running hash and reply order catch verifier bugs, not a compromised verifier, which can accept fabricated proofs. The administrator closes the channel; because a channel's verifier is fixed for its life, a new channel with a correct verifier is registered.",
+      "pays": "Whoever relied on the channel. Connector operators vet the verifier before staking on a channel.",
+      "state": "CLOSING (it drains and closes only if the peer's replies still arrive in order)",
+      "recovers": "Yes, on a new channel. Messages in flight when it closed can be lost and need reconciling outside the protocol.",
+      "recovery": "R4",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "5-recovery-scenarios",
-          "label": "design §5, R5"
-        }
+        { "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" },
+        { "doc": "overview", "anchor": "4-trust-model", "label": "Overview §4" },
+        { "doc": "overview", "anchor": "5-roles", "label": "Overview §5" },
+        { "doc": "openIssues", "anchor": "oi-3-messages-left-without-replies-when-a-channel-cannot-drain", "label": "Open issues OI-3" }
       ]
     },
     {
       "k": "format",
       "q": "A ledger changes how its proofs look",
-      "what": "The old verifier can no longer read the new proofs. A new verifier is published, a new channel registered with it, applications migrate, and the admin closes the old channel.",
-      "pays": "Migration effort. The source ledger must keep the old format alive long enough.",
+      "what": "The channel's verifier can no longer check the new proofs, and a channel's verifier cannot be replaced. A new channel is registered with a new verifier, applications migrate, and the administrator closes the old channel.",
+      "pays": "Migration effort.",
       "state": "old channel CLOSED",
-      "recovers": "Yes; this is the normal upgrade path.",
+      "recovers": "Yes, on a new channel.",
+      "recovery": "R2",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "47-cross-role-scenarios",
-          "label": "design §4.7"
-        }
+        { "doc": "service", "anchor": "7-recovery-scenarios", "label": "CLPR Service §7" },
+        { "doc": "channelSetup", "anchor": "4-verifier-binding", "label": "Channel setup §4" }
       ]
     },
     {
@@ -193,13 +163,9 @@
       "what": "Then messages from that ledger can be forged, and CLPR does not claim otherwise. A message is no more trustworthy than the consensus that sealed it.",
       "pays": "Everyone relying on that ledger, on-chain or cross-chain.",
       "state": "n/a",
-      "recovers": "Outside the protocol's scope. Beyond the two ledgers' consensus, the only other parts trusted for this are the channel's verifier and the CLPR Service on each side; endpoints and connectors cannot forge a message.",
+      "recovers": "Outside the protocol's scope. Beyond the two ledgers' consensus, the parts trusted are each ledger's CLPR Service, the channel's verifier and the remote application; endpoints and connectors cannot forge a message.",
       "refs": [
-        {
-          "doc": "design",
-          "anchor": "23-trust-model",
-          "label": "design §2.3"
-        }
+        { "doc": "overview", "anchor": "4-trust-model", "label": "Overview §4" }
       ]
     }
   ],

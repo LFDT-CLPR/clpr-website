@@ -1,55 +1,53 @@
 ---
 /**
- * One sync cycle between two endpoints, as the four-message sequence in design §3.1.4 (and the
- * ADR that introduced it): a bidirectional gRPC stream per Channel, an unproven BundleRequest each
- * way, a state-proven BundleResponse each way, then an empty payload that closes the stream.
+ * One sync cycle between two endpoints, as the four-step sequence of Endpoint sync §3.3: one
+ * bidirectional gRPC stream per cycle and channel, an unproven request each way, at most one bundle
+ * each way, and a terminal message from the responder that ends the cycle.
  *
- * The numbers are editable so the reader can see how the responder shapes a bundle from the
- * request (spec §1.5, design §3.2.3, ADR 2026-07-17 §3.2): messages start at
- * current_received_message_id + 1 and are capped by max_messages_per_bundle, so a bundle can be a
- * proper prefix of the backlog. A deliberately stale or over-claiming request shows why the
- * request is never allowed to change state (§4.2 Step 3 does that job).
+ * The numbers are editable so the reader can see how the sender shapes a bundle from the request
+ * (Endpoint sync §4, Bundle §3): messages start after the requestor's reported received id and are
+ * capped by the requestor's per-bundle message throttle, so a bundle can be a partial bundle. A
+ * stale or over-claiming request shows why the request never changes state: the requestor's
+ * verifier and bundle processing reject what it gets wrong.
  */
-import { design, spec, pinned } from '../../lib/sources';
+import { ledgerConfig, manifest, bundle, transitions, endpointSync, service } from '../../lib/sources';
 const { id = 'sync-cycle' } = Astro.props as { id?: string };
 
-const ADR_SYNC = (a = '') => pinned('clpr-spec', 'ADR/2026-07-14-endpoint-sync-streaming-and-mtls.md', a);
-const ADR_PREFIX = (a = '') => pinned('clpr-spec', 'ADR/2026-07-17-queue-metadata-and-partial-bundle-proofs.md', a);
 const steps = [
   {
     phase: 'Step 0 · before the first message',
-    t: 'One stream, one channel, mutual TLS',
-    plain: 'Endpoint A wants to sync one channel. It picks one of Ledger B\'s endpoints from the peer manifest that Ledger A holds for the channel and opens a gRPC stream to it. The two authenticate each other with mutual TLS: each endpoint\'s root of trust is the CA certificate published on-chain in its manifest, and what it actually presents is an in-memory Ed25519 leaf certificate its process minted at start-up. One stream is one sync cycle. Nothing is pushed unasked: each side asks for a bundle by describing its own state, and the peer shapes the bundle from that.',
-    proto: '<code>rpc sync(stream ClprSyncPayload) returns (stream ClprSyncPayload)</code>; every payload carries the 32-byte <code>channel_id</code>. <code>ClprEndpoint.tls_certificate</code> is a DER-encoded self-signed ECDSA P-384 CA certificate (at most 512 bytes; not presented on the wire); each endpoint holds an Ed25519 leaf signed by that CA and presents it at the mTLS handshake. The connection and its TLS session MAY persist across cycles.',
-    refs: [{ h: spec('grpc-endpoint-service'), l: 'spec §1.5, gRPC Endpoint Service' }, { h: spec('12-endpoint-identity'), l: 'spec §1.2' }, { h: design('314-endpoint-communication-protocol'), l: 'design §3.1.4' }, { h: design('312-endpoint-manifest'), l: 'design §3.1.2, TLS certificate' }, { h: ADR_SYNC('34-mtls-root-of-trust-model'), l: 'ADR 2026-07-14 §3.4' }],
+    t: 'One stream, one channel, one cycle',
+    plain: 'Endpoint A wants to sync one channel. It is the initiator: it picks one of Ledger B\'s endpoints from the peer manifest that Ledger A holds for the channel, and opens a gRPC stream to it. Endpoint B, which accepts the stream, is the responder. Apart from who opens the stream, the two sides do the same things. If B\'s manifest entry carries a certificate, B serves sync over TLS and A must connect over TLS, with no fallback to plaintext; if the entry has none, they talk in plaintext. Neither side presents a client certificate. Nothing is pushed unasked: each side describes its own state, and the other side shapes a bundle from that.',
+    proto: 'Every endpoint that advertises a network address in its manifest entry serves the sync method of the endpoint sync gRPC service; an endpoint with no address only initiates. Every message on the stream carries the channel id, the same on every message. TLS protects data in transit and authenticates the server only when the client checks its certificate; it does not authenticate bundles, which rest on their proofs. Each cycle uses a new stream; under the recommended practice the connection and any TLS session may persist across cycles.',
+    refs: [{ h: endpointSync('1-purpose-and-roles'), l: 'Endpoint sync §1' }, { h: endpointSync('2-transport'), l: 'Endpoint sync §2' }, { h: manifest('1-endpoint'), l: 'Endpoint manifest §1' }, { h: manifest('6-endpoint-discovery'), l: 'Endpoint manifest §6' }, { h: service('68-transport-and-sync-hygiene'), l: 'CLPR Service §6.8' }],
   },
   {
     phase: 'Step 1 · message ①',
     t: 'A describes its own state',
-    plain: 'A sends the first message: a BundleRequest with four values saying where A stands on this channel: how far it has got with B\'s messages, its channel status, the trust anchor it currently holds for B, and the version of B\'s endpoint list it has cached. It is a hint, not a proof. B will use it to build the smallest bundle that still makes progress.',
-    proto: '<code>ClprSyncPayload(channel_id, bundle_request, no bundle_response)</code>. <code>BundleRequest</code> fields: <code>current_received_message_id</code>, <code>current_status</code>, <code>current_trust_anchor_id</code>, <code>current_endpoint_manifest_version</code>. The request is unproven: it "informs bundle creation only and MUST NOT cause a state change"; <code>verifyBundle</code>\'s replay defence, hash-chain check and trust-anchor update remain the sole authorities on state.',
-    refs: [{ h: spec('15-sync-protocol'), l: 'spec §1.5, BundleRequest' }, { h: design('314-endpoint-communication-protocol'), l: 'design §3.1.4' }, { h: ADR_SYNC('32-bundle_request-fields--validated-against-the-bundle-progress-criteria'), l: 'ADR 2026-07-14 §3.2' }],
+    plain: 'A sends the first message: a request with four values saying where A stands on this channel: the last of B\'s messages it has received, its channel status, the id of the trust anchor Ledger A stores for B, and the version of B\'s endpoint manifest that Ledger A holds. It is a hint, not a proof. B uses it only to shape the bundle it sends back.',
+    proto: 'A side\'s first message in a cycle carries its request; later messages do not. The request is unproven: it MUST NOT cause a state change on either ledger. The receiving ledger\'s verifier and bundle processing remain the only authorities on channel state. The format of the trust anchor id is defined by the sender\'s proof scheme.',
+    refs: [{ h: endpointSync('31-messages'), l: 'Endpoint sync §3.1' }, { h: endpointSync('32-rules'), l: 'Endpoint sync §3.2' }, { h: endpointSync('33-sequence'), l: 'Endpoint sync §3.3' }],
   },
   {
     phase: 'Step 2 · message ②',
-    t: 'B answers with a bundle for A, and its own request',
-    plain: 'B reads the request and takes from Ledger B exactly the messages A says it is missing: from the next id after A\'s number, up to the per-bundle cap. It wraps them in a state proof of Ledger B that covers B\'s own sync data and the last message in the batch (the earlier ones ride on the running hash), and sends them back together with B\'s own BundleRequest, so that A can do the same for B.',
-    proto: '<code>ClprSyncPayload(bundle_request: B\'s state, bundle_response: bundle_payload)</code>. If the claim is at or above B\'s <code>next_message_id</code>, it names a message B has not sent, and B starts from its own <code>acked_message_id + 1</code> instead; no messages if <code>current_received_message_id + 1</code> equals B\'s <code>next_message_id</code>; otherwise the range starts at <code>current_received_message_id + 1</code>. State-proven inside the payload: B\'s <code>ChannelSyncData(received_message_id, status, next_message_id)</code>, the anchor message id and running hash, plus any trust-anchor or manifest update. The bundle may be a proper prefix of the backlog: <code>max_messages_per_bundle</code> is a hard cap and the receiving Service rejects anything above it.',
-    refs: [{ h: design('323-bundle-transport'), l: 'design §3.2.3' }, { h: ADR_SYNC('33-trust-model-for-the-unproven-request'), l: 'ADR 2026-07-14 §3.3' }, { h: ADR_PREFIX('11-a-bundle-cannot-express-a-subsequence-of-a-large-backlog'), l: 'ADR 2026-07-17' }, { h: spec('11-ledger-identity-and-configuration'), l: 'spec §1.1, ClprThrottles' }, { h: spec('42-bundle-verification-algorithm'), l: 'spec §4.2, step 2' }],
+    t: 'B answers with its own request, and a bundle for A',
+    plain: 'B reads the request and takes from Ledger B a contiguous run of the messages A says it is missing: from the next id after A\'s number, within Ledger A\'s throttles. It proves B\'s queue metadata and the last message of the run from one state of Ledger B (the earlier messages are bound by the running hash), and sends the bundle together with B\'s own request, so that A can do the same for B.',
+    proto: 'The run starts right after the requestor\'s reported received id, never extends past the sender\'s latest message, and respects the requestor\'s ledger throttles: a message count and a size. It MAY end early, which makes it a partial bundle. If the request claims messages the sender has not enqueued, the sender MAY start after its own acknowledged id or send no messages. If the requestor\'s manifest version is behind, the bundle MUST include a manifest proof. If no normal bundle verifies under the requestor\'s trust anchor, the sender sends a transition bundle instead. Each side sends at most one bundle per cycle.',
+    refs: [{ h: endpointSync('4-message-range'), l: 'Endpoint sync §4' }, { h: endpointSync('5-endpoint-obligations'), l: 'Endpoint sync §5' }, { h: bundle('2-queue-metadata'), l: 'Bundle §2' }, { h: bundle('3-partial-bundles'), l: 'Bundle §3' }, { h: bundle('4-proof-requirements'), l: 'Bundle §4' }, { h: ledgerConfig('3-throttles'), l: 'Ledger configuration §3' }],
   },
   {
     phase: 'Step 3 · message ③',
-    t: 'A verifies, submits to Ledger A, then sends B\'s bundle',
-    plain: 'A does not trust the bytes. It runs the verifier locally first, so it does not pay for a bundle whose proof would fail, then submits the bundle as an ordinary transaction to Ledger A. There the CLPR Service checks that the bundle makes progress, that the message ids continue exactly where A\'s record ends, and that the running hash matches the proven anchor; it records B\'s acknowledgement and dispatches the messages. Then A builds B\'s bundle from Ledger A, shaped by B\'s request, and sends it. A has nothing more to ask, so bundle_request is absent.',
-    proto: 'Endpoints MUST verify bundle proofs before submitting. On-chain (spec §4.2): <code>verifyBundle</code> → NoProgress check (spec §2.1.2) → size check → replay defence (first id = <code>received_message_id + 1</code>, then contiguous) → running-hash check → <code>acked_message_id := sync_data.received_message_id</code> → status checks → dispatch. Then <code>ClprSyncPayload(no bundle_request, bundle_response: bundle for B)</code>.',
-    refs: [{ h: design('314-endpoint-communication-protocol'), l: 'design §3.1.4' }, { h: spec('42-bundle-verification-algorithm'), l: 'spec §4.2' }, { h: spec('212-bundle-progress-criteria'), l: 'spec §2.1.2' }, { h: ADR_SYNC('33-trust-model-for-the-unproven-request'), l: 'ADR 2026-07-14 §3.3' }],
+    t: 'A sends B\'s bundle and submits its own',
+    plain: 'A builds B\'s bundle from Ledger A, shaped by B\'s request, sends it, and half-closes its side of the stream. Separately, A submits the bundle it received to Ledger A as an ordinary transaction, after checking that it would make progress and be accepted, since a rejected bundle still costs the fee. On Ledger A the verifier checks the proof, and the CLPR Service checks that the message ids continue where Ledger A\'s record ends and that the running hash matches the proven last message; it records B\'s acknowledgement and dispatches the messages. The stream neither waits for the submission nor reports its result.',
+    proto: 'An endpoint SHOULD evaluate the progress criteria against its last known view of the destination channel and SHOULD check that the bundle verifies and processes before submitting it. On the ledger, bundle processing runs the pre-checks, the verifier call, the limits, progress, the manifest and trust anchor update, the replay defence, the running hash, the acknowledgement checks, response ordering, then dispatch. A sender learns that its bundle was accepted from the requestor\'s next request.',
+    refs: [{ h: endpointSync('33-sequence'), l: 'Endpoint sync §3.3' }, { h: service('52-checks-before-submitting'), l: 'CLPR Service §5.2' }, { h: transitions('2-bundle-processing'), l: 'Channel state transitions §2' }, { h: transitions('3-progress'), l: 'Channel state transitions §3' }],
   },
   {
     phase: 'Step 4 · message ④',
-    t: 'B verifies, submits to Ledger B, and closes the stream',
-    plain: 'B does the same on its side. With nothing left to ask or send, it ends the cycle with an empty payload: both fields absent. The stream closes; the connection beneath it may stay open for the next cycle, with no new handshake. How often to sync is left to each endpoint. Endpoints also keep score: a peer that only ever asks and never brings messages of its own gets deprioritised.',
-    proto: '<code>ClprSyncPayload(no bundle_request, no bundle_response)</code> closes the stream. Reciprocity-based peer selection: endpoints SHOULD prefer peers that reciprocate by providing messages in return; one that only requests is deprioritised, and this cannot be faked, since a valid bundle with messages requires real messages to send. Sync cadence is deliberately unspecified.',
-    refs: [{ h: spec('grpc-endpoint-service'), l: 'spec §1.5, gRPC Endpoint Service' }, { h: spec('52-endpoint-discovery'), l: 'spec §5.2, reciprocity' }, { h: design('312-endpoint-manifest'), l: 'design §3.1.2, reciprocity' }, { h: ADR_SYNC('31-wire-protocol-bidirectional-streaming'), l: 'ADR 2026-07-14 §3.1' }],
+    t: 'B ends the cycle, and submits A\'s bundle',
+    plain: 'On receiving A\'s bundle, B sends a terminal message, with no request and no bundle, and ends the call. The cycle is complete. B submits A\'s bundle to Ledger B the same way, outside the stream. How often to sync is left to each endpoint. Endpoints choose their sync peers at random, weighted toward peers that have delivered useful bundles, and prefer peers that reciprocate; that weighting is each endpoint\'s own choice.',
+    proto: 'The responder sends the terminal message without waiting for the half-close, then MUST end the call. If step 3 carries no bundle, the responder MAY end the call without step 4. Peer selection is a Recommendation and local to each endpoint: the CLPR Service keeps no endpoint reputation. An endpoint MAY stop or reduce syncing with a peer that breaks the rules or sends bundles its ledger rejects; there is no cross-ledger misbehaviour reporting.',
+    refs: [{ h: endpointSync('33-sequence'), l: 'Endpoint sync §3.3' }, { h: service('53-peer-selection'), l: 'CLPR Service §5.3' }, { h: service('68-transport-and-sync-hygiene'), l: 'CLPR Service §6.8' }, { h: endpointSync('6-misbehavior'), l: 'Endpoint sync §6' }],
   },
 ];
 const X = { la: 60, ea: 210, eb: 560, lb: 706 };
@@ -62,7 +60,7 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
   </div>
   <div class="sim__body">
     <div class="sim__scroll">
-    <svg viewBox="0 0 760 514" role="img" aria-label="Sequence diagram with four lifelines: Ledger A, Endpoint A, Endpoint B, Ledger B. Four messages pass between the endpoints; each endpoint submits the bundle it received to its own ledger.">
+    <svg viewBox="0 0 760 514" role="img" aria-label="Sequence diagram with four lifelines: Ledger A, Endpoint A, Endpoint B, Ledger B. Four messages pass between the endpoints; each endpoint submits the bundle it received to its own ledger, outside the stream.">
       <defs>
         <marker id={`${id}-arr`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--c)" /></marker>
         <marker id={`${id}-arr-a`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--a)" /></marker>
@@ -80,19 +78,19 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
       <g><rect x="490" y="10" width="140" height="38" rx="8" class="d-c" /><text x={X.eb} y="27" class="t b center">Endpoint B</text><text x={X.eb} y="42" class="t small center">responder</text></g>
       <g><rect x="660" y="10" width="92" height="38" rx="8" class="d-b" /><text x={X.lb} y="27" class="t b center">Ledger B</text><text x={X.lb} y="42" class="t small center">CLPR Service</text></g>
 
-      <g class="part" data-part="stream"><rect x="150" y="58" width="460" height="26" rx="6" class="d-grey" stroke-dasharray="5 4" /><text x="385" y="75" class="t small center">one stream = one sync cycle · one channel_id · mutual TLS</text></g>
+      <g class="part" data-part="stream"><rect x="150" y="58" width="460" height="26" rx="6" class="d-grey" stroke-dasharray="5 4" /><text x="385" y="75" class="t small center">one stream = one sync cycle · one channel · TLS or plaintext</text></g>
 
-      <g class="part" data-part="m1"><path d={`M${X.ea},112 L${X.eb},112`} class="line c dash" style="--len:350" marker-end={`url(#${id}-arr)`} /><text x="385" y="104" class="t small center b">① ClprSyncPayload(bundle_request: A's state)</text><text x="385" y="126" class="t mono center" data-role="m1-fields"></text></g>
+      <g class="part" data-part="m1"><path d={`M${X.ea},112 L${X.eb},112`} class="line c dash" style="--len:350" marker-end={`url(#${id}-arr)`} /><text x="385" y="104" class="t small center b">① A's request: A's channel state</text><text x="385" y="126" class="t mono center" data-role="m1-fields"></text></g>
       <g class="part" data-part="noteB1"><rect x="440" y="138" width="240" height="24" rx="5" class="d-surface" stroke-dasharray="4 3" /><text x={X.eb} y="154" class="t small center">builds a bundle shaped by A's request</text></g>
-      <g class="part" data-part="m2"><path d={`M${X.eb},200 L${X.ea},200`} class="line c" style="--len:350" marker-end={`url(#${id}-arr)`} /><text x="385" y="179" class="t small center b">② ClprSyncPayload(bundle_request: B's state,</text><text x="385" y="192" class="t small center b">bundle_response: bundle for A)</text><text x="385" y="214" class="t mono center" data-role="m2-fields"></text></g>
-      <g class="part" data-part="noteA1"><rect x="90" y="226" width="240" height="24" rx="5" class="d-surface" stroke-dasharray="4 3" /><text x={X.ea} y="242" class="t small center">verifyBundle locally ✓, then submit</text></g>
-      <g class="part" data-part="subA"><path d={`M${X.ea},278 L${X.la},278`} class="line a" style="--len:150" marker-end={`url(#${id}-arr-a)`} /><text x="135" y="270" class="t small center">submitBundle</text><text x="135" y="291" class="t mono center" data-role="subA-fields"></text></g>
+      <g class="part" data-part="m2"><path d={`M${X.eb},200 L${X.ea},200`} class="line c" style="--len:350" marker-end={`url(#${id}-arr)`} /><text x="385" y="179" class="t small center b">② B's request: B's channel state,</text><text x="385" y="192" class="t small center b">and B's bundle for A</text><text x="385" y="214" class="t mono center" data-role="m2-fields"></text></g>
+      <g class="part" data-part="noteA1"><rect x="90" y="226" width="240" height="24" rx="5" class="d-surface" stroke-dasharray="4 3" /><text x={X.ea} y="242" class="t small center">checks the bundle, then submits it</text></g>
+      <g class="part" data-part="subA"><path d={`M${X.ea},278 L${X.la},278`} class="line a" style="--len:150" marker-end={`url(#${id}-arr-a)`} /><text x="135" y="270" class="t small center">submit bundle</text><text x="135" y="291" class="t mono center" data-role="subA-fields"></text></g>
       <g class="part" data-part="noteA2"><rect x="90" y="310" width="240" height="24" rx="5" class="d-surface" stroke-dasharray="4 3" /><text x={X.ea} y="326" class="t small center">builds a bundle shaped by B's request</text></g>
-      <g class="part" data-part="m3"><path d={`M${X.ea},362 L${X.eb},362`} class="line c" style="--len:350" marker-end={`url(#${id}-arr)`} /><text x="385" y="354" class="t small center b">③ ClprSyncPayload(bundle_response: bundle for B)</text><text x="385" y="376" class="t mono center" data-role="m3-fields"></text></g>
-      <g class="part" data-part="noteB2"><rect x="440" y="388" width="240" height="24" rx="5" class="d-surface" stroke-dasharray="4 3" /><text x={X.eb} y="404" class="t small center">verifyBundle locally ✓, then submit</text></g>
-      <g class="part" data-part="subB"><path d={`M${X.eb},440 L${X.lb},440`} class="line b" style="--len:146" marker-end={`url(#${id}-arr-b)`} /><text x="633" y="432" class="t small center">submitBundle</text><text x="633" y="453" class="t mono center" data-role="subB-fields"></text></g>
-      <g class="part" data-part="m4"><path d={`M${X.eb},484 L${X.ea},484`} class="line dash" style="--len:350" marker-end={`url(#${id}-arr-g)`} /><text x="385" y="476" class="t small center b">④ ClprSyncPayload(both fields absent)</text></g>
-      <g class="part" data-part="close"><text x="385" y="506" class="t small center muted">closes the stream; the connection and its TLS session MAY persist, and the next cycle opens a new stream on it</text></g>
+      <g class="part" data-part="m3"><path d={`M${X.ea},362 L${X.eb},362`} class="line c" style="--len:350" marker-end={`url(#${id}-arr)`} /><text x="385" y="354" class="t small center b">③ A's bundle for B, then half-close</text><text x="385" y="376" class="t mono center" data-role="m3-fields"></text></g>
+      <g class="part" data-part="noteB2"><rect x="440" y="388" width="240" height="24" rx="5" class="d-surface" stroke-dasharray="4 3" /><text x={X.eb} y="404" class="t small center">checks the bundle, then submits it</text></g>
+      <g class="part" data-part="subB"><path d={`M${X.eb},440 L${X.lb},440`} class="line b" style="--len:146" marker-end={`url(#${id}-arr-b)`} /><text x="633" y="432" class="t small center">submit bundle</text><text x="633" y="453" class="t mono center" data-role="subB-fields"></text></g>
+      <g class="part" data-part="m4"><path d={`M${X.eb},484 L${X.ea},484`} class="line dash" style="--len:350" marker-end={`url(#${id}-arr-g)`} /><text x="385" y="476" class="t small center b">④ terminal message: nothing more</text></g>
+      <g class="part" data-part="close"><text x="385" y="506" class="t small center muted">ends the call; as recommended, the connection may persist, and each cycle opens a new stream</text></g>
 
       <g class="sync__hint" data-role="hint"><rect x="70" y="116" width="130" height="40" rx="6" class="d-surface" stroke-dasharray="4 3" /><text x="135" y="132" class="t small center b">press Next</text><text x="135" y="147" class="t small center">to send message ①</text></g>
       <circle class="chip" data-role="chip1" r="6" aria-hidden="true" />
@@ -100,7 +98,7 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
     </svg>
     </div>
     <p class="sim__scroll-note">Wider than a phone; scroll it sideways if you need to.</p>
-    <p class="small" style="margin:6px 0 0">Dashed arrow: an unproven request. Solid arrow: a bundle whose contents are state-proven by the sending ledger; <code>sync(r, s, n)</code> abbreviates its <code>ChannelSyncData(received_message_id, status, next_message_id)</code>. Both channels are ACTIVE and the trust anchors do not rotate in this cycle; those values are illustrative constants.</p>
+    <p class="small" style="margin:6px 0 0">Dashed arrow: an unproven request. Solid arrow: a bundle whose contents are state-proven by the sending ledger; <code>meta(r, s, n)</code> abbreviates the queue metadata it proves: the last message id the sender has received, its channel status and its next message id. Both channels are ACTIVE and the trust anchors do not change in this cycle; those values are illustrative constants. The submissions are not part of the exchange: the stream does not wait for them.</p>
 
     <div class="steps two" style="--l:1.25fr;--r:1fr;margin-top:12px">
       <div class="step-card" data-role="card">
@@ -118,20 +116,20 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
         <div class="sync__side" data-side="a">
           <div class="sync__title" style="color:var(--a)">Ledger A (Endpoint A's home)</div>
           <label>has received B's messages up to <input type="number" min="0" max="999999" value="3" data-in="aRecv" /></label>
-          <label>A's next_message_id <input type="number" min="1" max="999999" value="9" data-in="aNext" /></label>
+          <label>A's next message id <input type="number" min="1" max="999999" value="9" data-in="aNext" /></label>
           <label>A's request claims received = <select data-in="aClaim"><option value="0">the truth</option><option value="-2">2 less (stale)</option><option value="2">2 more (over-claim)</option></select></label>
         </div>
         <div class="sync__side" data-side="b">
           <div class="sync__title" style="color:var(--b)">Ledger B (Endpoint B's home)</div>
           <label>has received A's messages up to <input type="number" min="0" max="999999" value="7" data-in="bRecv" /></label>
-          <label>B's next_message_id <input type="number" min="1" max="999999" value="20" data-in="bNext" /></label>
+          <label>B's next message id <input type="number" min="1" max="999999" value="20" data-in="bNext" /></label>
           <label>B's endpoint manifest is at version <input type="number" min="1" max="999999" value="3" data-in="bMan" /> <span class="small">(A's cached copy: v3)</span></label>
         </div>
-        <label class="sync__cap">max_messages_per_bundle (the receiving ledger's throttle) <input type="number" min="1" max="999999" value="10" data-in="maxB" /></label>
+        <label class="sync__cap">most messages per bundle (the receiving ledger's throttle; the same on both here) <input type="number" min="1" max="999999" value="10" data-in="maxB" /></label>
       </div>
     </div>
 
-    <p class="small" style="margin:10px 0 0">Source: <a href={spec('15-sync-protocol')} rel="noopener">spec §1.5</a> · <a href={design('314-endpoint-communication-protocol')} rel="noopener">design §3.1.4</a> · <a href={design('323-bundle-transport')} rel="noopener">design §3.2.3</a> · <a href={ADR_SYNC()} rel="noopener">ADR 2026-07-14</a> (why a bidirectional stream) · <a href={ADR_PREFIX()} rel="noopener">ADR 2026-07-17</a> (prefix bundles).</p>
+    <p class="small" style="margin:10px 0 0">Source: <a href={endpointSync('3-exchange')} rel="noopener">Endpoint sync §3</a> · <a href={endpointSync('4-message-range')} rel="noopener">Endpoint sync §4</a> · <a href={manifest('6-endpoint-discovery')} rel="noopener">Endpoint manifest §6</a> (discovery) · <a href={service('5-bundle-submission')} rel="noopener">CLPR Service §5</a> (submission) · <a href={bundle('3-partial-bundles')} rel="noopener">Bundle §3</a> (partial bundles).</p>
   </div>
   <div class="sim__controls">
     <button class="btn" type="button" data-role="prev" disabled>◀ Prev</button>
@@ -194,7 +192,7 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
   const B_CACHED_A_MANIFEST = 2;
 
   interface Shape { first: number; last: number; n: number; backlog: number; }
-  /** Messages the responder puts in a bundle: from claim + 1 up to next − 1, at most max of them. */
+  /** Messages the sender puts in a bundle: from claim + 1 up to next − 1, at most max of them (Endpoint sync §4). */
   function shape(claim: number, next: number, max: number): Shape {
     const first = claim + 1;
     const last = next - 1;
@@ -207,7 +205,7 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
 
   // Which arrow each step's payload travels, and the chip colour for it (c = endpoint to endpoint).
   const TRAVEL: { part: string; tone: '' | 'a' | 'b' | 'g' }[][] = [[], [{ part: 'm1', tone: '' }], [{ part: 'm2', tone: '' }], [{ part: 'subA', tone: 'a' }, { part: 'm3', tone: '' }], [{ part: 'subB', tone: 'b' }, { part: 'm4', tone: 'g' }]];
-  /** Greedy word wrap for the mono labels under the submitBundle arrows, which must fit between two lifelines. */
+  /** Greedy word wrap for the mono labels under the submit bundle arrows, which must fit between two lifelines. */
   function wrap(s: string, max: number): string[] {
     const lines: string[] = [];
     let cur = '';
@@ -275,8 +273,8 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
     function render(moved = false) {
       const aRecv = num('aRecv', 0), aNext = num('aNext', 1), bRecv = num('bRecv', 0), bNext = num('bNext', 1), bMan = num('bMan', 1), maxB = num('maxB', 1);
       const claim = Math.max(0, aRecv + num('aClaim', -2));
-      // A claim at or above B's next_message_id names a message B has not sent: B falls back to its own
-      // acked_message_id + 1 (ADR 2026-07-14 §3.3), taken here to equal A's real received_message_id.
+      // A claim at or above B's next message id names a message B has not enqueued: B MAY start after its own
+      // acknowledged id instead (Endpoint sync §4), which this sim takes to equal A's real received id.
       const fallback = claim >= bNext;
       const startAfter = fallback ? aRecv : claim;
       const forA = shape(startAfter, bNext, maxB);
@@ -294,10 +292,12 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
       nextBtn.disabled = step === 4;
       const brief = (s: Shape, next: number) => (s.n === 0 ? 'no msgs' : s.backlog === 1 ? `msg ${s.first}` : s.n === s.backlog ? `msgs ${s.first}…${s.last} (all)` : `msgs ${s.first}…${s.last} of ${s.first}…${next - 1}`);
       text('m1-fields', `received=${claim} ACTIVE anchor=${TA_B_SEEN_BY_A} manifest=v${A_CACHED_B_MANIFEST}`);
-      text('m2-fields', `${brief(forA, bNext)} · sync(${bRecv}, ACTIVE, ${bNext})${manifestProof ? ` · manifest v${bMan}` : ''}`);
-      text('m3-fields', `${brief(forB, aNext)} · sync(${aRecv}, ACTIVE, ${aNext})`);
+      text('m2-fields', `${brief(forA, bNext)} · meta(${bRecv}, ACTIVE, ${bNext})${manifestProof ? ` · manifest v${bMan}` : ''}`);
+      text('m3-fields', `${brief(forB, aNext)} · meta(${aRecv}, ACTIVE, ${aNext})`);
 
-      // What Ledger A does with B's bundle (spec §4.2). The request was unproven; this is where state changes or does not.
+      // What Ledger A does with B's bundle (Channel state transitions §2). The request was unproven; this is where
+      // state changes or does not. A run that starts at or below B's proven acknowledged id (here A's real received
+      // id) fails A's verifier; one that starts past A's received id + 1 is a gap that bundle processing rejects.
       let aOutcome: 'ok' | 'empty' | 'stale' | 'over';
       if (forA.n === 0) aOutcome = 'empty';
       else if (forA.first === aRecv + 1) aOutcome = 'ok';
@@ -305,7 +305,7 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
       else aOutcome = 'over';
       const subA = aOutcome === 'ok' ? `recv ${aRecv}→${forA.last} · acked→${bRecv}${manifestProof ? ` · manifest→v${bMan}` : ''}`
         : aOutcome === 'empty' ? (manifestProof ? `manifest→v${bMan} · acked→${bRecv}` : 'nothing to submit')
-        : 'rejected (replay defence)';
+        : aOutcome === 'stale' ? 'rejected by verifier' : 'rejected: message gap';
       lines('subA-fields', subA, 21);
       tone('subA-fields', aOutcome === 'ok' ? 'ok' : aOutcome === 'empty' ? (manifestProof ? 'ok' : 'warn') : 'bad');
       const bAccepts = forB.n > 0;
@@ -316,40 +316,40 @@ const X = { la: 60, ea: 210, eb: 560, lb: 706 };
       if (moved) travel();
 
       // Log: a mono summary line, then one plain line and the protocol facts, with the live numbers.
-      const req = (r: number, ta: string, v: number) => `BundleRequest(current_received_message_id: ${r}, current_status: ACTIVE, current_trust_anchor_id: ${ta}, current_endpoint_manifest_version: ${v})`;
-      const sync = (r: number, n: number) => `sync(${r}, ACTIVE, ${n})`;
-      const mono = step === 0 ? 'stream open · mTLS · nothing exchanged yet'
-        : step === 1 ? `① BundleRequest(received=${claim}, ACTIVE, ${TA_B_SEEN_BY_A}, v${A_CACHED_B_MANIFEST})`
-        : step === 2 ? `② BundleResponse(${range(forA)}, ${sync(bRecv, bNext)}${manifestProof ? `, manifest v${bMan}` : ''}) + BundleRequest(received=${bRecv}, ACTIVE, ${TA_A_SEEN_BY_B}, v${B_CACHED_A_MANIFEST})`
-        : step === 3 ? `submitBundle@A → ${subA} · ③ BundleResponse(${range(forB)}, ${sync(aRecv, aNext)})`
-        : `submitBundle@B → ${bAccepts ? `recv ${bRecv}→${forB.last} · acked→${aRecv}` : `acked→${aRecv} (if progress)`} · ④ ClprSyncPayload() · stream closed`;
+      const req = (r: number, ta: string, v: number) => `request(received ${r}, status ACTIVE, trust anchor ${ta}, manifest v${v})`;
+      const meta = (r: number, n: number) => `meta(${r}, ACTIVE, ${n})`;
+      const mono = step === 0 ? 'stream open · nothing exchanged yet'
+        : step === 1 ? `① request(received=${claim}, ACTIVE, ${TA_B_SEEN_BY_A}, v${A_CACHED_B_MANIFEST})`
+        : step === 2 ? `② request(received=${bRecv}, ACTIVE, ${TA_A_SEEN_BY_B}, v${B_CACHED_A_MANIFEST}) + bundle(${range(forA)}, ${meta(bRecv, bNext)}${manifestProof ? `, manifest v${bMan}` : ''})`
+        : step === 3 ? `③ bundle(${range(forB)}, ${meta(aRecv, aNext)}) · half-close · submit at A → ${subA}`
+        : `④ terminal message · call ended · submit at B → ${bAccepts ? `recv ${bRecv}→${forB.last} · acked→${aRecv}` : `acked→${aRecv} (if progress)`}`;
       let html = '';
       if (step === 0) {
-        html = `Endpoint A opened a stream to Endpoint B for this channel, over mutual TLS. Nothing has been exchanged yet. <strong>Edit the numbers on the right at any time;</strong> the bundles below are recomputed from them.`;
+        html = `Endpoint A opened a stream to Endpoint B for this channel, over TLS if B's manifest entry carries a certificate and in plaintext if it does not. Nothing has been exchanged yet. <strong>Edit the numbers on the right at any time;</strong> the bundles below are recomputed from them.`;
       } else if (step === 1) {
-        html = `<strong>A → B:</strong> <code>${req(claim, TA_B_SEEN_BY_A, A_CACHED_B_MANIFEST)}</code>. Unproven, and nothing on Ledger B changes because of it.` + (claim !== aRecv ? ` <span class="warn">A's real received_message_id is ${aRecv}; the request says ${claim}.</span>` : '');
+        html = `<strong>A → B:</strong> <code>${req(claim, TA_B_SEEN_BY_A, A_CACHED_B_MANIFEST)}</code>. Unproven, and nothing on Ledger B changes because of it.` + (claim !== aRecv ? ` <span class="warn">A's real received id is ${aRecv}; the request says ${claim}.</span>` : '');
       } else if (step === 2) {
-        const backlog = (fallback ? `<span class="warn">A's claim of ${claim} names a message B has not sent (its next_message_id is ${bNext}), so B falls back to its own acked_message_id + 1, taken here as ${aRecv + 1}.</span> ` : '')
-          + (forA.backlog ? `B's outbound queue holds ${forA.backlog} message${forA.backlog === 1 ? '' : 's'} after id ${startAfter} (ids ${startAfter + 1}…${bNext - 1}). ` : `B has nothing after id ${startAfter} (its next_message_id is ${bNext}), so the bundle carries no messages. `)
+        const backlog = (fallback ? `<span class="warn">A's claim of ${claim} names a message B has not enqueued (its next message id is ${bNext}). B may then send no messages or start after its own acknowledged id; here it starts after it, at ${aRecv + 1}.</span> ` : '')
+          + (forA.backlog ? `B's outbound queue holds ${forA.backlog} message${forA.backlog === 1 ? '' : 's'} after id ${startAfter} (ids ${startAfter + 1}…${bNext - 1}). ` : `B has nothing after id ${startAfter} (its next message id is ${bNext}), so the bundle carries no messages. `)
           + (claim > aRecv && !fallback ? `<span class="warn">Because A over-claimed, ids ${aRecv + 1}…${Math.min(claim, bNext - 1)} that A still needs are left out.</span> ` : claim < aRecv ? `<span class="warn">Because A under-claimed, ids ${claim + 1}…${aRecv} that A already has are included again.</span> ` : '');
-        const cap = forA.n && forA.n < forA.backlog ? `<strong>Only ${forA.n} go in</strong>, because max_messages_per_bundle = ${maxB}: the bundle is a proper prefix of the backlog, its anchor is message ${forA.last}, and ${forA.last + 1}…${bNext - 1} wait for a later cycle. ` : forA.n ? `All ${forA.n} fit under max_messages_per_bundle = ${maxB}; the anchor is message ${forA.last}. ` : '';
-        html = `<strong>B → A:</strong> bundle for A = <strong>${range(forA)}</strong>. ${backlog}${cap}State-proven in the payload: B's <code>ChannelSyncData(received_message_id: ${bRecv}, status: ACTIVE, next_message_id: ${bNext})</code>${manifestProof ? ` and a proof of B's endpoint manifest v${bMan}, because A reported only v${A_CACHED_B_MANIFEST}` : ''}. In the same payload, B's own <code>${req(bRecv, TA_A_SEEN_BY_B, B_CACHED_A_MANIFEST)}</code>.`;
+        const cap = forA.n && forA.n < forA.backlog ? `<strong>Only ${forA.n} go in</strong>, because Ledger A takes at most ${maxB} per bundle: this is a partial bundle, its proven last message is ${forA.last}, and ${forA.last + 1}…${bNext - 1} wait for a later cycle. ` : forA.n ? `All ${forA.n} fit under Ledger A's limit of ${maxB} per bundle; the proven last message is ${forA.last}. ` : '';
+        html = `<strong>B → A:</strong> B's own <code>${req(bRecv, TA_A_SEEN_BY_B, B_CACHED_A_MANIFEST)}</code>, and the bundle for A = <strong>${range(forA)}</strong>. ${backlog}${cap}State-proven in the bundle: B's queue metadata (received ${bRecv}, status ACTIVE, next message id ${bNext})${manifestProof ? ` and B's endpoint manifest v${bMan}, which B must include because A reported only v${A_CACHED_B_MANIFEST}` : ''}.`;
       } else if (step === 3) {
         const verdict = aOutcome === 'ok'
-          ? `<span class="ok">Ledger A accepts it.</span> First id ${forA.first} = received_message_id ${aRecv} + 1, ids contiguous, running hash reproduces the proven anchor. received_message_id → ${forA.last}; acked_message_id → ${bRecv} (B's proven received_message_id), so A can delete acknowledged responses${manifestProof ? `; peer manifest → v${bMan}` : ''}.`
+          ? `<span class="ok">Ledger A accepts it.</span> The verifier checks the proof; the first id ${forA.first} follows Ledger A's received id ${aRecv}, the ids are contiguous, and the running hash reproduces the proven last message. Received id → ${forA.last}; acknowledged id → ${bRecv} (B's proven received id), so Ledger A deletes the replies and control messages B has acknowledged${manifestProof ? `; peer manifest → v${bMan}` : ''}.`
           : aOutcome === 'stale'
-          ? `<span class="bad">Ledger A rejects it.</span> The replay defence (spec §4.2 step 3) demands a first id of exactly received_message_id + 1 = ${aRecv + 1}, but the bundle starts at ${forA.first}: it repeats ${aRecv - forA.first + 1} message${aRecv - forA.first + 1 === 1 ? '' : 's'} Ledger A already has. <strong>Nothing on chain changes</strong>; the stale request cost bandwidth and, if submitted, a transaction fee, and the next cycle's fresh request fixes the range. Correctness never depended on the request.`
+          ? `<span class="bad">Ledger A rejects it.</span> The run starts at ${forA.first}, at or below the acknowledged id that B's state proves (this sim takes it to equal A's real received id, ${aRecv}). Ledger A's verifier must fail such a bundle. <strong>Nothing on the ledger changes</strong>; the stale request cost bandwidth and, if submitted, a transaction fee, and the next cycle's request fixes the range. Had the run started above B's acknowledged id, Ledger A would have accepted it and skipped the messages it already has. Correctness never depended on the request.`
           : aOutcome === 'over'
-          ? `<span class="bad">Ledger A rejects it.</span> The bundle starts at ${forA.first}, but Ledger A has only received up to ${aRecv}, so ids ${aRecv + 1}…${forA.first - 1} are missing: the replay defence (spec §4.2 step 3) rejects the whole bundle. An over-claim only harms the over-claiming side (a liveness cost, never a safety one); a later correct request, or any endpoint's permissionless submission, delivers the gap.`
+          ? `<span class="bad">Ledger A rejects it.</span> The bundle starts at ${forA.first}, but Ledger A has only received up to ${aRecv}, so ids ${aRecv + 1}…${forA.first - 1} are missing: bundle processing rejects a gap, and the whole bundle with it. An over-claim harms only the over-claiming side, as a delay and never as a wrong delivery; a later correct request, or anyone's submission of a bundle that fills the gap, delivers the messages.`
           : manifestProof
-          ? `<span class="ok">Ledger A accepts it</span> even with no messages: a manifest proof with version ${bMan} > ${A_CACHED_B_MANIFEST} is progress on its own (Criterion 3), and acked_message_id → ${bRecv}.`
-          : `<span class="warn">Nothing to submit:</span> no messages, no manifest or trust-anchor advance. A submits it only if the acknowledgement itself is progress (sync_data.received_message_id ${bRecv} above Ledger A's acked_message_id); otherwise the endpoint suppresses it rather than pay for a NoProgress rejection (spec §2.1.2).`;
-        const forBtext = forB.n ? `${range(forB)}${forB.n < forB.backlog ? ` (${forB.n} of ${forB.backlog}, capped)` : ''}` : `no messages (B already has everything up to ${aNext - 1})`;
-        html = `${verdict} <strong>A → B:</strong> bundle for B = <strong>${forBtext}</strong>, state-proven with A's <code>ChannelSyncData(received_message_id: ${aRecv}, status: ACTIVE, next_message_id: ${aNext})</code>. bundle_request absent: A has nothing more to ask this cycle.`;
+          ? `<span class="ok">Ledger A accepts it</span> even with no messages: a manifest with version ${bMan} > ${A_CACHED_B_MANIFEST} is progress on its own, and the acknowledged id → ${bRecv}.`
+          : `<span class="warn">Maybe nothing to submit:</span> no messages, no manifest and no trust anchor change. The bundle makes progress only if its acknowledgement does (B's proven received id ${bRecv} above Ledger A's acknowledged id). An endpoint should not submit a bundle that makes no progress: Ledger A would reject it, and the fee would still be paid.`;
+        const forBtext = forB.n ? `${range(forB)}${forB.n < forB.backlog ? ` (${forB.n} of ${forB.backlog}, a partial bundle)` : ''}` : `no messages (B already has everything up to ${aNext - 1})`;
+        html = `<strong>A → B:</strong> bundle for B = <strong>${forBtext}</strong>, with A's proven queue metadata (received ${aRecv}, status ACTIVE, next message id ${aNext}); no request, since a side sends its request only in its first message. A then half-closes. <strong>Separately, at Ledger A:</strong> ${verdict}`;
       } else {
-        html = (bAccepts ? `<span class="ok">Ledger B accepts A's bundle:</span> first id ${forB.first} = ${bRecv} + 1; received_message_id → ${forB.last}, acked_message_id → ${aRecv}. ` : `A's bundle carried no messages, so it was worth submitting only if it made progress another way, for example acked_message_id → ${aRecv} when that is higher than Ledger B's current value. `)
-          + `<strong>B → A:</strong> a payload with both fields absent. The stream closes; the connection may persist. `
-          + (forA.n > 0 && forB.n > 0 ? `A brought ${forB.n} message${forB.n === 1 ? '' : 's'} and B brought ${forA.n}: both did useful work, which is what the reciprocity rule rewards.` : `A brought ${forB.n} message${forB.n === 1 ? '' : 's'} and B brought ${forA.n}. Over time endpoints prefer peers that bring messages in return, so a side that only ever asks gets deprioritised.`);
+        html = `<strong>B → A:</strong> a terminal message, with no request and no bundle, and B ends the call; the connection may persist. <strong>Separately, at Ledger B:</strong> `
+          + (bAccepts ? `<span class="ok">Ledger B accepts A's bundle:</span> first id ${forB.first} follows ${bRecv}; received id → ${forB.last}, acknowledged id → ${aRecv}. ` : `A's bundle carried no messages, so it is worth submitting only if it makes progress another way, for example an acknowledged id of ${aRecv} when that is higher than Ledger B's current value. `)
+          + (forA.n > 0 && forB.n > 0 ? `A brought ${forB.n} message${forB.n === 1 ? '' : 's'} and B brought ${forA.n}: each delivered a useful bundle, which the recommended peer selection weighs.` : `A brought ${forB.n} message${forB.n === 1 ? '' : 's'} and B brought ${forA.n}. The recommended peer selection weighs peers by the useful bundles they deliver and prefers peers that reciprocate; each endpoint keeps that weighting locally.`);
       }
       log.innerHTML = `<span class="line">${mono.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</span>${html}`;
     }

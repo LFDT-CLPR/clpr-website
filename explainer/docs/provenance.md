@@ -5,8 +5,8 @@ enforce.
 
 ## The problem being solved
 
-The site makes several hundred claims about a protocol whose specification is explicitly still
-changing ("will likely go through a couple more changes"). A claim that was true in August can
+The site makes several hundred claims about a protocol whose specification keeps changing: one
+version is final while the next is open on `main`. A claim that was true in August can
 be false in October. Linking to `main` would let the text and its evidence drift apart silently.
 So the site never links to a branch: every claim is written against a specific commit of a
 specific repository, the commit is recorded in one manifest, every link embeds it, and the build
@@ -17,16 +17,16 @@ fails if the pages and the manifest disagree.
 ```json
 {
   "org": { "name": "LFDT-CLPR", "url": "https://github.com/LFDT-CLPR", "lab": "…", "labUrl": "…" },
-  "lastSynced": "2026-09-30",
+  "lastSynced": "2026-11-28",
   "sources": [
     {
       "id": "clpr-spec",
       "repo": "https://github.com/LFDT-CLPR/clpr-spec",
       "branch": "main",
-      "commit": "945082d69e65dd0fd9e9bdf8d59cb8121579f6fd",
-      "committedAt": "2026-08-31T11:59:29-05:00",
-      "role": "Protocol specification …",
-      "watch": ["clpr-service.md", "clpr-service-spec.md", "ADR/", "verifiers/", "…"]
+      "commit": "da68222b9b7732e925062dc17bc142d6ebff657b",
+      "committedAt": "2026-11-23T11:47:47-06:00",
+      "role": "The CLPR Specification: …",
+      "watch": ["README.md", "clpr-overview.md", "protocol/", "ledgers/", "recommendations/", "clips/", "…"]
     }
   ]
 }
@@ -47,18 +47,23 @@ The five sources at the initial release: `clpr-spec`, `clpr-smart-contracts`, `c
 
 ## How links are built
 
-`src/lib/sources.ts` turns the manifest into URLs:
+`src/lib/sources.ts` turns the manifest into URLs. `pack.json` `docs` registers one document key
+per specification file (`overview`, `conventions`, `ledgerConfig`, `manifest`, `channelSetup`,
+`connectorSetup`, `messaging`, `bundle`, `verifierIface`, `transitions`, `endpointSync`, `schema`,
+`openIssues`, `service`, `stakes`, `economics`), and `sources.ts` exports a helper of the same name for
+each:
 
 | Helper | Produces |
 |---|---|
-| `design(anchor)` | `…/clpr-spec/blob/<commit>/clpr-service.md#<anchor>` |
-| `spec(anchor)` | `…/clpr-spec/blob/<commit>/clpr-service-spec.md#<anchor>` |
+| `overview(anchor)` | `…/clpr-spec/blob/<commit>/clpr-overview.md#<anchor>` |
+| `messaging(anchor)`, and one per other key | `…/clpr-spec/blob/<commit>/protocol/messaging.md#<anchor>`, and so on |
 | `sol(path, line?)` | `…/clpr-smart-contracts/blob/<commit>/<path>#L<line>` |
 | `pinned(id, path?, anchor?)` | any file in any source at its commit; with no path, the repository tree at the commit |
 | `short(id)` | the seven-character commit for display |
 
 Anchors are GitHub heading slugs: lower-case, punctuation removed, each space becomes a hyphen
-(so `3.3 Payment & Routing Layer` is `33-payment--routing-layer`, with two hyphens).
+(so `5.1 Trust anchor catch-up` is `51-trust-anchor-catch-up`, `OI-4. Compensation for sending
+bundles` is `oi-4-compensation-for-sending-bundles`, and ``2.1 `registerChannel` `` is `21-registerchannel`).
 
 ## What the checks enforce
 
@@ -74,12 +79,13 @@ Anchors are GitHub heading slugs: lower-case, punctuation removed, each space be
 **`kse check-links`**
 - every `href="#…"` resolves to an id on the same page;
 - every relative or root-relative link resolves to a file in `dist/` (root-relative links carry the
-  `BASE_PATH` prefix when the site is built under one, as for GitHub Pages; the checker strips it);
+  `BASE_PATH` prefix when the site is built under one, as under `/plumbing/` in the website; the checker strips it);
 - external links are counted, not fetched.
 
 **`kse check-anchors`** (run explicitly; needs `.upstream/` from a sync fetch)
-- every `design('…')` / `spec('…')` call, every ref in `sections.json`, the data files and `journey.json`, exists as a
-  heading in the pinned spec documents;
+- every document-helper call (`messaging('…')`, `stakes('…')`, and the rest named in `pack.json`
+  `refHelpers`), every ref in `sections.json`, the data files and `journey.json`, exists as a
+  heading in the pinned specification document its key names;
 - every `pinned(id, path)` and `sol(path)` points at a file that exists upstream.
 
 It scans `src/` only, so documentation can show examples without tripping it.
@@ -98,12 +104,15 @@ It scans `src/` only, so documentation can show examples without tripping it.
   anchor check matches them textually), and every `repo` ref names a source id in `sources.json`;
 - every source id is cited by at least one component in `catalog.json`, and every component has a
   place on the Architecture map;
-- with `.upstream/` present: every verifier directory upstream (`clpr-spec/verifiers/*`,
-  `clpr-smart-contracts/src/verifiers/**` except `common`) is a row in `ledgers.json`; every
-  `ADR/*.md` is a row in `adrs.json`; the sub-headings of design §3.4 and the headings of §4.1 to
-  §4.7 match the rows of `patterns.json` and `roles.json`; the `‼️` passages of the design document
-  match the flagged rows of `open.json`. A failure here is the list of new upstream things the site
-  has not described yet.
+- with `.upstream/` present: every directory under `clpr-spec/ledgers/` that has a `ledger.md` is the
+  `specDir` of a row in `ledgers.json`, and every verifier code directory
+  (`clpr-smart-contracts/src/verifiers/**` except `common`) is the `codeDir` of one; every `## OI-n.`
+  heading of Open issues is cited by exactly one row of `open.json`; the bold role names of the
+  Overview §5 table match the rows of `roles.json`; the number of patterns Overview §8 names matches
+  `patterns.json`; every part of the Overview §2 table has an entry in `cast.json`; and every
+  `recovery` field in `roles.json` and `failures.json` names an R-row of the CLPR Service §7 recovery
+  table and cites §7. A failure here is the list of upstream things the site has not described yet,
+  or no longer matches.
 
 **`kse check-orphans`**
 - every component under `src/components/` is imported by a page, a content file or another component, so a figure or simulation nobody renders cannot linger in the anchor check and the content map.
@@ -117,10 +126,10 @@ It scans `src/` only, so documentation can show examples without tripping it.
 | Message | Likely cause | Fix |
 |---|---|---|
 | `provenance table does not show clpr-spec@…` | `dist/` is stale | `pnpm run build` first |
-| `unpinned upstream link …/blob/main/…` | a hand-written URL in MDX or a sim | use `design()`/`spec()`/`sol()`/`pinned()` |
+| `unpinned upstream link …/blob/main/…` | a hand-written URL in MDX or a sim | use a document helper (`messaging()`, …), `sol()` or `pinned()` |
 | `sections […] do not match sections.json` | a section was added to one place only, or reordered | make the JSON and the MDX agree |
 | `duplicate element id "money"` | a sim rendered with the same id as a section or another sim | pass `id="money-dev"` |
-| `design anchor #… not found` | the upstream heading was renamed or renumbered, or the slug is wrong | find the new heading in `.upstream/clpr-spec/…` and update every reference |
+| `messaging anchor #… not found in protocol/messaging.md` | the upstream heading was renamed or renumbered, or the slug is wrong | find the new heading in `.upstream/clpr-spec/…` and update every reference |
 | `clpr-endpoint/docs/foo.md does not exist upstream` | the file moved | update the `pinned()` path |
 
 ## What provenance does not prove

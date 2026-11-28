@@ -1,28 +1,30 @@
-# The plumbing of CLPR — project notes for Claude
+# The plumbing of CLPR: project notes for Claude
 
 Two one-page explainers of CLPR (the bridgeless Cross Ledger Protocol, an LF Decentralized
 Trust lab), built with Astro 7 + MDX, no UI framework, no runtime dependencies. The long-form
 documentation is in `docs/` (start at `docs/README.md`); this file is the short rulebook. Generic components, layout and every gate script come from the `knowledge-site-engine` package (`@kse/` imports, `pnpm exec kse <command>`); per-site settings are in `src/data/pack.json`. This directory lives inside the CLPR website repository: the website's `pnpm build` runs `embed.mjs` to build it into `public/plumbing/`, and every command below runs from `explainer/`.
 
-- `/` — for everyone. `src/content/general.mdx`, rendered by `src/pages/index.astro`.
-- `/developers/` — for developers. `src/content/developers.mdx`, rendered by `src/pages/developers.astro`.
+- `/`: for everyone. `src/content/general.mdx`, rendered by `src/pages/index.astro`.
+- `/developers/`: for developers. `src/content/developers.mdx`, rendered by `src/pages/developers.astro`.
 
 ## Ground rules
 
 1. **Spec-faithful, pinned.** Every protocol claim is written against the commits in
-   `src/data/sources.json`. Link upstream files through `src/lib/sources.ts` (`design()`,
-   `spec()`, `sol()`, `pinned()`) so links stay pinned. Never link to `main`.
+   `src/data/sources.json`. Link upstream files through `src/lib/sources.ts` (one helper per
+   specification document, such as `overview()`, `messaging()` or `stakes()`, plus `sol()` and
+   `pinned()`) so links stay pinned. Never link to `main`.
 2. **Every claim is backed by a reference, and the reference lives in data.** Each section in
    `src/data/sections.json` and each row in the other `src/data/*.json` files carries `refs`
-   (design or spec heading anchors, or a pinned file path) in the shape `check-anchors.mjs`
+   (heading anchors in a specification document named in `pack.json` `docs`, or a pinned file
+   path) in the shape `check-anchors.mjs`
    resolves. The developer page renders a section's refs under its heading; the general page
    cites its sources once, in the provenance footer. Prose does not attribute ("the specification
    says"); it states. `kind="impl"` callouts describe what the reference implementation does
-   (which sometimes diverges — see `clpr-smart-contracts/docs/bundle-flow.md`); `kind="open"`
+   (which sometimes diverges; see `clpr-smart-contracts/docs/bundle-flow.md`); `kind="open"`
    marks what upstream calls unresolved. Do not present inferred behaviour as protocol behaviour.
 3. **Neutral voice, donation-ready.** No personal branding, no marketing claims, no numbers
-   without a source. Apache-2.0 code, CC BY 4.0 text, DCO sign-off on every commit
-   (`git commit -s`).
+   without a source. Apache-2.0 code, CC BY 4.0 text, DCO sign-off and a GPG signature on
+   every commit (`git commit -s -S`; the repository's `CONTRIBUTING.md`).
 4. **The website's theme, phone width.** The pages wear the CLPR website's theme: the system's setting by default,
    light or dark on the header's Light/Dark/System switch. `src/styles/site-theme.css` redefines the
    engine's tokens (`styles/global.css`) as `light-dark()` pairs and `Site.astro` supplies the website's
@@ -41,10 +43,10 @@ documentation is in `docs/` (start at `docs/README.md`); this file is the short 
    appear once, introduced as a comparison, on a line marked `vocab-allow`. `pnpm run check` runs
    `kse check-vocab`, which fails on anything else.
 7. **Upstream facts live in data rows.** The components, ledgers and verifiers, application
-   patterns, roles and scenarios, open issues, failure cases, cast and ADRs are rows in
+   patterns, roles and scenarios, open issues, failure cases and cast are rows in
    `src/data/*.json`, each with `refs`; `checks/check-data.mjs` validates them and, with
-   `.upstream/` present, fails when upstream has a verifier directory, ADR or heading the data
-   does not. `docs/content-map.md` is generated from those refs (`pnpm run content-map`); never
+   `.upstream/` present, fails when upstream has a ledger, verifier directory, open issue, role,
+   pattern, part or recovery row the data does not match. `docs/content-map.md` is generated from those refs (`pnpm run content-map`); never
    edit it by hand.
 8. **Figures are components, drawn in the website's vocabulary.** Ledgers, endpoints, verifiers,
    connectors and channels take the landing page's shapes (`.claude/skills/clpr-figure/`,
@@ -62,7 +64,7 @@ documentation is in `docs/` (start at `docs/README.md`); this file is the short 
 
 ## Simulation components (`src/components/sims/*.astro`)
 
-Conventions every sim follows — copy `ChannelLife.astro` or `RunningHash.astro` as a template:
+Conventions every sim follows; copy `ChannelLife.astro` or `RunningHash.astro` as a template:
 
 - Outer element `<div class="sim <name>" id={id}>` with `.sim__head` (kind label + `<h3>`),
   `.sim__body`, optional `.sim__controls`, optional `.sim__log` (`data-role="log"`).
@@ -82,19 +84,19 @@ Conventions every sim follows — copy `ChannelLife.astro` or `RunningHash.astro
 
 ## Commands
 
-- `pnpm run build` — build to `dist/` (Astro).
-- `pnpm run check` — provenance, internal links, vocabulary, data rows, the generated content map and
+- `pnpm run build`: build to `dist/` (Astro).
+- `pnpm run check`: provenance, internal links, vocabulary, data rows, the generated content map and
   orphan components (run after every content change).
-- `pnpm run verify` — build, then every gate: check, anchors, browser, the `DARK=1` sim pass (the light
+- `pnpm run verify`: build, then every gate: check, anchors, browser, the `DARK=1` sim pass (the light
   default under a dark system), diagram text, overflow at 400px on both pages, then
   `check:dark` (the sims, diagram text and overflow again in the dark theme, through
   `checks/browser/theme-preload.cjs`; see D21). The command to run before calling anything done.
-- `node checks/browser/check-diagram-text.mjs` — after a build, every label in every figure and
+- `node checks/browser/check-diagram-text.mjs`: after a build, every label in every figure and
   simulation stays inside its box and the drawing, in the fonts the pages ship.
-- `pnpm exec kse check-scroll` — neither page scrolls by itself after load (a simulation once did).
-- `pnpm run check:anchors` — every upstream reference resolves in `.upstream/` (after a sync fetch).
-- `pnpm test` — build then check.
-- `pnpm exec kse shot <path> <out.png> [width] [fullPage] [clickSelector|…]` — screenshot a
+- `pnpm exec kse check-scroll`: neither page scrolls by itself after load (a simulation once did).
+- `pnpm run check:anchors`: every upstream reference resolves in `.upstream/` (after a sync fetch).
+- `pnpm test`: build then check.
+- `pnpm exec kse shot <path> <out.png> [width] [fullPage] [clickSelector|…]`: screenshot a
   built page; look at the PNG before calling layout done. For the dark theme make
   `'[data-theme-choice="dark"]'` the first click (`DARK=1` emulates a dark system, which the default follows,
   but the click covers a stored choice);
@@ -103,11 +105,11 @@ Conventions every sim follows — copy `ChannelLife.astro` or `RunningHash.astro
   engine's fonts, which are narrower than the site's Sora: confirm with the diagram text check).
   The browser scripts use the preinstalled Linux Chromium when it exists and Playwright's own
   otherwise (`pnpm exec playwright install chromium` once on a new machine).
-- `pnpm run content-map` — regenerate `docs/content-map.md` after changing a `refs` entry.
-- `pnpm run export:single` — build, then write `export-single/`: each page as one self-contained HTML
+- `pnpm run content-map`: regenerate `docs/content-map.md` after changing a `refs` entry.
+- `pnpm run export:single`: build, then write `export-single/`: each page as one self-contained HTML
   file (styles, scripts and favicon inlined) to share without deploying; the script opens each file
   from disk in Chromium and fails if it loads anything else.
-- `pnpm run sync:fetch` / `pnpm run sync:status` — fetch upstream repos into `.upstream/` and report
+- `pnpm run sync:fetch` / `pnpm run sync:status`: fetch upstream repos into `.upstream/` and report
   drift against `sources.json`; `pnpm run sync:pin` moves the pins. The full update procedure is
   the `clpr-sync` skill (`.claude/skills/clpr-sync/SKILL.md`); `docs/content-map.md` says which
   site sections depend on which upstream files.

@@ -20,7 +20,7 @@ The site is written to be contributed to the lab one day. That sets the voice.
   signature card on file…"), on a line preceded by a `{/* vocab-allow */}` marker.
   `kse check-vocab`, part of `pnpm run check`, fails the build on anything else.
 - **State, do not attribute.** The content is about CLPR, not about a document. No sentence says
-  "the specification says", "the design document notes" or "the spec defines"; it states the fact,
+  "the specification says", "the overview notes" or "the spec defines"; it states the fact,
   and the fact is backed by a ref in `src/data/sections.json` (rendered under the heading on the
   developer page) or a data row's `refs`. Quotation marks are for verbatim wording that matters.
   Two labelled caveats survive on the developer page: *In the EVM reference code* for where the
@@ -45,17 +45,17 @@ the right column is what the developer page adds.
 | ledger | a shared record that many computers keep identical copies of | ledger (CAIP-2 chain id + CLPR Service address) |
 | validators; sealing a line | the computers that agree on each new line; agreement that cannot be undone | consensus, finality |
 | state proof | the validators' signature on a summary of the ledger, plus the path to one line | state proof |
-| endpoint | the program that carries messages and proofs between ledgers; it can delay, not forge | endpoint (relay); the sync protocol over gRPC |
+| endpoint | the program that carries messages and proofs between ledgers; it can delay, not forge | CLPR Endpoint; endpoint sync over gRPC |
 | CLPR Service | the protocol's own part of each ledger: queues, channels, checks, payment | CLPR Service (native in Hiero nodes; Solidity on EVM) |
-| outbound queue | where a ledger keeps the messages it has sent until they are answered | outbound queue, per channel (the EVM contracts cap each connector's share) |
+| outbound queue | where a ledger keeps the messages it has sent until they are answered | outbound queue, per channel (the recommended design caps each connector's share) |
 | message id | the number a message is given when it is queued | message id (strictly increasing per channel) |
-| running hash | a hash of the previous running hash and the message, so one proof covers a batch | `SHA-256(previous_running_hash ‖ serialized_payload)` |
+| running hash | a hash of the previous running hash and the message, so one proof can cover a batch | running hash, chained over each message's canonical payload bytes (the formula stays in Messaging §4) |
 | trust anchor | the other ledger's signing identity that a channel keeps on file | trust anchor (verifier-specific; changed only by proof) |
-| verifier | the small program that checks one kind of proof | verifier contract / native verifier |
+| verifier | the small program that checks one kind of proof | verifier contract (on Hiero, built-in or deployed) |
 | connector | the account that agrees to pay for a message | connector (approval, charge, stake, slashing) |
-| reply | the one answer every accepted message gets | Response Message (`ClprMessageReply`) |
-| control message | a message the protocol sends itself to update settings | Control Message (`ConfigUpdate`) |
-| bundle | a batch of messages with one proof | bundle |
+| reply | the one answer each message gets, unless its channel can no longer drain | REPLY message, with one of four statuses |
+| control message | a message the protocol sends itself to update settings | CONTROL message (`ConfigUpdate`) |
+| bundle | a batch of messages proven together | bundle |
 | endpoint manifest | each ledger's on-chain list of endpoint addresses | endpoint manifest (versioned, proven per channel) |
 | commit, reveal | the two phases of registering a channel: post a hash, then prove the key | commit-reveal registration |
 | paused | the channel stops taking new messages and rejects out-of-order replies until the peer corrects them, then resumes by itself | `PAUSED` channel status |
@@ -65,16 +65,15 @@ the right column is what the developer page adds.
 Use the callout kinds exactly as [content-model.md](content-model.md) defines them. The three
 that matter most:
 
-- `spec` — the text's own words. Quote with quotation marks when verbatim.
-- `impl` — what the Solidity or Java code does. Always name the file or the repository document.
+- `spec`: the text's own words. Quote with quotation marks when verbatim.
+- `impl`: what the Solidity or Java code does. Always name the file or the repository document.
   If the implementation differs from the spec, say so in the same sentence.
-- `open` — something the specification itself marks as unresolved (stake sizing, queue
-  monopolization, admin incentives, and the thirteen "options to consider").
+- `open`: one of the specification's numbered open issues (for example the
+  calibration of the connector stake, or compensation for sending bundles).
 
 When the specification is ambiguous or two upstream documents disagree, describe the
-disagreement rather than picking a side silently. The developer page does this in several places
-(verifier "fixed at registration time" vs. supplied at `completeChannel`; the Hiero verifier
-document vs. the Solidity). The changelog lists them so a maintainer can raise them upstream.
+disagreement rather than picking a side silently. The changelog lists them so a maintainer can
+raise them upstream.
 
 ## Things not to claim
 
@@ -87,8 +86,11 @@ document vs. the Solidity). The changelog lists them so a maintainer can raise t
   message but cannot forge one. Say "proofs instead of a bridge", not "nothing in between" or "no bridge to trust".
 - That a verifier is immutable or can never change. Its address is fixed for the Channel's
   lifetime, but the contract may sit behind an upgradeable proxy.
-- That CLPR holds no funds. The CLPR Service is the custodian of Connector funds and endpoint
-  bonds; what it never pools is user assets.
+- That CLPR holds no funds. Under the recommended design the CLPR Service holds each connector's
+  locked stake; what it never pools is user assets.
+- That endpoints post a bond, are slashed or are penalized, or that the Service keeps a reputation
+  for them. Only connectors post a stake and are slashed. A misbehaving endpoint is removed from
+  the endpoint manifest.
 - A latency bound such as "as fast as consensus". A message waits for the source ledger's
   finality at the level the Channel's verifier accepts, an endpoint sync and the destination's
   consensus.
@@ -106,23 +108,24 @@ document vs. the Solidity). The changelog lists them so a maintainer can raise t
   without one messages wait but are never forged.
 - That CLPR interprets payloads or does application work. A message is opaque bytes; token
   transfers, contract calls, swaps and every other meaning belong to the applications at each end
-  (design §3.4, which only outlines the patterns). Payloads are not confidential and must be
+  (Overview §8, which only names the patterns). Payloads are not confidential and must be
   treated as untrusted input.
 - That trust disappears. It moves to the ledgers, their CLPR Services and the Channel's verifier,
   and anyone can register a Channel with any verifier. Never write "as safe as the two ledgers,
   and not one bit less".
-- Product or vendor names for a ledger type. Say "EVM ledger"; name QBFT or CometBFT only as the
-  proof type an endpoint or verifier handles. Besu appears in the repositories as a test and
-  deployment stack, not as the only target.
-- Anything about other interledger designs that the design's executive summary and HIP-1535's
-  Motivation do not say. Those two say interledger solutions often rely on an intermediary
+- Product or vendor names for a ledger type that the specification does not name. Besu may be
+  named, because the specification documents it as a ledger (`ledgers/besu/`) in the EVM family;
+  for any other EVM ledger say "EVM ledger" and name QBFT or CometBFT only as the proof type an
+  endpoint or verifier handles.
+- Anything about other interledger designs that HIP-1535's Motivation does not say. It says
+  interledger solutions often rely on an intermediary
   consensus layer, a federated bridge, an external validator set or a custodian. Write "many
   bridges", never "typical", "most" or "all", and give no figures, no failure counts and no
   "keeps failing".
 - Maturity the sources do not claim. The site's host calls the lab a place for "very early open
   projects": the specification is still changing, some economic parameters are open and the
   endpoint is described as a prototype. Say "reference implementation", not "deployable today"
-  or "production ready". The application patterns in design §3.4 are outlined, not specified.
+  or "production ready". Overview §8 names the application patterns; it does not specify them.
 - Who the maintainers are, beyond what the governance repository says (`teams.yml` lists people,
   not companies). Hashgraph acted "pursuant to its agreement with" the Hedera Governing Council,
   not "on behalf of" it. Do not call CLPR "pending" a lab: it is one.
@@ -133,19 +136,20 @@ document vs. the Solidity). The changelog lists them so a maintainer can raise t
   application error) becomes a failure reply and the rest of the bundle carries on; out-of-order
   replies pause the Channel.
 - A formula or encoding without saying whether it is the specification's or the contracts'.
-  Where they differ (the running-hash fold, the QBFT trust anchor) say which one the sentence
-  describes.
+  Where they differ, say which one the sentence describes.
 - A drawing that puts the Verifier in front of the CLPR Service. The Endpoint submits a bundle
   to the CLPR Service, which calls the ledger's own Verifier Contract; each ledger has its own.
   A Connector sits beside the Service (its registration and locked stake are in the Service);
   the application calls the Service, which asks the Connector.
 - A formula, a sync call or an ordering without saying whether it is the specification's or the
-  pinned reference contracts' and endpoint's. The specification updates all Channel state before
-  dispatch; the reference contracts charge the Connector after the call. The specification runs
-  `sync` over mutual TLS; the reference endpoint serves the same stream without it. Say which
-  one the figure shows.
-- That the sending side is never paid. A Response Message charges the source Connector the same
-  way, and the charge goes to the submitter on that ledger.
+  pinned reference contracts' and endpoint's. The specification recommends that the Service
+  complete its own state changes, including debiting charges, before an external call; on EVM
+  ledgers the charge is collected after the call. The specification runs `sync` over TLS when the
+  endpoint's manifest entry has a certificate and in plaintext otherwise; the reference endpoint
+  serves the same stream without TLS. Say which one the figure shows.
+- That the sending side is never paid. Under the recommended design, delivering a REPLY to the
+  sending application is charged to the source Connector, and the charge goes to the submitter on
+  that ledger.
 - A reason for how ledgers or CLPR work that no source gives. Introduce it as "in general", or
   as the page's own explanation, or leave it out.
 
@@ -174,7 +178,8 @@ The site speaks for an LF Decentralized Trust lab, and LFDT's website requiremen
 ## Editing checklist
 
 1. Is every protocol statement one of: spec, implementation, open? Is it labelled?
-2. Does every upstream link go through `design()`, `spec()`, `sol()` or `pinned()`?
+2. Does every upstream link go through a document helper (`overview()`, `messaging()`, …), `sol()`
+   or `pinned()`?
 3. Did a section number change? Search the MDX for `section N` references.
 4. Did a journey step's narration change? Both `plain` and `protocol` must stay true, in both
    directions where the step exists in both.

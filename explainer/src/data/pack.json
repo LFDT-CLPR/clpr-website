@@ -9,25 +9,151 @@
   "brand": "The plumbing of CLPR",
   "primarySource": "clpr-spec",
   "docs": {
-    "design": {
+    "overview": {
       "source": "clpr-spec",
-      "path": "clpr-service.md",
-      "label": "design document"
+      "path": "clpr-overview.md",
+      "label": "Overview"
     },
-    "spec": {
+    "conventions": {
       "source": "clpr-spec",
-      "path": "clpr-service-spec.md",
-      "label": "protocol specification"
+      "path": "protocol/conventions.md",
+      "label": "Conventions"
+    },
+    "ledgerConfig": {
+      "source": "clpr-spec",
+      "path": "protocol/ledger-configuration.md",
+      "label": "Ledger configuration"
+    },
+    "manifest": {
+      "source": "clpr-spec",
+      "path": "protocol/endpoint-manifest.md",
+      "label": "Endpoint manifest"
+    },
+    "channelSetup": {
+      "source": "clpr-spec",
+      "path": "protocol/channel-setup.md",
+      "label": "Channel setup"
+    },
+    "connectorSetup": {
+      "source": "clpr-spec",
+      "path": "protocol/connector-setup.md",
+      "label": "Connector setup"
+    },
+    "messaging": {
+      "source": "clpr-spec",
+      "path": "protocol/messaging.md",
+      "label": "Messaging"
+    },
+    "bundle": {
+      "source": "clpr-spec",
+      "path": "protocol/bundle.md",
+      "label": "Bundle"
+    },
+    "verifierIface": {
+      "source": "clpr-spec",
+      "path": "protocol/verifier-interface.md",
+      "label": "Verifier interface"
+    },
+    "transitions": {
+      "source": "clpr-spec",
+      "path": "protocol/channel-state-transitions.md",
+      "label": "Channel state transitions"
+    },
+    "endpointSync": {
+      "source": "clpr-spec",
+      "path": "protocol/endpoint-sync.md",
+      "label": "Endpoint sync"
+    },
+    "schema": {
+      "source": "clpr-spec",
+      "path": "protocol/schema.md",
+      "label": "Schema"
+    },
+    "openIssues": {
+      "source": "clpr-spec",
+      "path": "protocol/open-issues.md",
+      "label": "Open issues"
+    },
+    "service": {
+      "source": "clpr-spec",
+      "path": "recommendations/clpr-service.md",
+      "label": "CLPR Service"
+    },
+    "stakes": {
+      "source": "clpr-spec",
+      "path": "recommendations/stakes-and-bonds.md",
+      "label": "Stakes and bonds"
+    },
+    "economics": {
+      "source": "clpr-spec",
+      "path": "recommendations/channel-economics.md",
+      "label": "Channel economics"
     }
   },
   "refHelpers": [
     {
-      "fn": "design",
-      "doc": "design"
+      "fn": "overview",
+      "doc": "overview"
     },
     {
-      "fn": "spec",
-      "doc": "spec"
+      "fn": "conventions",
+      "doc": "conventions"
+    },
+    {
+      "fn": "ledgerConfig",
+      "doc": "ledgerConfig"
+    },
+    {
+      "fn": "manifest",
+      "doc": "manifest"
+    },
+    {
+      "fn": "channelSetup",
+      "doc": "channelSetup"
+    },
+    {
+      "fn": "connectorSetup",
+      "doc": "connectorSetup"
+    },
+    {
+      "fn": "messaging",
+      "doc": "messaging"
+    },
+    {
+      "fn": "bundle",
+      "doc": "bundle"
+    },
+    {
+      "fn": "verifierIface",
+      "doc": "verifierIface"
+    },
+    {
+      "fn": "transitions",
+      "doc": "transitions"
+    },
+    {
+      "fn": "endpointSync",
+      "doc": "endpointSync"
+    },
+    {
+      "fn": "schema",
+      "doc": "schema"
+    },
+    {
+      "fn": "openIssues",
+      "doc": "openIssues"
+    },
+    {
+      "fn": "service",
+      "doc": "service"
+    },
+    {
+      "fn": "stakes",
+      "doc": "stakes"
+    },
+    {
+      "fn": "economics",
+      "doc": "economics"
     },
     {
       "fn": "sol",
@@ -98,15 +224,11 @@
     ],
     [
       "\\bzero custody\\b",
-      "no pooled user assets (the CLPR Service holds Connector funds and endpoint bonds)"
+      "no pooled user assets (the CLPR Service holds connector stakes)"
     ],
     [
       "\\bimmutable (smart )?contract\\b|\\bverifiers? (contracts? )?(is|are) immutable\\b",
       "a verifier whose address is fixed for the Channel's lifetime (the contract may be an upgradeable proxy)"
-    ],
-    [
-      "\\bBesu\\b",
-      "EVM ledger (name QBFT or CometBFT only as a proof type)"
     ],
     [
       "\\bdeployable today\\b|\\bproduction[- ]ready\\b|\\bready for production\\b",

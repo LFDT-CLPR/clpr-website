@@ -1,6 +1,15 @@
 ---
-/** Section 1: five ledgers agree on a new line. Consensus and finality in one picture. */
+/**
+ * Section 1: five ledgers agree on a new line. Consensus and finality in one picture. The closing
+ * line on finality rests on Bundle §4 and CLPR Service §6.2 (finality is the verifier's choice;
+ * final or safe state is recommended).
+ */
+import Refs from '@kse/components/Refs.astro';
 const { id = 'ledger-sim' } = Astro.props as { id?: string };
+const refs = [
+  { doc: 'bundle', anchor: '4-proof-requirements', label: 'Bundle §4' },
+  { doc: 'service', anchor: '62-finality', label: 'CLPR Service §6.2' },
+] as const;
 const nodes = [0, 1, 2, 3, 4];
 const centre = (i: number) => 40 + i * 145 + 55;
 ---
@@ -8,7 +17,7 @@ const centre = (i: number) => 40 + i * 145 + 55;
   <div class="sim__head"><div><span class="kind">Simulation</span><h3>Five copies of one ledger</h3></div></div>
   <div class="sim__body">
     <div class="sim__scroll">
-    <svg viewBox="0 0 760 250" role="img" aria-label="Five ledgers held by five computers. A proposed line spreads to all of them, they agree, and the line is sealed.">
+    <svg viewBox="0 0 760 250" role="img" aria-label="One ledger, five identical copies held by five computers. A proposed line spreads to all of them, they agree, and the line is sealed.">
       <path class="line dash" d={`M${centre(0)},198 H${centre(4)}`} />
       {nodes.map((i) => <line x1={centre(i)} y1="180" x2={centre(i)} y2="198" class="line dash" />)}
       {nodes.map((i) => {
@@ -43,6 +52,7 @@ const centre = (i: number) => 40 + i * 145 + 55;
     <p class="sim__scroll-note">Wider than a phone; scroll it sideways if you need to.</p>
     <div class="sim__track seg" data-role="track" aria-hidden="true"><i></i><i></i><i></i></div>
     <div class="phases" aria-hidden="true"><span>proposing</span><span>agreeing</span><span>sealed</span></div>
+    <Refs refs={[...refs]} />
   </div>
   <div class="sim__controls">
     <button class="btn primary" type="button" data-role="propose">Propose a new line</button>
@@ -146,7 +156,7 @@ const centre = (i: number) => 40 + i * 145 + 55;
       }
       setCaption('sealed: on a ledger with final consensus, this line is not changed or removed');
       phase(3);
-      log.innerHTML = '<span class="line">sealed</span>The line is <span class="ok">final</span>. Agreeing on it is called <strong>consensus</strong>; the fact that it will not be undone is called <strong>finality</strong>. Both matter later: how final a line must be before CLPR carries it is set by each channel\'s verifier.';
+      log.innerHTML = '<span class="line">sealed</span>The line is <span class="ok">final</span>. Agreeing on it is called <strong>consensus</strong>; the fact that it will not be undone is called <strong>finality</strong>. Both matter later: how final a line must be before a channel accepts a proof of it is the choice of that channel\'s verifier, and the recommended choice is final or safe state.';
       root.removeAttribute('aria-busy');
     }
     propose.addEventListener('click', () => { if (root.getAttribute('aria-busy') !== 'true') run(); });

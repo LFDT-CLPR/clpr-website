@@ -2,9 +2,9 @@
 
 The CLPR repositories move; the site must follow without any claim drifting. This page is the
 human overview. The step-by-step procedure that an AI assistant follows is the
-[`clpr-sync` skill](../.claude/skills/clpr-sync/SKILL.md); the two agree, and the skill is the
-more detailed of the two. Two report-only skills sit beside it: [`clpr-drift`](../.claude/skills/clpr-drift/SKILL.md)
-explains what moved upstream and what it touches, and [`clpr-audit`](../.claude/skills/clpr-audit/SKILL.md)
+[`clpr-sync` skill](../../.claude/skills/clpr-sync/SKILL.md); the two agree, and the skill is the
+more detailed of the two. Two report-only skills sit beside it: [`clpr-drift`](../../.claude/skills/clpr-drift/SKILL.md)
+explains what moved upstream and what it touches, and [`clpr-audit`](../../.claude/skills/clpr-audit/SKILL.md)
 judges whether every statement in the repository (both explainer pages, the website's landing page
 and its drawings, the documents) still matches the passage it cites, and re-checks the facts that
 change outside the pins. Only `clpr-sync` edits or re-pins.
@@ -51,8 +51,9 @@ changed upstream file:
 2. Read the **new full text** upstream (in `.upstream/<id>/…`), not only the patch. Renumbered
    sections and moved paragraphs change what a sentence means without appearing in a small diff.
 3. Re-read each dependent site location next to the new text and change only what the text
-   changed: wording, numbers, field names, step order, table rows, open questions that got
-   resolved, implementation divergences that got fixed or appeared.
+   changed: wording, step order, table rows, open questions that got resolved, implementation
+   divergences that got fixed or appeared. Delete volatile detail (field names, numbers, formulas)
+   where the sentence reads without it, rather than update it (writing-guide.md, Keep it stable).
 4. Check the simulations that model the changed behaviour. The anchor check only proves their
    citations still exist; whether their logic still matches is a reading task.
 5. If the change is a new concept, add it to both pages in their own registers (see
@@ -88,10 +89,10 @@ Open the screenshots of the sections you edited in light and dark and at phone w
 ### 6. Record and commit
 
 Add an entry at the top of `CHANGELOG.md` with the upstream commit ranges and the sections
-touched, then one DCO-signed commit:
+touched, then one signed-off and GPG-signed commit (the repository's `CONTRIBUTING.md`):
 
 ```bash
-git commit -s -m "sync: clpr-spec@1a2b3c4, governance@9f8e7d6" -m "<the changelog bullets>"
+git commit -s -S -m "sync: clpr-spec@1a2b3c4, governance@9f8e7d6" -m "<the changelog bullets>"
 ```
 
 Open a pull request rather than pushing to `main` directly when someone else can review; the
